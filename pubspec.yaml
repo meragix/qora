@@ -9,7 +9,8 @@ environment:
 dev_dependencies:
   melos: ^7.4.0
 
-workspace: 
+workspace:
+  - packages/qora
 
 melos:
   command:
