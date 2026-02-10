@@ -99,16 +99,16 @@ class QoraClient {
   }) async {
     int attempt = 0;
     Object? lastError;
-    StackTrace? lastStackTrace;
+    //StackTrace? lastStackTrace;
 
     while (attempt <= options.retryCount) {
       try {
         _log('Executing query ${key.toDebugString()} (attempt ${attempt + 1})');
         final result = await fetcher();
         return result;
-      } catch (error, stackTrace) {
+      } catch (error, _) {
         lastError = error;
-        lastStackTrace = stackTrace;
+        //lastStackTrace = stackTrace;
 
         if (attempt < options.retryCount) {
           final delay = options.getRetryDelay(attempt);
