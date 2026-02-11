@@ -49,14 +49,17 @@ class QoraScope extends StatefulWidget {
   /// await client.fetchQuery(...);
   /// ```
   static QoraClient of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<_InheritedQoraScope>();
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<_InheritedQoraScope>();
 
     if (scope == null) {
       throw FlutterError.fromParts([
-        ErrorSummary('QoraScope.of() called with a context that does not contain a QoraScope.'),
+        ErrorSummary(
+            'QoraScope.of() called with a context that does not contain a QoraScope.'),
         ErrorDescription(
             'No QoraClient ancestor could be found starting from the context that was passed to QoraScope.of().'),
-        ErrorHint('Make sure that QoraScope is an ancestor of the widget that calls QoraScope.of().\n\n'
+        ErrorHint(
+            'Make sure that QoraScope is an ancestor of the widget that calls QoraScope.of().\n\n'
             'Typical usage:\n'
             'void main() {\n'
             '  runApp(\n'
@@ -77,7 +80,8 @@ class QoraScope extends StatefulWidget {
   ///
   /// Utile pour les cas où le QoraScope est optionnel
   static QoraClient? maybeOf(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<_InheritedQoraScope>();
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<_InheritedQoraScope>();
     return scope?.client;
   }
 

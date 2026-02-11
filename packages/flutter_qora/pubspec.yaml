@@ -1,9 +1,9 @@
 name: flutter_qora
 description: "A Flutter wrapper around the Qora async state management library, providing seamless integration with Flutter's widget tree and lifecycle"
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/meragix/qora
 
-publish_to: none
+# publish_to: none
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -13,8 +13,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  qora:
-    path: ../qora
+  qora: ^0.1.0
   connectivity_plus: ^6.0.0
 
 dev_dependencies:

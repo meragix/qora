@@ -17,7 +17,8 @@ class FlutterConnectivityManager implements ConnectivityManager {
   @override
   NetworkStatus get currentStatus => _currentStatus;
 
-  FlutterConnectivityManager({required QoraClient qoraClient}) : _qoraClient = qoraClient;
+  FlutterConnectivityManager({required QoraClient qoraClient})
+      : _qoraClient = qoraClient;
 
   @override
   Future<void> start() async {

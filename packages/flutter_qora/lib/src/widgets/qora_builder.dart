@@ -190,7 +190,9 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   @override
   Widget build(BuildContext context) {
     // Appliquer keepPreviousData si nécessaire
-    final effectiveState = widget.keepPreviousData ? _applyKeepPreviousData(_currentState) : _currentState;
+    final effectiveState = widget.keepPreviousData
+        ? _applyKeepPreviousData(_currentState)
+        : _currentState;
 
     return widget.builder(context, effectiveState);
   }

@@ -24,7 +24,8 @@ class QoraClient {
   // ignore: prefer_final_fields
   bool _isDisposed = false;
 
-  QoraClient({QoraClientConfig? config}) : config = config ?? const QoraClientConfig() {
+  QoraClient({QoraClientConfig? config})
+      : config = config ?? const QoraClientConfig() {
     _startEvictionTimer();
   }
 
@@ -112,7 +113,8 @@ class QoraClient {
 
         if (attempt < options.retryCount) {
           final delay = options.getRetryDelay(attempt);
-          _log('Retry ${attempt + 1}/${options.retryCount} for ${key.toDebugString()} in ${delay.inMilliseconds}ms');
+          _log(
+              'Retry ${attempt + 1}/${options.retryCount} for ${key.toDebugString()} in ${delay.inMilliseconds}ms');
           await Future.delayed(delay, () {});
           attempt++;
         } else {

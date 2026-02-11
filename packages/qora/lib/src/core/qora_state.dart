@@ -48,13 +48,15 @@ sealed class QoraState<T> {
     required R Function() initial,
     required R Function(T? previousData) loading,
     required R Function(T data, DateTime updatedAt) success,
-    required R Function(Object error, StackTrace? stackTrace, T? previousData) failure,
+    required R Function(Object error, StackTrace? stackTrace, T? previousData)
+        failure,
   }) {
     return switch (this) {
       QoraInitial() => initial(),
       QoraLoading(:final previousData) => loading(previousData),
       QoraSuccess(:final data, :final updatedAt) => success(data, updatedAt),
-      QoraFailure(:final error, :final stackTrace, :final previousData) => failure(error, stackTrace, previousData),
+      QoraFailure(:final error, :final stackTrace, :final previousData) =>
+        failure(error, stackTrace, previousData),
     };
   }
 }

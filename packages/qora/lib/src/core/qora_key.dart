@@ -27,7 +27,9 @@ class QoraKey {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is QoraKey && runtimeType == other.runtimeType && const DeepCollectionEquality().equals(parts, other.parts);
+      other is QoraKey &&
+          runtimeType == other.runtimeType &&
+          const DeepCollectionEquality().equals(parts, other.parts);
 
   @override
   int get hashCode => _hashCode;

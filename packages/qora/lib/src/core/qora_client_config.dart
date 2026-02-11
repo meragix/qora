@@ -7,7 +7,8 @@ class QoraClientConfig {
   final QoraOptions defaultOptions;
 
   /// Fonction pour mapper les erreurs brutes en ReqryException
-  final QoraException Function(Object error, StackTrace? stackTrace)? errorMapper;
+  final QoraException Function(Object error, StackTrace? stackTrace)?
+      errorMapper;
 
   /// Active le mode debug pour les logs
   final bool debugMode;
