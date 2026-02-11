@@ -1,39 +1,38 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# qora
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+The core engine of the Qora ecosystem. A pure Dart library for managing server state with zero dependencies on the Flutter framework.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- **Agnostic Architecture**: Works with any HTTP client (Dio, http) and any storage (Hive, Isar).
+- **Concurrency Management**: Prevents multiple simultaneous calls to the same endpoint.
+- **Persistence Layer**: Abstract `ReqryStorage` interface for custom caching strategies.
 
-## Getting started
+## Installation
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```yaml
+dependencies:
+  qora: ^0.1.0
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+## Quick Start (Logic Layer)
 
 ```dart
-const like = 'sample';
+final qora = QoraClient();
+
+// Define a query
+final profile = await qora.fetchQuery<User>(
+  key: QoraKey(['user', 1]),
+  fetcher: (signal) => api.getUser(1, cancelToken: signal),
+  decoder: (json) => User.fromJson(json),
+  staleTime: Duration(minutes: 5),
+);
 ```
 
-## Additional information
+## Architecture Trade-offs
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+- **Pros**: Zero Flutter dependency. Can be used in CLI or Server-side Dart.
+- **Cons**: Requires manual state observation if used without flutter_qora.
+
+## Documentation
+
+For detailed API documentation, please refer to the [Docs](https://meragix.github.io/qora).

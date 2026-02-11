@@ -1,0 +1,16 @@
+# Global owners (reviewed for all changes)
+
+* @donfreddy
+
+# Package-specific
+
+/packages/qora/ @donfreddy
+/packages/flutter_qora/ @donfreddy
+
+# Docs
+
+/docs/ @donfreddy
+
+# CI/CD
+
+/.github/ @donfreddy

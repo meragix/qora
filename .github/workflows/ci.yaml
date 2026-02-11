@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Melos
+        run: dart pub global activate melos 7.4.0
+
+      - name: Bootstrap
+        run: melos bootstrap
+
+      - name: Detect Changed Packages
+        id: filter
+        run: |
+          CHANGED=$(melos list --since=origin/${{ github.base_ref }} --json | jq -r '.[].name' | tr '\n' ',' | sed 's/,$//')
+          echo "packages=${CHANGED}" >> $GITHUB_OUTPUT
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.packages != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(format('["{0}"]', needs.changes.outputs.packages)) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+
+      - name: Bootstrap
+        run: melos bootstrap
+
+      - name: Analyze
+        run: melos analyze
+
+      - name: Check formatting
+        run: melos format:check
+
+      - name: Run tests
+        run: melos test
+
+      - name: Golden Tests (Flutter only)
+        if: startsWith(matrix.package, 'flutter_')
+        run: melos run test:golden --scope=${{ matrix.package }}
+
+  dry-run-publish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+
+      - run: melos bootstrap
+
+      - name: Dry Run Publish
+        run: melos publish:check
