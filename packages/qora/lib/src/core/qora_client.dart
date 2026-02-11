@@ -130,7 +130,7 @@ class QoraClient {
   ///
   /// ```dart
   /// final users = await client.fetchQuery(
-  ///   key: QoraKey(['users']),
+  ///   key: ['users'],
   ///   fetcher: () => api.getUsers(),
   /// );
   /// ```
