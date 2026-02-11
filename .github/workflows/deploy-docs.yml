@@ -22,26 +22,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: docs-site/package-lock.json
+          cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
         working-directory: ./docs-site
         run: npm ci
 
       - name: Build website
-        working-directory: ./docs-site
-        run: npm run build
+        working-directory: ./docs
+        run: NUXT_APP_BASE_URL=/qora/ npx nuxt build --preset github_pages
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./docs-site/build
+          path: ./docs/.output/public
 
   deploy:
     environment:
