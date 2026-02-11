@@ -11,6 +11,7 @@ dev_dependencies:
 
 workspace:
   - packages/qora
+  - packages/flutter_qora
 
 melos:
   command:

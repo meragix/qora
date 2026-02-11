@@ -15,11 +15,11 @@ sealed class QoraState<T> {
   }) = QoraSuccess<T>;
 
   /// État d'erreur avec l'erreur et éventuellement des données précédentes
-  const factory QoraState.error({
+  const factory QoraState.failure({
     required Object error,
     StackTrace? stackTrace,
     T? previousData,
-  }) = QoraError<T>;
+  }) = QoraFailure<T>;
 
   /// Vérifie si l'état est en chargement
   bool get isLoading => this is QoraLoading<T>;
@@ -28,7 +28,7 @@ sealed class QoraState<T> {
   bool get hasData => switch (this) {
         QoraSuccess() => true,
         QoraLoading(:final previousData) => previousData != null,
-        QoraError(:final previousData) => previousData != null,
+        QoraFailure(:final previousData) => previousData != null,
         QoraInitial() => false,
       };
 
@@ -36,25 +36,25 @@ sealed class QoraState<T> {
   T? get dataOrNull => switch (this) {
         QoraSuccess(:final data) => data,
         QoraLoading(:final previousData) => previousData,
-        QoraError(:final previousData) => previousData,
+        QoraFailure(:final previousData) => previousData,
         QoraInitial() => null,
       };
 
   /// Vérifie si l'état est en erreur
-  bool get hasError => this is QoraError<T>;
+  bool get hasError => this is QoraFailure<T>;
 
   /// Pattern matching utilitaire
   R when<R>({
     required R Function() initial,
     required R Function(T? previousData) loading,
     required R Function(T data, DateTime updatedAt) success,
-    required R Function(Object error, StackTrace? stackTrace, T? previousData) err,
+    required R Function(Object error, StackTrace? stackTrace, T? previousData) failure,
   }) {
     return switch (this) {
       QoraInitial() => initial(),
       QoraLoading(:final previousData) => loading(previousData),
       QoraSuccess(:final data, :final updatedAt) => success(data, updatedAt),
-      QoraError(:final error, :final stackTrace, :final previousData) => err(error, stackTrace, previousData),
+      QoraFailure(:final error, :final stackTrace, :final previousData) => failure(error, stackTrace, previousData),
     };
   }
 }
@@ -92,12 +92,12 @@ final class QoraSuccess<T> extends QoraState<T> {
 }
 
 /// État d'erreur
-final class QoraError<T> extends QoraState<T> {
+final class QoraFailure<T> extends QoraState<T> {
   final Object error;
   final StackTrace? stackTrace;
   final T? previousData;
 
-  const QoraError({
+  const QoraFailure({
     required this.error,
     this.stackTrace,
     this.previousData,

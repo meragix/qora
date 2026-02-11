@@ -144,7 +144,7 @@ class QoraClient {
 
     if (!mergedOpts.enabled) {
       entry.updateState(
-        QoraState.error(error: StateError('Query is disabled: $key')),
+        QoraState.failure(error: StateError('Query is disabled: $key')),
       );
       _pendingRequests.remove(key);
     }
@@ -195,7 +195,7 @@ class QoraClient {
     }).catchError((Object error, StackTrace stackTrace) {
       final mappedError = _mapError(error, stackTrace);
       entry.updateState(
-        QoraState.error(
+        QoraState.failure(
           error: mappedError!,
           stackTrace: stackTrace,
           previousData: cachedData,

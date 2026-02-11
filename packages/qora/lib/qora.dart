@@ -16,5 +16,9 @@ export 'src/core/qora_options.dart';
 export 'src/core/qora_state.dart';
 export 'src/core/query_function.dart';
 
+// Managers
+export 'src/managers/connectivity_manager.dart';
+export 'src/managers/lifecycle_manager.dart';
+
 // Utils
 export 'src/utils/qora_exception.dart';
