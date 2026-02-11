@@ -37,12 +37,12 @@ jobs:
 
       - name: Build website
         working-directory: ./docs
-        run: NUXT_APP_BASE_URL=/qora/ npm run build --preset github_pages
+        run: NUXT_APP_BASE_URL=/qora/ npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./docs/github_pages/.output/public
+          path: ./docs/.output/public
 
   deploy:
     environment:
