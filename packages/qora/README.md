@@ -35,4 +35,4 @@ final profile = await qora.fetchQuery<User>(
 
 ## Documentation
 
-For detailed API documentation, please refer to the [Docs](https://meragix.github.io/qora).
+For full documentation, examples, and API reference, please visit our [Documentation Site](https://meragix.github.io/qora).
