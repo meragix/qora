@@ -150,8 +150,6 @@ icon: i-lucide-layers
   ---
 
 icon: i-lucide-clock
-  target: _blank
-  to: <https://ui.nuxt.com/components/content-search>
   ---
 
   #title
@@ -159,5 +157,28 @@ icon: i-lucide-clock
   
   #description
   Take total control over data freshness. Define precisely how long data stays "fresh" per query. Qora intelligently triggers background refreshes only when necessary, balancing UX and server load.
+  :::
+::
+
+::u-page-section
+  :::u-page-c-t-a
+  ---
+  title: Ready to master your server state?
+  description: Join the next generation of Flutter developers building resilient, offline-ready applications with Qora. Stop managing data, start shipping features.
+  class: dark:bg-neutral-950
+  links:
+    - label: Start building now
+      to: '/getting-started/installation'
+      trailingIcon: i-lucide-arrow-right
+      size: xl
+    - label: View on GitHub
+      to: 'https://github.com/votre-org/qora'
+      target: _blank
+      variant: outline
+      icon: i-simple-icons-github
+      size: xl
+  ---
+
+  :stars-bg
   :::
 ::
