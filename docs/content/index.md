@@ -1,123 +1,163 @@
 ---
 seo:
-  title: Write beautiful docs with Markdown
-  description: Ship fast, flexible, and SEO-optimized documentation with beautiful
-    design out of the box. Docus brings together the best of the Nuxt ecosystem.
-    Powered by Nuxt UI.
+  title: Qora | Bulletproof Server-State for Dart & Flutter
+  description: High-performance, type-safe, and offline-ready state management. Stop managing data, start declaring intent.
 ---
 
 ::u-page-hero
+---
+orientation: horizontal
+---
+
 #title
-Write beautiful docs with Markdown
+Bulletproof [Server-State]{.text-primary} for Dart
 
 #description
-Ship fast, flexible, and SEO-optimized documentation with beautiful design out of the box.
+Stop managing data. Start declaring intent. Fast, Typed, and Offline-ready state management for Flutter. Built for developers who demand reliability.
 
-Docus brings the best of the Nuxt ecosystem into one CLI.
+#headline
+  :::u-badge
+  ---
+
+color: success
+  variant: outline
+  class: rounded-full
+  ---
+
+  v0.1.0 is now available
+  :::
 
 #links
   :::u-button
   ---
-  color: neutral
+
+color: neutral
   size: xl
   to: /getting-started/installation
   trailing-icon: i-lucide-arrow-right
   ---
+
   Get started
   :::
 
   :::u-button
   ---
-  color: neutral
+
+color: neutral
   icon: simple-icons-github
   size: xl
-  to: https://github.com/nuxt-content/docus
+  to: <https://github.com/meragix/qora>
   variant: outline
   ---
+
   Star on GitHub
+  :::
+
+#default
+  :::prose
+
+  ```dart [example.dart]
+final profile = await qora.fetch<User>(
+    // Query Key - Unique ID for caching & invalidation
+    key: ['user', userId],
+
+    // Query function with abort signal support
+    fetcher: (signal) async {
+      final raw = awaitapi.getUser(userId, signal);
+      return User.fromJson(raw);
+    }
+
+    options: QoraOptions(
+      staleTime: 30.seconds, // When data becomes "old"
+      cacheTime: 5.minutes,  // How long it stays in memory
+    )
+);
+  ```
   :::
 ::
 
 ::u-page-section
 #title
-Shipped with many features
+Engineered for Performance
 
 #features
   :::u-page-feature
+  --- 
+
+icon: i-lucide-brain
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://nuxt.com
-  ---
+
   #title
-  Built with [Nuxt 4]{.text-primary}
+  Zero-Config [Caching]{.text-primary}
   
   #description
-  Optimized by the most famous Vue framework. Docus gives you everything you need to build fast, performant, and SEO-friendly websites.
+  Qora automatically stores and deduplicates your API responses. One request for multiple widgets, zero manual state management.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://ui.nuxt.com/
+
+icon: i-lucide-refresh-cw
   ---
+
   #title
-  Powered by [Nuxt UI]{.text-primary}
+  Intelligent [Background Sync]{.text-primary}
   
   #description
-  Beautiful out of the box, minimal by design but highly customizable. Docus leverages Nuxt UI to give you the best docs writing experience with zero boilerplate, just focus on your content.
+  Display cached data instantly while silently refreshing in the background. Your app stays fresh without ever blocking the user.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://content.nuxt.com
+
+icon: i-lucide-database
   ---
+
   #title
-  Enhanced Markdown syntax by [Nuxt Content]{.text-primary}
+  Bulletproof [Offline Support]{.text-primary}
   
   #description
-  The only thing you need to take care about is writing your content. Write your pages in Markdown and extend with MDC syntax to embed Nuxt UI or custom Vue components. Structure, routing, and rendering are handled for you.
+  Built-in persistence with plug-and-play storage (Hive, SharedPrefs). Your data remains accessible even in the most unstable network conditions.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://nuxt.com/docs/guide/directory-structure/app-config
+
+icon: i-lucide-zap
   ---
+
   #title
-  Customize with [Nuxt App Config]{.text-primary}
+  Automatic [Resource Cleanup]{.text-primary}
   
   #description
-  Update colors, social links, header logos and component styles globally using the `app.config.ts`, no direct code modifications required.
+  Qora cancels network requests automatically when widgets are disposed. Save battery, bandwidth, and prevent memory leaks without effort.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
-  target: _blank
-  to: https://content.nuxt.com/studio
+
+icon: i-lucide-layers
   ---
+
   #title
-  Edit in production with [Nuxt Studio]{.text-primary}
+  Smart [Request Deduplication]{.text-primary}
   
   #description
-  Edit your content in production with zero Markdown knowledge required. Let your non technical colleagues collaborate on the documentation and integrate Vue components without code skills.
+  Stop wasting bandwidth. If multiple components request the same data simultaneously, Qora executes a single network call and shares the result across your entire app.
   :::
 
   :::u-page-feature
   ---
-  icon: i-simple-icons-nuxt
+
+icon: i-lucide-clock
   target: _blank
-  to: https://ui.nuxt.com/components/content-search
+  to: <https://ui.nuxt.com/components/content-search>
   ---
+
   #title
-  Built-in navigation and [full-text search]{.text-primary}
+  Fine-grained [Stale Time]{.text-primary} Control
   
   #description
-  Only focus on ordering your content, Docus handles the search modal and auto-generates the side navigation for you.
+  Take total control over data freshness. Define precisely how long data stays "fresh" per query. Qora intelligently triggers background refreshes only when necessary, balancing UX and server load.
   :::
 ::
