@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-02-11
+### Added
+
+- Polymorphic key system supporting key: [] AND QoraKey
+- Deep recursive equality with order-independent map support
+- Defensive immutability via List.unmodifiable()
+- Custom KeyCacheMap to avoid reference traps
+
+### Change
+
+- Update old QoraKey implementation system
 
 ## [0.1.0] - 2026-02-11
 

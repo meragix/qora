@@ -46,7 +46,7 @@ color: neutral
 color: neutral
   icon: simple-icons-github
   size: xl
-  to: <https://github.com/meragix/qora>
+  to: 'https://github.com/meragix/qora'
   variant: outline
   ---
 
@@ -172,7 +172,7 @@ icon: i-lucide-clock
       trailingIcon: i-lucide-arrow-right
       size: xl
     - label: View on GitHub
-      to: 'https://github.com/votre-org/qora'
+      to: 'https://github.com/meragix/qora'
       target: _blank
       variant: outline
       icon: i-simple-icons-github

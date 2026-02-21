@@ -2,8 +2,9 @@
 
 import 'dart:async';
 import 'package:qora/src/core/cached_entry.dart';
+import 'package:qora/src/core/key/key_cache_map.dart';
+import 'package:qora/src/core/key/qora_key.dart';
 import 'package:qora/src/core/qora_client_config.dart';
-import 'package:qora/src/core/qora_key.dart';
 import 'package:qora/src/core/qora_options.dart';
 import 'package:qora/src/core/qora_state.dart';
 import 'package:qora/src/core/query_function.dart';
@@ -13,19 +14,16 @@ class QoraClient {
   /// Configuration par défaut
   final QoraClientConfig config;
 
-  final Map<QoraKey, CacheEntry<dynamic>> _cache = {};
+  final KeyCacheMap<CacheEntry<dynamic>> _cache = KeyCacheMap<CacheEntry<dynamic>>();
 
-  // ignore: strict_raw_type
-  final Map<QoraKey, Future> _pendingRequests = {};
-
-  // final Map<QoraKey, Set<QueryObserver>> _observers = {};
+  final KeyCacheMap<Future<dynamic>> _pendingRequests = KeyCacheMap<Future<dynamic>>();
+  // final Map<Object, Set<QueryObserver>> _observers = {};
 
   Timer? _evictionTimer;
   // ignore: prefer_final_fields
   bool _isDisposed = false;
 
-  QoraClient({QoraClientConfig? config})
-      : config = config ?? const QoraClientConfig() {
+  QoraClient({QoraClientConfig? config}) : config = config ?? const QoraClientConfig() {
     _startEvictionTimer();
   }
 
@@ -39,8 +37,7 @@ class QoraClient {
 
   /// Supprime les entrées expirées du cache
   void _evictStaleEntries() {
-    //final now = DateTime.now();
-    final keysToRemove = <QoraKey>[];
+    final keysToRemove = <Object>[];
 
     for (final entry in _cache.entries) {
       if (entry.value.shouldEvict(config.defaultOptions.cacheTime)) {
@@ -49,10 +46,10 @@ class QoraClient {
     }
 
     for (final key in keysToRemove) {
-      _cache[key]?.dispose();
+      _cache.get(key)?.dispose();
       _cache.remove(key);
       if (config.debugMode) {
-        print('[Reqry] Evicted cache entry: ${key.toDebugString()}');
+        print('[Reqry] Evicted cache entry: ${key.toString()}');
       }
     }
   }
@@ -79,24 +76,46 @@ class QoraClient {
     return error;
   }
 
-  /// Récupère ou crée une entrée de cache
-  CacheEntry<T> _getOrCreateEntry<T>(QoraKey key) {
+  /// Retrieves or creates a cache entry
+  CacheEntry<T> _getOrCreateEntry<T>(Object key) {
     _assertNotDisposed();
 
-    if (!_cache.containsKey(key)) {
-      _cache[key] = CacheEntry<T>(
-        state: const QoraState.initial(),
-        createdAt: DateTime.now(),
-      );
+    final normalizedKey = normalizeKey(key);
+    final cached = _cache.get(normalizedKey);
+
+    if (cached != null) {
+      final entry = cached as CacheEntry<T>;
+
+      if (entry.shouldEvict(config.defaultOptions.cacheTime)) {
+        entry.dispose();
+        _cache.remove(normalizedKey);
+
+        if (config.debugMode) {
+          print('[Qora] Lazy evicted: $normalizedKey');
+        }
+      } else {
+        if (config.debugMode) {
+          print('[Qora] Cache HIT: $normalizedKey');
+        }
+        return entry;
+      }
     }
-    return _cache[key] as CacheEntry<T>;
+
+    print('[Qora] Cache MISS: $normalizedKey');
+    final data = CacheEntry<T>(
+      state: const QoraState.initial(),
+      createdAt: DateTime.now(),
+    );
+
+    _cache.set(normalizedKey, data);
+    return data;
   }
 
   /// Exécute une requête avec retry
   Future<T> _executeWithRetry<T>({
     required Future<T> Function() fetcher,
     required QoraOptions options,
-    required QoraKey key,
+    required Object key,
   }) async {
     int attempt = 0;
     Object? lastError;
@@ -104,7 +123,7 @@ class QoraClient {
 
     while (attempt <= options.retryCount) {
       try {
-        _log('Executing query ${key.toDebugString()} (attempt ${attempt + 1})');
+        _log('Executing query ${key.toString()} (attempt ${attempt + 1})');
         final result = await fetcher();
         return result;
       } catch (error, _) {
@@ -113,8 +132,7 @@ class QoraClient {
 
         if (attempt < options.retryCount) {
           final delay = options.getRetryDelay(attempt);
-          _log(
-              'Retry ${attempt + 1}/${options.retryCount} for ${key.toDebugString()} in ${delay.inMilliseconds}ms');
+          _log('Retry ${attempt + 1}/${options.retryCount} for ${key.toString()} in ${delay.inMilliseconds}ms');
           await Future.delayed(delay, () {});
           attempt++;
         } else {
@@ -135,7 +153,7 @@ class QoraClient {
   /// );
   /// ```
   Future<T> fetchQuery<T>({
-    required QoraKey key,
+    required Object key,
     required QueryFunction<T> fetcher,
     QoraOptions? options,
   }) async {
@@ -151,13 +169,13 @@ class QoraClient {
       _pendingRequests.remove(key);
     }
 
-    // Vérifier si une requête est déjà en cours (déduplication)
+    // Check if a request is already in progress (deduplication).
     if (_pendingRequests.containsKey(key)) {
-      _log('Deduplicating query ${key.toDebugString()}');
-      return await _pendingRequests[key] as Future<T>;
+      _log('Deduplicating query ${key.toString()}');
+      return await _pendingRequests.get(key) as Future<T>;
     }
 
-    // Stale-While-Revalidate: retourner données en cache si disponibles
+    // Stale-While-Revalidate: return cached data if available
     final currentState = entry.state;
     T? cachedData;
     bool hasValidCache = false;
@@ -167,13 +185,13 @@ class QoraClient {
       hasValidCache = !entry.isStale(mergedOpts.staleTime);
 
       if (hasValidCache) {
-        _log('Returning fresh cached data for ${key.toDebugString()}');
+        _log('Returning fresh cached data for ${key.toString()}');
         entry.lastAccessedAt = DateTime.now();
         return Future.value(cachedData);
       }
 
       // Données stale, on met à jour en arrière-plan
-      _log('Cache stale for ${key.toDebugString()}, revalidating...');
+      _log('Cache stale for ${key.toString()}, revalidating...');
       entry.updateState(QoraState.loading(previousData: cachedData));
     } else {
       // Pas de cache, on passe en loading
@@ -207,11 +225,11 @@ class QoraClient {
       throw mappedError;
     });
 
-    _pendingRequests[key] = pendingRequest;
+    _pendingRequests.set(key, pendingRequest);
 
     // Si on a des données en cache stale, les retourner immédiatement
     if (cachedData != null) {
-      _log('Returning stale data for ${key.toDebugString()}');
+      _log('Returning stale data for ${key.toString()}');
       // La revalidation continue en arrière-plan
       return cachedData;
     }
@@ -220,16 +238,16 @@ class QoraClient {
   }
 
   /// Observe l'état d'une requête de manière réactive
-  Stream<QoraState<T>> watchState<T>(QoraKey key) {
+  Stream<QoraState<T>> watchState<T>(Object key) {
     _assertNotDisposed();
     final entry = _getOrCreateEntry<T>(key);
     return entry.stream.asBroadcastStream();
   }
 
   /// Récupère l'état actuel d'une requête
-  QoraState<T> getState<T>(QoraKey key) {
+  QoraState<T> getState<T>(Object key) {
     _assertNotDisposed();
-    final entry = _cache[key];
+    final entry = _cache.get(key);
     if (entry == null) {
       return const QoraState.initial();
     }
@@ -237,18 +255,18 @@ class QoraClient {
   }
 
   /// Invalide une requête et force son rafraîchissement
-  void invalidateQuery(QoraKey key) {
+  void invalidateQuery(Object key) {
     _assertNotDisposed();
-    final entry = _cache[key];
+    final entry = _cache.get(key);
     if (entry != null) {
-      _log('Invalidating query ${key.toDebugString()}');
+      _log('Invalidating query ${key.toString()}');
       _cache.remove(key);
       entry.dispose();
     }
   }
 
   /// Invalide toutes les requêtes correspondant à un prédicat
-  void invalidateQueries(bool Function(QoraKey key) predicate) {
+  void invalidateQueries(bool Function(Object key) predicate) {
     _assertNotDisposed();
     final keysToInvalidate = _cache.keys.where(predicate).toList();
     for (final key in keysToInvalidate) {
@@ -257,7 +275,7 @@ class QoraClient {
   }
 
   /// Met à jour manuellement les données d'une requête
-  void setQueryData<T>(QoraKey key, T data) {
+  void setQueryData<T>(Object key, T data) {
     _assertNotDisposed();
     final entry = _getOrCreateEntry<T>(key);
     entry.updateState(
@@ -266,11 +284,11 @@ class QoraClient {
         updatedAt: DateTime.now(),
       ),
     );
-    _log('Manually updated query data for ${key.toDebugString()}');
+    _log('Manually updated query data for ${key.toString()}');
   }
 
   /// Restaure une snapshot du cache (pour rollback)
-  void restoreQueryData<T>(QoraKey key, T? snapshot) {
+  void restoreQueryData<T>(Object key, T? snapshot) {
     _assertNotDisposed();
     if (snapshot == null) {
       removeQuery(key);
@@ -282,7 +300,7 @@ class QoraClient {
           updatedAt: DateTime.now(),
         ),
       );
-      _log('Restore query data for ${key.toDebugString()}');
+      _log('Restore query data for ${key.toString()}');
     }
   }
 
@@ -297,15 +315,15 @@ class QoraClient {
   }
 
   /// Récupère toutes les clés en cache
-  List<QoraKey> get cachedKeys => _cache.keys.toList();
+  List<Object> get cachedKeys => _cache.keys.toList();
 
   /// Supprime une entrée du cache
-  void removeQuery(QoraKey key) {
+  void removeQuery(Object key) {
     _assertNotDisposed();
-    _cache[key]?.dispose();
+    _cache.get(key)?.dispose();
     _cache.remove(key);
     _pendingRequests.remove(key);
-    _log('Removed query ${key.toDebugString()}');
+    _log('Removed query ${key.toString()}');
   }
 
   /// Vide tout le cache

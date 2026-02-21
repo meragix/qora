@@ -97,8 +97,7 @@ class UserListScreen extends StatelessWidget {
             failure: (error, stackTrace, previousData) {
               return Column(
                 children: [
-                  if (previousData != null)
-                    Expanded(child: UserListView(users: previousData)),
+                  if (previousData != null) Expanded(child: UserListView(users: previousData)),
                   ErrorBanner(error: error.toString()),
                 ],
               );
@@ -169,9 +168,7 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
             children: [
               IconButton(
                 icon: Icon(Icons.chevron_left),
-                onPressed: _currentPage > 1
-                    ? () => setState(() => _currentPage--)
-                    : null,
+                onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
               ),
               Text('Page $_currentPage'),
               IconButton(
@@ -325,7 +322,7 @@ class UpdateUserButton extends StatelessWidget {
       client.setQueryData<User>(key, updatedUser);
 
       // 5. Invalider les requêtes liées
-      client.invalidateQueries((k) => k.parts.first == 'users');
+      client.invalidateQueries((k) => k == 'users');
     } catch (error) {
       // 6. Rollback en cas d'erreur
       if (previousData != null) {
