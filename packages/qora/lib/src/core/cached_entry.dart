@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:qora/src/core/qora_state.dart';
+import 'package:qora/src/core/state/qora_state.dart';
 
 /// Entrée de cache contenant l'état et les métadonnées
 class CacheEntry<T> {

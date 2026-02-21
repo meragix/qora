@@ -72,11 +72,12 @@ class UserListScreen extends StatelessWidget {
         queryKey: QoraKey(['users']),
         queryFn: () => ApiService.getUsers(),
         builder: (context, state) {
-          return state.when(
-            initial: () => Center(
+          return state.maybeWhen(
+            orElse: () => const SizedBox.shrink(),
+            onInitial: () => Center(
               child: Text('Appuyez pour charger'),
             ),
-            loading: (previousData) {
+            onLoading: (previousData) {
               // Si on a des données précédentes, les afficher avec un indicateur
               if (previousData != null) {
                 return Stack(
@@ -88,13 +89,13 @@ class UserListScreen extends StatelessWidget {
               }
               return Center(child: CircularProgressIndicator());
             },
-            success: (users, updatedAt) {
+            onSuccess: (users, updatedAt) {
               if (users.isEmpty) {
                 return Center(child: Text('Aucun utilisateur'));
               }
               return UserListView(users: users);
             },
-            failure: (error, stackTrace, previousData) {
+            onError: (error, stackTrace, previousData) {
               return Column(
                 children: [
                   if (previousData != null) Expanded(child: UserListView(users: previousData)),
@@ -136,9 +137,10 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
               queryFn: () => ApiService.getUsersPaginated(_currentPage),
               keepPreviousData: true, // 🎯 IMPORTANT pour la pagination
               builder: (context, state) {
-                return state.when(
-                  initial: () => Center(child: CircularProgressIndicator()),
-                  loading: (previousData) {
+                return state.maybeWhen(
+                  orElse: () => const SizedBox.shrink(),
+                  onInitial: () => Center(child: CircularProgressIndicator()),
+                  onLoading: (previousData) {
                     // Afficher les données de la page précédente
                     if (previousData != null) {
                       return Stack(
@@ -156,8 +158,8 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
                     }
                     return Center(child: CircularProgressIndicator());
                   },
-                  success: (users, _) => UserListView(users: users),
-                  failure: (err, _, prev) => ErrorView(error: err.toString()),
+                  onSuccess: (users, _) => UserListView(users: users),
+                  onError: (err, _, prev) => ErrorView(error: err.toString()),
                 );
               },
             ),
@@ -217,18 +219,19 @@ class UserDetailScreen extends StatelessWidget {
         queryKey: QoraKey(['user', userId]),
         queryFn: () => ApiService.getUser(userId),
         builder: (context, state) {
-          return state.when(
-            initial: () => Center(child: Text('Chargement...')),
-            loading: (prev) => prev != null
+          return state.maybeWhen(
+            orElse: () => const SizedBox.shrink(),
+            onInitial: () => Center(child: Text('Chargement...')),
+            onLoading: (prev) => prev != null
                 ? UserDetailView(user: prev, isRefreshing: true)
                 : Center(child: CircularProgressIndicator()),
-            success: (user, updatedAt) {
+            onSuccess: (user, updatedAt) {
               return UserDetailView(
                 user: user,
                 updatedAt: updatedAt,
               );
             },
-            failure: (error, _, prev) {
+            onError: (error, _, prev) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -271,13 +274,14 @@ class UserAvatarWidget extends StatelessWidget {
     return QoraStateBuilder<User>(
       queryKey: QoraKey(['user', userId]),
       builder: (context, state) {
-        return state.when(
-          initial: () => CircleAvatar(child: Icon(Icons.person)),
-          loading: (_) => CircleAvatar(child: CircularProgressIndicator()),
-          success: (user, _) => CircleAvatar(
+        return state.maybeWhen(
+          orElse: () => const SizedBox.shrink(),
+          onInitial: () => CircleAvatar(child: Icon(Icons.person)),
+          onLoading: (_) => CircleAvatar(child: CircularProgressIndicator()),
+          onSuccess: (user, _) => CircleAvatar(
             backgroundImage: NetworkImage(user.avatarUrl),
           ),
-          failure: (_, __, ___) => CircleAvatar(child: Icon(Icons.error)),
+          onError: (_, __, ___) => CircleAvatar(child: Icon(Icons.error)),
         );
       },
     );

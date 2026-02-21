@@ -10,6 +10,7 @@ analyzer:
     # Treat warnings as errors in CI
     missing_required_param: error
     missing_return: error
+    prefer_const_constructors: ignore
     todo: ignore
     
 linter:

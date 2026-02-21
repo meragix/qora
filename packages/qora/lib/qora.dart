@@ -13,8 +13,8 @@ export 'src/core/persist_qora_client.dart';
 export 'src/core/qora_client.dart';
 export 'src/core/qora_client_config.dart';
 export 'src/core/qora_options.dart';
-export 'src/core/qora_state.dart';
 export 'src/core/query_function.dart';
+export 'src/core/state/state.dart';
 // Managers
 export 'src/managers/connectivity_manager.dart';
 export 'src/managers/lifecycle_manager.dart';

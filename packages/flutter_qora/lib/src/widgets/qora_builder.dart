@@ -86,7 +86,7 @@ class QoraBuilder<T> extends StatefulWidget {
 class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   late QoraClient _client;
   StreamSubscription<QoraState<T>>? _subscription;
-  QoraState<T> _currentState = const QoraState.initial();
+  QoraState<T> _currentState = Initial();
   T? _previousData;
 
   @override
@@ -154,7 +154,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
           _currentState = state;
 
           // Mémoriser les données pour keepPreviousData
-          if (state is QoraSuccess<T>) {
+          if (state is Success<T>) {
             _previousData = state.data;
           }
         });
@@ -190,9 +190,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   @override
   Widget build(BuildContext context) {
     // Appliquer keepPreviousData si nécessaire
-    final effectiveState = widget.keepPreviousData
-        ? _applyKeepPreviousData(_currentState)
-        : _currentState;
+    final effectiveState = widget.keepPreviousData ? _applyKeepPreviousData(_currentState) : _currentState;
 
     return widget.builder(context, effectiveState);
   }
@@ -202,9 +200,10 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   /// Si on est en Loading et qu'on a des données précédentes,
   /// on retourne un état Loading avec previousData au lieu d'un état vide
   QoraState<T> _applyKeepPreviousData(QoraState<T> state) {
-    return state.when(
-      initial: () => state,
-      loading: (previousDataFromState) {
+    return state.maybeWhen(
+      orElse: () => Initial(),
+      onInitial: () => state,
+      onLoading: (previousDataFromState) {
         // Si on a déjà des previousData dans le state, les utiliser
         if (previousDataFromState != null) {
           return state;
@@ -212,20 +211,20 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
         // Sinon, utiliser nos données mémorisées
         if (_previousData != null) {
-          return QoraState<T>.loading(previousData: _previousData);
+          return Loading(previousData: _previousData);
         }
 
         return state;
       },
-      success: (_, __) => state,
-      failure: (error, stackTrace, previousDataFromState) {
+      onSuccess: (_, __) => state,
+      onError: (error, stackTrace, previousDataFromState) {
         // Idem pour les erreurs
         if (previousDataFromState != null) {
           return state;
         }
 
         if (_previousData != null) {
-          return QoraState<T>.failure(
+          return Failure(
             error: error,
             stackTrace: stackTrace,
             previousData: _previousData,
@@ -280,7 +279,7 @@ class QoraStateBuilder<T> extends StatefulWidget {
 class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
   late QoraClient _client;
   StreamSubscription<QoraState<T>>? _subscription;
-  QoraState<T> _currentState = const QoraState.initial();
+  QoraState<T> _currentState = Initial();
 
   @override
   void initState() {

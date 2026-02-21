@@ -6,8 +6,8 @@ import 'package:qora/src/core/key/key_cache_map.dart';
 import 'package:qora/src/core/key/qora_key.dart';
 import 'package:qora/src/core/qora_client_config.dart';
 import 'package:qora/src/core/qora_options.dart';
-import 'package:qora/src/core/qora_state.dart';
 import 'package:qora/src/core/query_function.dart';
+import 'package:qora/src/core/state/qora_state.dart';
 
 /// Le moteur principal de Qora
 class QoraClient {
@@ -103,7 +103,7 @@ class QoraClient {
 
     print('[Qora] Cache MISS: $normalizedKey');
     final data = CacheEntry<T>(
-      state: const QoraState.initial(),
+      state: Initial(),
       createdAt: DateTime.now(),
     );
 
@@ -164,7 +164,7 @@ class QoraClient {
 
     if (!mergedOpts.enabled) {
       entry.updateState(
-        QoraState.failure(error: StateError('Query is disabled: $key')),
+        Failure(error: StateError('Query is disabled: $key')),
       );
       _pendingRequests.remove(key);
     }
@@ -180,7 +180,7 @@ class QoraClient {
     T? cachedData;
     bool hasValidCache = false;
 
-    if (currentState is QoraSuccess<T>) {
+    if (currentState is Success<T>) {
       cachedData = currentState.data;
       hasValidCache = !entry.isStale(mergedOpts.staleTime);
 
@@ -192,10 +192,10 @@ class QoraClient {
 
       // Données stale, on met à jour en arrière-plan
       _log('Cache stale for ${key.toString()}, revalidating...');
-      entry.updateState(QoraState.loading(previousData: cachedData));
+      entry.updateState(Loading(previousData: cachedData));
     } else {
       // Pas de cache, on passe en loading
-      entry.updateState(const QoraState.loading());
+      entry.updateState(Loading());
     }
 
     // Créer et enregistrer la requête
@@ -205,7 +205,7 @@ class QoraClient {
       key: key,
     ).then((data) {
       entry.updateState(
-        QoraState.success(
+        Success(
           data: data,
           updatedAt: DateTime.now(),
         ),
@@ -215,7 +215,7 @@ class QoraClient {
     }).catchError((Object error, StackTrace stackTrace) {
       final mappedError = _mapError(error, stackTrace);
       entry.updateState(
-        QoraState.failure(
+        Failure(
           error: mappedError!,
           stackTrace: stackTrace,
           previousData: cachedData,
@@ -249,7 +249,7 @@ class QoraClient {
     _assertNotDisposed();
     final entry = _cache.get(key);
     if (entry == null) {
-      return const QoraState.initial();
+      return Initial();
     }
     return entry.state as QoraState<T>;
   }
@@ -279,7 +279,7 @@ class QoraClient {
     _assertNotDisposed();
     final entry = _getOrCreateEntry<T>(key);
     entry.updateState(
-      QoraState.success(
+      Success(
         data: data,
         updatedAt: DateTime.now(),
       ),
@@ -295,7 +295,7 @@ class QoraClient {
     } else {
       final entry = _getOrCreateEntry<T>(key);
       entry.updateState(
-        QoraState.success(
+        Success(
           data: snapshot,
           updatedAt: DateTime.now(),
         ),
