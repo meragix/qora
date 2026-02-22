@@ -1,4 +1,4 @@
-import 'package:qora/src/client/qora_options.dart';
+import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/utils/qora_exception.dart';
 
 /// Global configuration for [QoraClient].

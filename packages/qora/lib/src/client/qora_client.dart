@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:qora/src/client/cached_entry.dart';
-import 'package:qora/src/client/qora_client_config.dart';
-import 'package:qora/src/client/qora_options.dart';
-import 'package:qora/src/client/query_cache.dart';
+import 'package:qora/src/cache/cached_entry.dart';
+import 'package:qora/src/config/qora_client_config.dart';
+import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/cache/query_cache.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/state/qora_state.dart';
 

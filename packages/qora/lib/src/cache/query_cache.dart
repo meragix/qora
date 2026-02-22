@@ -1,4 +1,4 @@
-import 'package:qora/src/client/cached_entry.dart';
+import 'package:qora/src/cache/cached_entry.dart';
 import 'package:qora/src/key/key_cache_map.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/state/qora_state.dart';
