@@ -1,38 +1,71 @@
 # qora
 
-The core engine of the Qora ecosystem. A pure Dart library for managing server state with zero dependencies on the Flutter framework.
+Pure Dart server state management. Zero Flutter dependency — works in Flutter apps, CLI tools, backend services, or shared packages.
 
-## Features
-
-- **Agnostic Architecture**: Works with any HTTP client (Dio, http) and any storage (Hive, Isar).
-- **Concurrency Management**: Prevents multiple simultaneous calls to the same endpoint.
-- **Persistence Layer**: Abstract `ReqryStorage` interface for custom caching strategies.
-
-## Installation
+## Install
 
 ```yaml
 dependencies:
-  qora: ^0.1.0
-
-## Quick Start (Logic Layer)
-
-```dart
-final qora = QoraClient();
-
-// Define a query
-final profile = await qora.fetchQuery<User>(
-  key: QoraKey(['user', 1]),
-  fetcher: (signal) => api.getUser(1, cancelToken: signal),
-  decoder: (json) => User.fromJson(json),
-  staleTime: Duration(minutes: 5),
-);
+  qora: ^1.0.0
 ```
 
-## Architecture Trade-offs
+## Quick start
 
-- **Pros**: Zero Flutter dependency. Can be used in CLI or Server-side Dart.
-- **Cons**: Requires manual state observation if used without flutter_qora.
+```dart
+import 'package:qora/qora.dart';
+
+final client = QoraClient(
+  config: const QoraClientConfig(
+    defaultOptions: QoraOptions(
+      staleTime: Duration(minutes: 5),
+      retryCount: 3,
+    ),
+  ),
+);
+
+// One-shot fetch — cached, deduplicated, retried automatically
+final user = await client.fetchQuery<User>(
+  key: ['users', 1],
+  fetcher: () => api.getUser(1),
+);
+
+// Reactive stream — emits on every state transition
+client.watchQuery<User>(
+  key: ['users', 1],
+  fetcher: () => api.getUser(1),
+).listen((state) {
+  switch (state) {
+    case Success(:final data):  print('User: ${data.name}');
+    case Failure(:final error): print('Error: $error');
+    default: {}
+  }
+});
+
+// Optimistic update with safe rollback
+final snapshot = client.getState<User>(['users', 1]);
+client.setQueryData(['users', 1], user.copyWith(name: 'Alice'));
+try {
+  await api.updateUser(1, name: 'Alice');
+} catch (_) {
+  client.restoreQueryData(['users', 1], snapshot);
+}
+
+client.dispose();
+```
+
+## State machine
+
+`QoraState<T>` is a sealed class — the Dart compiler enforces exhaustive handling:
+
+```dart
+switch (state) {
+  case Initial():                        // Not yet fetched
+  case Loading(:final previousData):    // Fetching; previousData available during revalidation
+  case Success(:final data, :final updatedAt): // Fresh data
+  case Failure(:final error, :final previousData): // Error; previousData available for fallback
+}
+```
 
 ## Documentation
 
-For full documentation, examples, and API reference, please visit our [Documentation Site](https://meragix.github.io/qora).
+Full guides and API reference: **[qora.meragix.com](https://qora.meragix.com)**

@@ -1,36 +1,86 @@
 # Qora
 
-**The Bulletproof Server-State Manager for Dart & Flutter.**
+**Async state management for Dart and Flutter — inspired by TanStack Query.**
 
-Qora is a high-performance, asynchronous state management solution designed to handle the complexity of server data. It transforms messy API calls into predictable, cached, and synchronized states.
+Stop writing boilerplate to fetch, cache, and sync server data. Qora handles deduplication, stale-while-revalidate, retries, and invalidation so you can focus on your product.
 
-## 📦 Packages
+```dart
+// Before Qora — 40+ lines of setState, loading flags, error handling, retry logic…
 
-| Package | Version | Description |
-| :--- | :--- | :--- |
-| [**qora**](./packages/qora) | `0.1.0` | Core logic. Pure Dart. Agnostic persistence. |
-| [**flutter_qora**](./packages/flutter_qora) | `0.1.0` | Flutter integration. Builders, Hooks, and UI Sync. |
+// After Qora — one call, everything handled
+final user = await client.fetchQuery<User>(
+  key: ['users', userId],
+  fetcher: () => api.getUser(userId),
+  options: const QoraOptions(staleTime: Duration(minutes: 5)),
+);
+```
 
-## 🚀 Why Qora?
+In Flutter, bind it directly to your UI — no `setState`, no `StreamBuilder` boilerplate:
 
-- **Smart Caching**: Deduplicates requests and manages TTL (Time To Live).
-- **Offline-First**: Built-in hydration for seamless offline experiences.
-- **Resource Efficient**: Automatic query cancellation on widget dispose.
-- **Type-Safe**: End-to-end type safety from fetcher to UI.
-
-## 🗺 Roadmap
-
-- [x] **v0.4.0** - Plug-and-play Persistence (Hive/SharedPrefs).
-- [x] **v0.7.0** - Universal Cancellation (AbortSignals).
-- [ ] **v0.9.0** - Predictive Prefetching.
-- [ ] **v1.0.0** - SSR Hydration for Flutter Web.
+```dart
+QoraBuilder<User>(
+  queryKey: ['users', userId],
+  queryFn: () => api.getUser(userId),
+  builder: (context, state) => switch (state) {
+    Initial()                          => const SizedBox.shrink(),
+    Loading(:final previousData)       => previousData != null
+        ? UserCard(previousData)
+        : const CircularProgressIndicator(),
+    Success(:final data)               => UserCard(data),
+    Failure(:final error)              => ErrorScreen(error),
+  },
+)
+```
 
 ---
 
-## 📚 Documentation
+## What you get out of the box
 
-For full documentation, examples, and API reference, please visit our [Documentation Site](https://meragix.github.io/qora).
+| Feature                 | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| Automatic caching       | Data is stored and served instantly on repeat requests            |
+| Stale-while-revalidate  | Show cached data immediately, refetch silently in background      |
+| Request deduplication   | 10 widgets, same key → 1 network call                             |
+| Automatic retry         | Failed requests retry with exponential backoff                    |
+| Optimistic updates      | Update the UI before the server responds, roll back on failure    |
+| Reactive invalidation   | Invalidate a key → every subscriber rebuilds automatically        |
 
 ---
 
-*Built with ❤️ for the Dart Community.*
+## Packages
+
+| Package                                   | Description                                           |
+| ----------------------------------------- | ----------------------------------------------------- |
+| [`qora`](./packages/qora)                 | Pure Dart core — works in Flutter, CLI, or backend    |
+| [`flutter_qora`](./packages/flutter_qora) | Flutter widgets: `QoraScope`, `QoraBuilder`, managers |
+
+---
+
+## Install
+
+```yaml
+# Flutter app — qora is included automatically
+dependencies:
+  flutter_qora: ^1.0.0
+```
+
+```yaml
+# Pure Dart (CLI, backend, shared package)
+dependencies:
+  qora: ^1.0.0
+```
+
+---
+
+## Documentation
+
+Full guides, API reference, and examples: **[qora.meragix.com](https://qora.meragix.com)**
+
+- [What is Qora?](https://qora.meragix.com/getting-started/what-is-qora)
+- [Quick Start](https://qora.meragix.com/getting-started/quick-start)
+- [Flutter Integration](https://qora.meragix.com/flutter-integration/setup)
+- [Optimistic Updates](https://qora.meragix.com/guides/optimistic-updates)
+
+---
+
+Built for the Dart community.
