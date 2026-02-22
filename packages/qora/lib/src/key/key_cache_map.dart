@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
-import 'package:qora/src/core/key/key_equality.dart';
-import 'package:qora/src/core/key/qora_key.dart';
+import 'package:qora/src/key/key_equality.dart';
+import 'package:qora/src/key/qora_key.dart';
 
 /// A Map that uses deep equality for query key comparison.
 ///

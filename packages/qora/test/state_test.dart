@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:qora/src/core/state/qora_state.dart';
-import 'package:qora/src/core/state/state_extensions.dart';
-import 'package:qora/src/core/state/state_serialization.dart';
+import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/state/state_extensions.dart';
+import 'package:qora/src/state/state_serialization.dart';
 import 'package:test/test.dart';
 
 void main() {

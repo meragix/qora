@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:qora/src/core/state/qora_state.dart';
+import 'package:qora/src/state/qora_state.dart';
 
 /// Mixin for serializing and deserializing [QoraState].
 ///

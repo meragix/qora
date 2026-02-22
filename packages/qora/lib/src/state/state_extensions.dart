@@ -1,4 +1,4 @@
-import 'package:qora/src/core/state/qora_state.dart';
+import 'package:qora/src/state/qora_state.dart';
 
 /// Additional utility extensions for [QoraState].
 extension QoraStateExtensions<T> on QoraState<T> {

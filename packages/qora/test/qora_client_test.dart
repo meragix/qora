@@ -79,7 +79,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 150), () {});
 
       // Maintenant les nouvelles données sont en cache
-      final newData = client.getState<String>(key);
+      final newData = client.getQueryData<String>(key);
       expect(newData, 'New');
     });
 

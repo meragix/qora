@@ -1,13 +1,11 @@
-// ignore_for_file: avoid_print
-
 import 'dart:async';
 import 'package:qora/src/core/cached_entry.dart';
-import 'package:qora/src/core/key/key_cache_map.dart';
-import 'package:qora/src/core/key/qora_key.dart';
+import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/core/qora_client_config.dart';
 import 'package:qora/src/core/qora_options.dart';
-import 'package:qora/src/core/query_function.dart';
-import 'package:qora/src/core/state/qora_state.dart';
+import 'package:qora/src/utils/query_function.dart';
+import 'package:qora/src/state/qora_state.dart';
 
 /// Le moteur principal de Qora
 class QoraClient {
@@ -49,7 +47,7 @@ class QoraClient {
       _cache.get(key)?.dispose();
       _cache.remove(key);
       if (config.debugMode) {
-        print('[Reqry] Evicted cache entry: ${key.toString()}');
+        //print('[Reqry] Evicted cache entry: ${key.toString()}');
       }
     }
   }
@@ -57,7 +55,7 @@ class QoraClient {
   /// Log en mode debug
   void _log(String message) {
     if (config.debugMode) {
-      print('[Reqry] $message');
+      //print('[Reqry] $message');
     }
   }
 

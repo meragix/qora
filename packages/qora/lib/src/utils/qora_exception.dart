@@ -1,4 +1,3 @@
-/// Exception standardisée Qora
 class QoraException implements Exception {
   final String message;
   final Object? originalError;
