@@ -10,10 +10,10 @@ orientation: horizontal
 ---
 
 #title
-Bulletproof [Server-State]{.text-primary} for Dart
+Intelligent [Server State]{.text-primary} for Dart
 
 #description
-Stop managing data. Start declaring intent. Fast, Typed, and Offline-ready state management for Flutter. Built for developers who demand reliability.
+Declarative data fetching with smart caching, background sync, request deduplication, and offline persistence. Built for real-world apps.
 
 #headline
   :::u-badge
@@ -57,16 +57,14 @@ color: neutral
   :::prose
 
   ```dart [example.dart]
-final profile = await qora.fetch<User>(
+final profile = await qora.fetchQuery<User>(
     // Query Key - Unique ID for caching & invalidation
     key: ['user', userId],
-
     // Query function with abort signal support
     fetcher: (signal) async {
       final raw = awaitapi.getUser(userId, signal);
       return User.fromJson(raw);
     }
-
     options: QoraOptions(
       staleTime: 30.seconds, // When data becomes "old"
       cacheTime: 5.minutes,  // How long it stays in memory
@@ -78,7 +76,7 @@ final profile = await qora.fetch<User>(
 
 ::u-page-section
 #title
-Engineered for Performance
+Deterministic Data Fetching
 
 #features
   :::u-page-feature
