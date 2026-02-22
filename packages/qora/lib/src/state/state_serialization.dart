@@ -87,7 +87,7 @@ class QoraStateSerialization {
             updatedAt: DateTime.parse(updatedAtStr),
           );
 
-        case 'faiture':
+        case 'failure':
           final errorStr = json['error'] as String;
           final previousDataJson = json['previousData'];
           return Failure<T>(

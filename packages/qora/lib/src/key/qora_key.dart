@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:qora/src/key/key_equality.dart';
 
 /// Type alias for raw key parts (backwards compatibility).
 ///
@@ -52,22 +53,14 @@ class QoraKey {
   factory QoraKey.from(QoraKeyParts parts) => QoraKey(parts);
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is QoraKey && _listEquals(parts, other.parts);
+  bool operator ==(Object other) =>
+      identical(this, other) || other is QoraKey && equalsKey(parts, other.parts);
 
   @override
-  int get hashCode => Object.hashAll(parts);
+  int get hashCode => hashKey(parts);
 
   @override
   String toString() => 'QoraKey($parts)';
-
-  // Simple reference equality for const constructor
-  static bool _listEquals(List<dynamic> a, List<dynamic> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }
 
 /// Normalizes a polymorphic key input to parts.

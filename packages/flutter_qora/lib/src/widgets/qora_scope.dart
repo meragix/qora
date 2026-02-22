@@ -1,13 +1,21 @@
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
-/// Widget InheritedWidget qui fournit le QoraClient à tout l'arbre de widgets
+/// Provides a [QoraClient] to the widget tree via an [InheritedWidget].
 ///
-/// Utilisation typique :
+/// Place [QoraScope] near the root of your app so that any descendant widget
+/// can access the client via `QoraScope.of(context)` or `context.qora`.
+///
+/// [QoraScope] also starts and disposes the optional [lifecycleManager] and
+/// [connectivityManager], ensuring they are active for the lifetime of the
+/// scope.
+///
+/// ## Basic setup
+///
 /// ```dart
 /// void main() {
 ///   final client = QoraClient(
-///     config: QoraClientConfig(debugMode: true),
+///     config: const QoraClientConfig(debugMode: kDebugMode),
 ///   );
 ///
 ///   runApp(
@@ -18,17 +26,34 @@ import 'package:qora/qora.dart';
 ///   );
 /// }
 /// ```
+///
+/// ## With lifecycle and connectivity managers
+///
+/// ```dart
+/// void main() {
+///   final client = QoraClient();
+///
+///   runApp(
+///     QoraScope(
+///       client: client,
+///       lifecycleManager: FlutterLifecycleManager(qoraClient: client),
+///       connectivityManager: FlutterConnectivityManager(qoraClient: client),
+///       child: MyApp(),
+///     ),
+///   );
+/// }
+/// ```
 class QoraScope extends StatefulWidget {
-  /// Le client Reqry à partager dans l'arbre de widgets
+  /// The [QoraClient] to share across the widget tree.
   final QoraClient client;
 
-  /// Optionnel : un gestionnaire de cycle de vie pour gérer les refetch automatiques
+  /// Optional lifecycle manager for refetch-on-resume behaviour.
   final LifecycleManager? lifecycleManager;
 
-  /// Optionnel : un gestionnaire de connectivité pour gérer les refetch automatiques
+  /// Optional connectivity manager for refetch-on-reconnect behaviour.
   final ConnectivityManager? connectivityManager;
 
-  /// L'arbre de widgets enfant
+  /// The subtree that can access this client.
   final Widget child;
 
   const QoraScope({
@@ -39,11 +64,10 @@ class QoraScope extends StatefulWidget {
     required this.child,
   });
 
-  /// Récupère le QoraClient le plus proche dans l'arbre de widgets
+  /// Returns the [QoraClient] from the nearest [QoraScope] ancestor.
   ///
-  /// Lance une erreur si aucun QoraScope n'est trouvé
+  /// Throws a [FlutterError] if no [QoraScope] is found in the widget tree.
   ///
-  /// Exemple :
   /// ```dart
   /// final client = QoraScope.of(context);
   /// await client.fetchQuery(...);
@@ -55,20 +79,25 @@ class QoraScope extends StatefulWidget {
     if (scope == null) {
       throw FlutterError.fromParts([
         ErrorSummary(
-            'QoraScope.of() called with a context that does not contain a QoraScope.'),
+          'QoraScope.of() called with a context that does not contain a QoraScope.',
+        ),
         ErrorDescription(
-            'No QoraClient ancestor could be found starting from the context that was passed to QoraScope.of().'),
+          'No QoraClient ancestor could be found starting from the context '
+          'that was passed to QoraScope.of().',
+        ),
         ErrorHint(
-            'Make sure that QoraScope is an ancestor of the widget that calls QoraScope.of().\n\n'
-            'Typical usage:\n'
-            'void main() {\n'
-            '  runApp(\n'
-            '    QoraScope(\n'
-            '      client: QoraClient(),\n'
-            '      child: MyApp(),\n'
-            '    ),\n'
-            '  );\n'
-            '}'),
+          'Make sure that QoraScope is an ancestor of the widget that calls '
+          'QoraScope.of().\n\n'
+          'Typical usage:\n'
+          'void main() {\n'
+          '  runApp(\n'
+          '    QoraScope(\n'
+          '      client: QoraClient(),\n'
+          '      child: MyApp(),\n'
+          '    ),\n'
+          '  );\n'
+          '}',
+        ),
         context.describeElement('The context used was'),
       ]);
     }
@@ -76,13 +105,14 @@ class QoraScope extends StatefulWidget {
     return scope.client;
   }
 
-  /// Version nullable de of() qui retourne null si aucun QoraScope n'est trouvé
+  /// Returns the [QoraClient] from the nearest [QoraScope], or `null` if none
+  /// is found.
   ///
-  /// Utile pour les cas où le QoraScope est optionnel
+  /// Useful when [QoraScope] is optional in part of the widget tree.
   static QoraClient? maybeOf(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<_InheritedQoraScope>();
-    return scope?.client;
+    return context
+        .dependOnInheritedWidgetOfExactType<_InheritedQoraScope>()
+        ?.client;
   }
 
   @override
@@ -114,7 +144,7 @@ class _QoraScopeState extends State<QoraScope> {
   }
 }
 
-/// InheritedWidget interne pour la propagation du client
+/// Internal [InheritedWidget] that propagates the client down the tree.
 class _InheritedQoraScope extends InheritedWidget {
   final QoraClient client;
 
@@ -125,7 +155,6 @@ class _InheritedQoraScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_InheritedQoraScope oldWidget) {
-    // Ne notifier que si l'instance du client change
     return client != oldWidget.client;
   }
 }

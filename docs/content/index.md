@@ -160,7 +160,7 @@ icon: i-lucide-clock
   :::
 ::
 
-::u-page-section
+<!-- ::u-page-section
   :::u-page-c-t-a
   ---
   title: Ready to master your server state?
@@ -181,4 +181,4 @@ icon: i-lucide-clock
 
   :stars-bg
   :::
-::
+:: -->

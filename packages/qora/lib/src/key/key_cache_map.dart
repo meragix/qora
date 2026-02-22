@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:meta/meta.dart';
 import 'package:qora/src/key/key_equality.dart';
 import 'package:qora/src/key/qora_key.dart';
@@ -72,11 +74,19 @@ class KeyCacheMap<V> {
   /// Is not empty?
   bool get isNotEmpty => _storage.isNotEmpty;
 
-  /// Get all entries as Map.
+  /// Get all entries as a [Map] with deep equality for list key lookups.
+  ///
+  /// The returned map uses [equalsKey] and [hashKey] for key comparison, so
+  /// `map[['users', 1]]` works correctly even when the list is a new object.
   Map<List<dynamic>, V> toMap() {
-    return Map.fromEntries(
-      _storage.entries.map((e) => MapEntry(e.key.key, e.value)),
+    final result = HashMap<List<dynamic>, V>(
+      equals: equalsKey,
+      hashCode: hashKey,
     );
+    for (final e in _storage.entries) {
+      result[e.key.key] = e.value;
+    }
+    return result;
   }
 }
 

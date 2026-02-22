@@ -1,93 +1,98 @@
-/// Package d'intégration Flutter pour Qora
+/// Flutter integration layer for Qora.
 ///
-/// Fournit des widgets et extensions Flutter pour utiliser facilement
-/// le package qora dans vos applications Flutter.
+/// Provides widgets, managers, and extensions for using [QoraClient] in
+/// Flutter applications.
 ///
-/// Composants principaux :
-/// - [QoraScope] : InheritedWidget pour fournir le QoraClient
-/// - [QoraBuilder] : Widget pour s'abonner aux requêtes
-/// - [QoraStateBuilder] : Widget pour observer l'état sans fetch
-/// - [QoraBuildContextExtension] : Extension `context.qora`
+/// ## Core components
 ///
-/// Exemple d'utilisation complète :
+/// - [QoraScope] — `InheritedWidget` that provides a [QoraClient] to the
+///   entire widget tree.
+/// - [QoraBuilder] — subscribes to a query, auto-fetches on mount, and
+///   rebuilds on every state change.
+/// - [QoraStateBuilder] — observe-only variant; rebuilds on state changes
+///   without triggering a fetch.
+/// - `context.qora` — shorthand for `QoraScope.of(context)`.
+///
+/// ## Optional managers
+///
+/// - [FlutterLifecycleManager] — invalidates queries when the app resumes
+///   from background (requires no extra dependency).
+/// - [FlutterConnectivityManager] — invalidates queries when the device
+///   reconnects to the network (requires `connectivity_plus`).
+///
+/// ## Quick start
+///
 /// ```dart
 /// void main() {
 ///   final client = QoraClient(
-///     config: QoraClientConfig(
+///     config: const QoraClientConfig(
 ///       defaultOptions: QoraOptions(
-///         staleTime: Duration(seconds: 30),
-///         cacheTime: Duration(minutes: 5),
+///         staleTime: Duration(minutes: 5),
+///         cacheTime: Duration(minutes: 10),
 ///       ),
-///       debugMode: true,
+///       debugMode: kDebugMode,
+///       maxCacheSize: 200,
 ///     ),
 ///   );
 ///
 ///   runApp(
 ///     QoraScope(
 ///       client: client,
+///       lifecycleManager: FlutterLifecycleManager(qoraClient: client),
 ///       child: MyApp(),
 ///     ),
 ///   );
 /// }
+/// ```
 ///
+/// ```dart
 /// class UserProfile extends StatelessWidget {
 ///   final int userId;
-///
-///   const UserProfile({required this.userId});
+///   const UserProfile({required this.userId, super.key});
 ///
 ///   @override
 ///   Widget build(BuildContext context) {
 ///     return QoraBuilder<User>(
-///       queryKey: QoraKey(['user', userId]),
+///       queryKey: ['users', userId],
 ///       queryFn: () => api.getUser(userId),
 ///       builder: (context, state) {
-///         return state.when(
-///           initial: () => Center(child: Text('Chargement...')),
-///           loading: (previousData) {
-///             if (previousData != null) {
-///               return UserCard(user: previousData, isRefreshing: true);
-///             }
-///             return Center(child: CircularProgressIndicator());
-///           },
-///           success: (user, updatedAt) => UserCard(user: user),
-///           failure: (error, stackTrace, previousData) {
-///             return Column(
-///               children: [
-///                 if (previousData != null) UserCard(user: previousData),
-///                 ErrorBanner(error: error),
-///               ],
-///             );
-///           },
-///         );
-///       },
-///     );
-///   }
-/// }
-///
-/// // Utiliser l'extension context.qora
-/// class RefreshButton extends StatelessWidget {
-///   @override
-///   Widget build(BuildContext context) {
-///     return IconButton(
-///       icon: Icon(Icons.refresh),
-///       onPressed: () {
-///         // Invalider toutes les requêtes users
-///         context.qora.invalidateQueries(
-///           (key) => key.parts.first == 'users',
-///         );
+///         return switch (state) {
+///           Initial()                    => const SizedBox.shrink(),
+///           Loading(:final previousData) =>
+///               previousData != null
+///                   ? UserCard(previousData)
+///                   : const CircularProgressIndicator(),
+///           Success(:final data)         => UserCard(data),
+///           Failure(:final error)        => ErrorBanner(error),
+///         };
 ///       },
 ///     );
 ///   }
 /// }
 /// ```
+///
+/// ```dart
+/// // Invalidate after a mutation
+/// ElevatedButton(
+///   onPressed: () async {
+///     await api.deleteUser(userId);
+///     context.qora.invalidate(['users', userId]);
+///   },
+///   child: const Text('Delete'),
+/// )
+/// ```
 library;
 
-// Export du package core qora
+// Re-export the core Qora package so consumers only need one import.
 export 'package:qora/qora.dart';
 
-// Export des composants Flutter
+// Widgets
 export 'src/widgets/qora_scope.dart';
 export 'src/widgets/qora_builder.dart';
 
-// Export des extensions
+// Extensions
 export 'src/extensions/build_context_extension.dart';
+
+// Platform managers (optional — wire into QoraScope as needed)
+export 'src/managers/flutter_lifecycle_manager.dart';
+export 'src/managers/flutter_connectivity_manager.dart';

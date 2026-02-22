@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:qora/src/cache/cached_entry.dart';
+import 'package:qora/src/cache/query_cache.dart';
 import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
-import 'package:qora/src/cache/query_cache.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/state/qora_state.dart';
 
@@ -228,6 +228,44 @@ class QoraClient {
     } finally {
       entry.removeSubscriber();
       entry.refetchTimer?.cancel();
+      _scheduleGC(normalized);
+    }
+  }
+
+  // ── Observe-only stream ───────────────────────────────────────────────────
+
+  /// Subscribe to the [QoraState] stream of a query **without triggering a
+  /// fetch**.
+  ///
+  /// - Immediately emits the current cached state ([Initial] if no entry exists).
+  /// - Forwards every subsequent state change pushed by [fetchQuery],
+  ///   [setQueryData], [invalidate], etc.
+  /// - Suspends the GC timer while at least one subscriber is active, keeping
+  ///   the entry alive in cache.
+  ///
+  /// This is the observe-only counterpart to [watchQuery]. Use it when the
+  /// fetch responsibility belongs to another part of your code (e.g.
+  /// [QoraStateBuilder] or a parent widget).
+  ///
+  /// ```dart
+  /// client.watchState<User>(['users', userId]).listen((state) {
+  ///   switch (state) {
+  ///     case Success(:final data): render(data);
+  ///     default: {}
+  ///   }
+  /// });
+  /// ```
+  Stream<QoraState<T>> watchState<T>(Object key) async* {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _getOrCreateEntry<T>(normalized);
+    entry.addSubscriber();
+    entry.gcTimer?.cancel();
+
+    try {
+      yield* entry.stream;
+    } finally {
+      entry.removeSubscriber();
       _scheduleGC(normalized);
     }
   }

@@ -2,30 +2,33 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_qora/src/widgets/qora_scope.dart';
 import 'package:qora/qora.dart';
 
-/// Extension sur BuildContext pour un accès rapide au QoraClient
+/// Convenience extension on [BuildContext] for accessing [QoraClient].
 ///
-/// Permet d'écrire `context.qora` au lieu de `QoraScope.of(context)`
+/// Prefer `context.qora` over `QoraScope.of(context)` for brevity.
 ///
-/// Exemple :
 /// ```dart
-/// // Invalider une requête
-/// context.qora.invalidateQuery(QoraKey(['users']));
+/// // Invalidate a specific query after a mutation
+/// context.qora.invalidate(['posts', postId]);
 ///
-/// // Récupérer des données
-/// final data = await context.qora.fetchQuery(
-///   key: QoraKey(['user', userId]),
-///   fetcher: () => api.getUser(userId),
-/// );
+/// // Invalidate all queries matching a predicate
+/// context.qora.invalidateWhere((key) => key.firstOrNull == 'users');
 ///
-/// // Observer l'état
-/// context.qora.watchState<User>(QoraKey(['user', 1]));
+/// // Optimistic update
+/// final snapshot = context.qora.getQueryData<User>(['user', userId]);
+/// context.qora.setQueryData(['user', userId], updatedUser);
+/// try {
+///   await api.updateUser(userId, payload);
+/// } catch (_) {
+///   context.qora.restoreQueryData(['user', userId], snapshot);
+/// }
 /// ```
 extension QoraBuildContextExtension on BuildContext {
-  /// Raccourci pour accéder au QoraClient
+  /// Returns the [QoraClient] from the nearest [QoraScope].
   ///
-  /// Lance une erreur si aucun QoraScope n'est trouvé dans l'arbre
+  /// Throws a [FlutterError] if no [QoraScope] is found in the widget tree.
   QoraClient get qora => QoraScope.of(this);
 
-  /// Version nullable qui retourne null si aucun QoraScope n'est trouvé
+  /// Returns the [QoraClient] from the nearest [QoraScope], or `null` if
+  /// no [QoraScope] is found.
   QoraClient? get qoraOrNull => QoraScope.maybeOf(this);
 }

@@ -3,28 +3,53 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
-/// Implémentation Flutter du LifecycleManager
+/// Flutter implementation of [LifecycleManager].
+///
+/// Observes [AppLifecycleState] changes via [WidgetsBindingObserver] and
+/// invalidates all cached queries when the app resumes after a pause longer
+/// than [refetchInterval].
+///
+/// ## Setup
+///
+/// Pass an instance to [QoraScope]:
+///
+/// ```dart
+/// final client = QoraClient();
+///
+/// QoraScope(
+///   client: client,
+///   lifecycleManager: FlutterLifecycleManager(
+///     qoraClient: client,
+///     refetchInterval: Duration(seconds: 30),
+///   ),
+///   child: MyApp(),
+/// )
+/// ```
 class FlutterLifecycleManager extends LifecycleManager
     with WidgetsBindingObserver {
   final QoraClient _qoraClient;
-  final Duration _refetchInterval;
+
+  /// Minimum pause duration before queries are invalidated on resume.
+  ///
+  /// If the app was in the background for less than this duration, no
+  /// invalidation occurs. Default: 5 seconds.
+  final Duration refetchInterval;
+
   DateTime? _lastPausedAt;
 
   final _lifecycleController = StreamController<LifecycleState>.broadcast();
+  LifecycleState _currentState = LifecycleState.active;
 
   @override
   Stream<LifecycleState> get lifecycleStream => _lifecycleController.stream;
-
-  LifecycleState _currentState = LifecycleState.active;
 
   @override
   LifecycleState get currentState => _currentState;
 
   FlutterLifecycleManager({
     required QoraClient qoraClient,
-    Duration refetchInterval = const Duration(seconds: 5),
-  })  : _qoraClient = qoraClient,
-        _refetchInterval = refetchInterval;
+    this.refetchInterval = const Duration(seconds: 5),
+  }) : _qoraClient = qoraClient;
 
   @override
   void start() {
@@ -33,9 +58,9 @@ class FlutterLifecycleManager extends LifecycleManager
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final qoreState = _mapFlutterState(state);
-    _currentState = qoreState;
-    _lifecycleController.add(qoreState);
+    final qoraState = _mapFlutterState(state);
+    _currentState = qoraState;
+    _lifecycleController.add(qoraState);
 
     if (state == AppLifecycleState.resumed) {
       _onAppResumed();
@@ -45,24 +70,21 @@ class FlutterLifecycleManager extends LifecycleManager
   }
 
   LifecycleState _mapFlutterState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        return LifecycleState.resumed;
-      case AppLifecycleState.inactive:
-        return LifecycleState.inactive;
-      case AppLifecycleState.paused:
-        return LifecycleState.paused;
-      default:
-        return LifecycleState.active;
-    }
+    return switch (state) {
+      AppLifecycleState.resumed => LifecycleState.resumed,
+      AppLifecycleState.inactive => LifecycleState.inactive,
+      AppLifecycleState.paused => LifecycleState.paused,
+      _ => LifecycleState.active,
+    };
   }
 
   void _onAppResumed() {
-    if (_lastPausedAt != null) {
-      final pauseDuration = DateTime.now().difference(_lastPausedAt!);
-      if (pauseDuration >= _refetchInterval) {
-        _qoraClient.refetchOnWindowFocus();
-      }
+    if (_lastPausedAt == null) return;
+    final pauseDuration = DateTime.now().difference(_lastPausedAt!);
+    if (pauseDuration >= refetchInterval) {
+      // Invalidate all cached queries. Active QoraBuilder widgets detect the
+      // resulting Loading(previousData: …) state and trigger a re-fetch.
+      _qoraClient.invalidateWhere((_) => true);
     }
   }
 

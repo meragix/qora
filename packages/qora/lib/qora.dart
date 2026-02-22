@@ -48,10 +48,10 @@
 library;
 
 export 'src/cache/cached_entry.dart';
+export 'src/cache/query_cache.dart';
 export 'src/client/qora_client.dart';
 export 'src/config/qora_client_config.dart';
 export 'src/config/qora_options.dart';
-export 'src/cache/query_cache.dart';
 export 'src/key/qora_key.dart';
 export 'src/managers/connectivity_manager.dart';
 export 'src/managers/lifecycle_manager.dart';
