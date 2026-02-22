@@ -185,7 +185,9 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         //
         // If a fetch is already in-flight, the client's deduplication
         // mechanism returns the same future — no extra network call is made.
-        if (widget.enabled && state is Loading<T> && state.previousData != null) {
+        if (widget.enabled &&
+            state is Loading<T> &&
+            state.previousData != null) {
           _client
               .fetchQuery<T>(
                 key: widget.queryKey,

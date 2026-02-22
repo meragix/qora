@@ -90,7 +90,8 @@ class UserListScreen extends StatelessWidget {
                 : UserListView(users: data),
             Failure(:final error, :final previousData) => Column(
                 children: [
-                  if (previousData != null) Expanded(child: UserListView(users: previousData)),
+                  if (previousData != null)
+                    Expanded(child: UserListView(users: previousData)),
                   ErrorBanner(message: '$error'),
                 ],
               ),
