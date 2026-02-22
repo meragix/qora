@@ -76,7 +76,9 @@ class QoraStateSerialization {
         case 'loading':
           final previousDataJson = json['previousData'];
           return Loading<T>(
-            previousData: previousDataJson != null ? dataFromJson(previousDataJson as Map<String, dynamic>) : null,
+            previousData: previousDataJson != null
+                ? dataFromJson(previousDataJson as Map<String, dynamic>)
+                : null,
           );
 
         case 'success':
@@ -92,7 +94,9 @@ class QoraStateSerialization {
           final previousDataJson = json['previousData'];
           return Failure<T>(
             error: errorStr,
-            previousData: previousDataJson != null ? dataFromJson(previousDataJson as Map<String, dynamic>) : null,
+            previousData: previousDataJson != null
+                ? dataFromJson(previousDataJson as Map<String, dynamic>)
+                : null,
           );
 
         default:

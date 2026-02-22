@@ -25,10 +25,12 @@ extension QoraStateExtensions<T> on QoraState<T> {
       };
 
   /// Returns true if this is a first-time loading (no previous data).
-  bool get isFirstLoad => this is Loading<T> && (this as Loading<T>).previousData == null;
+  bool get isFirstLoad =>
+      this is Loading<T> && (this as Loading<T>).previousData == null;
 
   /// Returns true if this is a refresh (loading with previous data).
-  bool get isRefreshing => this is Loading<T> && (this as Loading<T>).previousData != null;
+  bool get isRefreshing =>
+      this is Loading<T> && (this as Loading<T>).previousData != null;
 
   /// Returns true if state has an error.
   bool get hasError => this is Failure<T>;
@@ -37,7 +39,8 @@ extension QoraStateExtensions<T> on QoraState<T> {
   ///
   /// Returns false for non-Success states.
   bool isStale(Duration threshold) => switch (this) {
-        Success(:final updatedAt) => DateTime.now().difference(updatedAt) > threshold,
+        Success(:final updatedAt) =>
+          DateTime.now().difference(updatedAt) > threshold,
         _ => false,
       };
 
@@ -67,7 +70,8 @@ extension QoraStateExtensions<T> on QoraState<T> {
       Loading(:final previousData) => Loading<R>(
           previousData: previousData != null ? transform(previousData) : null,
         ),
-      Failure(:final error, :final stackTrace, :final previousData) => Failure<R>(
+      Failure(:final error, :final stackTrace, :final previousData) =>
+        Failure<R>(
           error: error,
           stackTrace: stackTrace,
           previousData: previousData != null ? transform(previousData) : null,
@@ -139,13 +143,15 @@ extension QoraStateExtensions<T> on QoraState<T> {
     required R Function() onInitial,
     required R Function(T? previousData) onLoading,
     required R Function(T data, DateTime updatedAt) onSuccess,
-    required R Function(Object error, StackTrace? stackTrace, T? previousData) onError,
+    required R Function(Object error, StackTrace? stackTrace, T? previousData)
+        onError,
   }) {
     return switch (this) {
       Initial() => onInitial(),
       Loading(:final previousData) => onLoading(previousData),
       Success(:final data, :final updatedAt) => onSuccess(data, updatedAt),
-      Failure(:final error, :final stackTrace, :final previousData) => onError(error, stackTrace, previousData),
+      Failure(:final error, :final stackTrace, :final previousData) =>
+        onError(error, stackTrace, previousData),
     };
   }
 
@@ -223,7 +229,9 @@ extension QoraStateStreamExtensions<T> on Stream<QoraState<T>> {
   ///
   /// Only emits when state has data (Success, Loading/Error with previousData).
   Stream<T> data() {
-    return map((state) => state.dataOrNull).where((data) => data != null).cast<T>();
+    return map((state) => state.dataOrNull)
+        .where((data) => data != null)
+        .cast<T>();
   }
 
   /// Maps the data type while preserving state structure.
@@ -323,7 +331,9 @@ class QoraStateUtils {
     QoraState<T2> state2,
     QoraState<T3> state3,
   ) {
-    if (state1 is Success<T1> && state2 is Success<T2> && state3 is Success<T3>) {
+    if (state1 is Success<T1> &&
+        state2 is Success<T2> &&
+        state3 is Success<T3>) {
       return Success(
         data: (state1.data, state2.data, state3.data),
         updatedAt: DateTime.now(),

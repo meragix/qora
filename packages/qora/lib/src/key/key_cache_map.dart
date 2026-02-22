@@ -63,7 +63,7 @@ class KeyCacheMap<V> {
 
   /// Get all ent.
   Iterable<MapEntry<List<dynamic>, V>> get entries =>
-    _storage.entries.map((e) => MapEntry(e.key.key, e.value));
+      _storage.entries.map((e) => MapEntry(e.key.key, e.value));
 
   /// Number of entries.
   int get length => _storage.length;

@@ -135,7 +135,9 @@ class QoraOptions {
   /// Delegates to [retryDelayCalculator] if provided; otherwise applies
   /// exponential backoff: `retryDelay × 2^attemptIndex`.
   Duration getRetryDelay(int attemptIndex) {
-    if (retryDelayCalculator != null) return retryDelayCalculator!(attemptIndex);
+    if (retryDelayCalculator != null) {
+      return retryDelayCalculator!(attemptIndex);
+    }
     return retryDelay * (1 << attemptIndex);
   }
 

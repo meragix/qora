@@ -99,18 +99,17 @@ Future<void> main() async {
   // ── 3. Reactive stream (watchQuery) ──────────────────────────────────────
 
   // watchQuery auto-fetches on first subscription and emits every transition.
-  final subscription = client
-      .watchQuery<List<Post>>(
-        key: ['posts'],
-        fetcher: Api.getPosts,
-        options: const QoraOptions(staleTime: Duration(seconds: 30)),
-      )
-      .listen((state) {
+  final subscription = client.watchQuery<List<Post>>(
+    key: ['posts'],
+    fetcher: Api.getPosts,
+    options: const QoraOptions(staleTime: Duration(seconds: 30)),
+  ).listen((state) {
     switch (state) {
       case Initial():
         print('Posts: not started');
       case Loading(:final previousData):
-        final label = previousData != null ? '${previousData.length} stale' : 'none';
+        final label =
+            previousData != null ? '${previousData.length} stale' : 'none';
         print('Posts: loading (previous: $label)');
       case Success(:final data):
         print('Posts: ${data.length} loaded');
@@ -139,7 +138,10 @@ Future<void> main() async {
   final snapshot = client.getQueryData<User>(['users', 1]);
 
   // b) Update the cache immediately — all active streams see this at once.
-  client.setQueryData<User>(['users', 1], snapshot!.copyWith(name: 'Alice (saving…)'));
+  client.setQueryData<User>(
+    ['users', 1],
+    snapshot!.copyWith(name: 'Alice (saving…)'),
+  );
 
   try {
     // c) Confirm with the real server response.

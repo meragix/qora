@@ -204,7 +204,8 @@ class QoraClient {
     try {
       if (opts.enabled) {
         // Decide whether to fetch on mount.
-        final shouldRefetchOnMount = opts.refetchOnMount ?? config.refetchOnMount;
+        final shouldRefetchOnMount =
+            opts.refetchOnMount ?? config.refetchOnMount;
         final isFirstFetch = entry.state is Initial<T>;
         final isStale = entry.isStale(opts.staleTime);
 
@@ -369,7 +370,9 @@ class QoraClient {
       _log('Invalidating: $normalized');
       final previous = entry.state.dataOrNull;
       entry.updateState(
-        previous != null ? Loading<dynamic>(previousData: previous) : Initial<dynamic>(),
+        previous != null
+            ? Loading<dynamic>(previousData: previous)
+            : Initial<dynamic>(),
       );
       _pendingRequests.remove(_stringKey(normalized));
     }
@@ -525,14 +528,19 @@ class QoraClient {
     final previousData = entry.state.dataOrNull;
     entry.updateState(Loading<T>(previousData: previousData));
 
-    final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then((data) {
+    final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts)
+        .then((data) {
       entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
       _pendingRequests.remove(sk);
       return data;
     }).catchError((Object error, StackTrace stackTrace) {
       final mapped = _mapError(error, stackTrace);
       entry.updateState(
-        Failure<T>(error: mapped, stackTrace: stackTrace, previousData: previousData),
+        Failure<T>(
+          error: mapped,
+          stackTrace: stackTrace,
+          previousData: previousData,
+        ),
       );
       _pendingRequests.remove(sk);
       // Re-throw so that await fetchQuery propagates the error to the caller.
@@ -563,7 +571,9 @@ class QoraClient {
         lastError = error;
         if (attempt < opts.retryCount) {
           final delay = opts.getRetryDelay(attempt);
-          _log('Retry ${attempt + 1}/${opts.retryCount} in ${delay.inMilliseconds} ms');
+          _log(
+            'Retry ${attempt + 1}/${opts.retryCount} in ${delay.inMilliseconds} ms',
+          );
           await Future<void>.delayed(delay);
         }
         attempt++;
@@ -581,7 +591,8 @@ class QoraClient {
     final existing = _cache.get<T>(key);
 
     if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.cacheTime) && !existing.isActive) {
+      if (existing.shouldEvict(config.defaultOptions.cacheTime) &&
+          !existing.isActive) {
         _log('Lazy evict: $key');
         _cache.remove(key);
       } else {

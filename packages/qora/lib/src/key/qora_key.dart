@@ -47,14 +47,16 @@ class QoraKey {
   /// Creates a key with entity and filter map.
   ///
   /// Example: `QoraKey.withFilter('posts', {'status': 'published'})`
-  QoraKey.withFilter(String entity, Map<String, dynamic> filter) : parts = [entity, filter];
+  QoraKey.withFilter(String entity, Map<String, dynamic> filter)
+      : parts = [entity, filter];
 
   /// Creates a key from raw parts (conversion helper).
   factory QoraKey.from(QoraKeyParts parts) => QoraKey(parts);
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is QoraKey && equalsKey(parts, other.parts);
+      identical(this, other) ||
+      other is QoraKey && equalsKey(parts, other.parts);
 
   @override
   int get hashCode => hashKey(parts);

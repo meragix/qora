@@ -89,7 +89,8 @@ sealed class QoraState<T> {
           data: transform(data),
           updatedAt: updatedAt,
         ),
-      Failure(:final error, :final stackTrace, :final previousData) => Failure<R>(
+      Failure(:final error, :final stackTrace, :final previousData) =>
+        Failure<R>(
           error: error,
           stackTrace: stackTrace,
           previousData: previousData != null ? transform(previousData) : null,
@@ -113,7 +114,8 @@ sealed class QoraState<T> {
     void Function()? onInitial,
     void Function(T? previousData)? onLoading,
     void Function(T data, DateTime updatedAt)? onSuccess,
-    void Function(Object error, StackTrace? stackTrace, T? previousData)? onError,
+    void Function(Object error, StackTrace? stackTrace, T? previousData)?
+        onError,
   }) {
     switch (this) {
       case Initial():
@@ -148,7 +150,8 @@ sealed class QoraState<T> {
     return switch (this) {
       Initial() => onInitial?.call() ?? orElse(),
       Loading(:final previousData) => onLoading?.call(previousData) ?? orElse(),
-      Success(:final data, :final updatedAt) => onSuccess?.call(data, updatedAt) ?? orElse(),
+      Success(:final data, :final updatedAt) =>
+        onSuccess?.call(data, updatedAt) ?? orElse(),
       Failure(:final error, :final stackTrace, :final previousData) =>
         onError?.call(error, stackTrace, previousData) ?? orElse(),
     };
@@ -164,7 +167,8 @@ final class Initial<T> extends QoraState<T> {
   const Initial();
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is Initial<T>;
+  bool operator ==(Object other) =>
+      identical(this, other) || other is Initial<T>;
 
   @override
   int get hashCode => (Initial).hashCode ^ T.hashCode;
@@ -196,7 +200,9 @@ final class Loading<T> extends QoraState<T> {
   const Loading({this.previousData});
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is Loading<T> && previousData == other.previousData;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Loading<T> && previousData == other.previousData;
 
   @override
   int get hashCode => Object.hash(Loading, T, previousData);
@@ -242,7 +248,8 @@ final class Success<T> extends QoraState<T> {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is Success<T> && data == other.data && updatedAt == other.updatedAt;
+      identical(this, other) ||
+      other is Success<T> && data == other.data && updatedAt == other.updatedAt;
 
   @override
   int get hashCode => Object.hash(Success, T, data, updatedAt);
@@ -278,11 +285,15 @@ final class Failure<T> extends QoraState<T> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Failure<T> && error == other.error && stackTrace == other.stackTrace && previousData == other.previousData;
+      other is Failure<T> &&
+          error == other.error &&
+          stackTrace == other.stackTrace &&
+          previousData == other.previousData;
 
   @override
   int get hashCode => Object.hash(Error, T, error, stackTrace, previousData);
 
   @override
-  String toString() => 'Failure<$T>(error: $error, previousData: $previousData)';
+  String toString() =>
+      'Failure<$T>(error: $error, previousData: $previousData)';
 }

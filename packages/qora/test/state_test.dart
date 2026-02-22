@@ -574,7 +574,8 @@ void main() {
       );
 
       final json = QoraStateSerialization.toJson(original, userToJson);
-      final restored = QoraStateSerialization.fromJson<User>(json, userFromJson);
+      final restored =
+          QoraStateSerialization.fromJson<User>(json, userFromJson);
 
       expect(restored, equals(original));
     });
@@ -657,7 +658,9 @@ class User {
   }
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is User && id == other.id && name == other.name;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User && id == other.id && name == other.name;
 
   @override
   int get hashCode => Object.hash(id, name);

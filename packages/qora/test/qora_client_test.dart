@@ -110,11 +110,11 @@ void main() {
       // Test avec des maps
       final key4 = QoraKey([
         'filter',
-        {'status': 'active'}
+        {'status': 'active'},
       ]);
       final key5 = QoraKey([
         'filter',
-        {'status': 'active'}
+        {'status': 'active'},
       ]);
 
       expect(key4 == key5, true);

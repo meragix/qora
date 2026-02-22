@@ -52,7 +52,8 @@ class QoraClientConfig {
   /// ```
   ///
   /// When `null` (default), errors are stored as-is.
-  final QoraException Function(Object error, StackTrace? stackTrace)? errorMapper;
+  final QoraException Function(Object error, StackTrace? stackTrace)?
+      errorMapper;
 
   /// Enables verbose logging to the console.
   ///
