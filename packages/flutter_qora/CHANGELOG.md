@@ -1,3 +1,4 @@
+<!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -7,18 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-02-11
+## [0.2.0] - 2026-02-22
+
+### Added
+
+- `FlutterConnectivityManager` — invalidates all queries when the device reconnects after being offline; powered by `connectivity_plus` (bundled as a direct dependency)
+- `FlutterConnectivityManager` and `FlutterLifecycleManager` exported from the main `flutter_qora` library barrel
+- `QoraScope` now accepts an optional `connectivityManager` parameter alongside `lifecycleManager`
+
+### Changed
+
+- **`queryKey` accepts `Object`** — both `QoraBuilder` and `QoraStateBuilder` now accept a plain `List<dynamic>` or a `QoraKey`; no wrapping in `QoraKey(...)` required
+- **`FlutterLifecycleManager.refetchInterval`** is now public (was `_refetchInterval`); configures the minimum background duration before queries are invalidated on app resume (default: 5 s)
+- **Internal refetch mechanism** uses `client.invalidateWhere((_) => true)` instead of direct stream manipulation; active `QoraBuilder` widgets detect the resulting `Loading(previousData: …)` state and re-fetch automatically
 
 ## [0.1.0] - 2026-02-11
 
 ### Added
 
-- QoraScope (InheritedWidget)
-- QoraBuilder<T> and QoraStateBuilder<T> widget
-- BuildContext extensions (context.qora)
-- Lifecycle management (FlutterLifecycleManager)
-- Refetch on app resume
-- QueryState<T> (isLoading, hasError, data)
+- `QoraScope` (`InheritedWidget`) — provides `QoraClient` to the widget tree
+- `QoraBuilder<T>` — fetches on mount, subscribes to all state transitions, re-fetches on invalidation, and cleans up on dispose
+- `QoraStateBuilder<T>` — observe-only variant; subscribes to state without triggering a fetch
+- `BuildContext` extensions: `context.qora`, `context.qoraOrNull`
+- `FlutterLifecycleManager` — invalidates all queries when the app resumes after a configurable background pause
 
-[unreleased]: https://github.com/meragix/qora/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/meragix/qora/releases/tag/flutter_qora-0.1.0
+[unreleased]: https://github.com/meragix/qora/compare/flutter_qora-v0.2.0...HEAD
+[0.2.0]: https://github.com/meragix/qora/compare/flutter_qora-v0.1.0...flutter_qora-v0.2.0
+[0.1.0]: https://github.com/meragix/qora/releases/tag/flutter_qora-v0.1.0

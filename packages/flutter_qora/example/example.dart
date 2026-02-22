@@ -1,34 +1,39 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_qora/flutter_qora.dart';
 
-// ============================================================================
-// EXEMPLE 1 : Configuration de base avec QoraScope
-// ============================================================================
+// ---------------------------------------------------------------------------
+// App entry point
+// ---------------------------------------------------------------------------
 
 void main() {
-  // Créer le client global
   final client = QoraClient(
     config: QoraClientConfig(
-      defaultOptions: QoraOptions(
-        staleTime: Duration(seconds: 30),
-        cacheTime: Duration(minutes: 5),
+      defaultOptions: const QoraOptions(
+        staleTime: Duration(minutes: 5),
+        cacheTime: Duration(minutes: 10),
         retryCount: 3,
       ),
-      debugMode: true,
-      // Mapper optionnel pour transformer les erreurs
-      errorMapper: (error, stackTrace) {
-        if (error.toString().contains('401')) {
-          return QoraException('Non autorisé', originalError: error);
-        }
-        return QoraException('Erreur réseau', originalError: error);
-      },
+      debugMode: kDebugMode,
+      errorMapper: (error, stackTrace) => QoraException(
+        error.toString().contains('401') ? 'Unauthorized' : 'Network error',
+        originalError: error,
+        stackTrace: stackTrace,
+      ),
     ),
   );
 
   runApp(
     QoraScope(
       client: client,
-      child: MyApp(),
+      // Invalidates all queries when the app resumes after 30 s in background.
+      lifecycleManager: FlutterLifecycleManager(
+        qoraClient: client,
+        refetchInterval: const Duration(seconds: 30),
+      ),
+      // Invalidates all queries when the device reconnects after being offline.
+      connectivityManager: FlutterConnectivityManager(qoraClient: client),
+      child: const MyApp(),
     ),
   );
 }
@@ -38,17 +43,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Qora Flutter Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
       home: UserListScreen(),
     );
   }
 }
 
-// ============================================================================
-// EXEMPLE 2 : ReqryBuilder basique pour une liste d'utilisateurs
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Example 1 — Basic list with all four states
+// ---------------------------------------------------------------------------
 
 class UserListScreen extends StatelessWidget {
   const UserListScreen({super.key});
@@ -57,62 +61,49 @@ class UserListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Utilisateurs'),
+        title: const Text('Users'),
         actions: [
-          // Utilisation de l'extension context.reqry
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              context.qora.invalidateQuery(QoraKey(['users']));
-            },
+            icon: const Icon(Icons.refresh),
+            // Invalidate all "users" queries — QoraBuilder detects the
+            // resulting Loading(previousData: ...) and re-fetches automatically.
+            onPressed: () => context.qora.invalidateWhere(
+              (key) => key.firstOrNull == 'users',
+            ),
           ),
         ],
       ),
       body: QoraBuilder<List<User>>(
-        queryKey: QoraKey(['users']),
-        queryFn: () => ApiService.getUsers(),
+        queryKey: const ['users'],
+        queryFn: ApiService.getUsers,
         builder: (context, state) {
-          return state.maybeWhen(
-            orElse: () => const SizedBox.shrink(),
-            onInitial: () => Center(
-              child: Text('Appuyez pour charger'),
-            ),
-            onLoading: (previousData) {
-              // Si on a des données précédentes, les afficher avec un indicateur
-              if (previousData != null) {
-                return Stack(
-                  children: [
+          return switch (state) {
+            Initial() => const Center(child: Text('Press refresh to load')),
+            Loading(:final previousData) => previousData != null
+                ? Stack(children: [
                     UserListView(users: previousData),
-                    LinearProgressIndicator(),
-                  ],
-                );
-              }
-              return Center(child: CircularProgressIndicator());
-            },
-            onSuccess: (users, updatedAt) {
-              if (users.isEmpty) {
-                return Center(child: Text('Aucun utilisateur'));
-              }
-              return UserListView(users: users);
-            },
-            onError: (error, stackTrace, previousData) {
-              return Column(
+                    const LinearProgressIndicator(),
+                  ])
+                : const Center(child: CircularProgressIndicator()),
+            Success(:final data) => data.isEmpty
+                ? const Center(child: Text('No users found'))
+                : UserListView(users: data),
+            Failure(:final error, :final previousData) => Column(
                 children: [
                   if (previousData != null) Expanded(child: UserListView(users: previousData)),
-                  ErrorBanner(error: error.toString()),
+                  ErrorBanner(message: '$error'),
                 ],
-              );
-            },
-          );
+              ),
+          };
         },
       ),
     );
   }
 }
 
-// ============================================================================
-// EXEMPLE 3 : Pagination avec keepPreviousData
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Example 2 — Flicker-free pagination with keepPreviousData
+// ---------------------------------------------------------------------------
 
 class PaginatedUsersScreen extends StatefulWidget {
   const PaginatedUsersScreen({super.key});
@@ -122,62 +113,42 @@ class PaginatedUsersScreen extends StatefulWidget {
 }
 
 class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
-  int _currentPage = 1;
+  int _page = 1;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Pagination')),
+      appBar: AppBar(title: const Text('Users — paginated')),
       body: Column(
         children: [
-          // ✅ keepPreviousData évite les flashs lors du changement de page
           Expanded(
             child: QoraBuilder<List<User>>(
-              queryKey: QoraKey(['users', 'paginated', _currentPage]),
-              queryFn: () => ApiService.getUsersPaginated(_currentPage),
-              keepPreviousData: true, // 🎯 IMPORTANT pour la pagination
+              queryKey: ['users', 'page', _page],
+              queryFn: () => ApiService.getUsersPaged(_page),
+              // Keep the previous page visible while the next page loads.
+              keepPreviousData: true,
               builder: (context, state) {
-                return state.maybeWhen(
-                  orElse: () => const SizedBox.shrink(),
-                  onInitial: () => Center(child: CircularProgressIndicator()),
-                  onLoading: (previousData) {
-                    // Afficher les données de la page précédente
-                    if (previousData != null) {
-                      return Stack(
-                        children: [
-                          UserListView(users: previousData),
-                          // Petit indicateur de chargement en haut
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: LinearProgressIndicator(),
-                          ),
-                        ],
-                      );
-                    }
-                    return Center(child: CircularProgressIndicator());
-                  },
-                  onSuccess: (users, _) => UserListView(users: users),
-                  onError: (err, _, prev) => ErrorView(error: err.toString()),
+                // dataOrNull returns Success.data OR Loading/Failure.previousData.
+                final users = state.dataOrNull ?? [];
+                return Stack(
+                  children: [
+                    UserListView(users: users),
+                    if (state.isLoading)
+                      const Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: LinearProgressIndicator(),
+                      ),
+                  ],
                 );
               },
             ),
           ),
-          // Contrôles de pagination
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left),
-                onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
-              ),
-              Text('Page $_currentPage'),
-              IconButton(
-                icon: Icon(Icons.chevron_right),
-                onPressed: () => setState(() => _currentPage++),
-              ),
-            ],
+          _PaginationControls(
+            page: _page,
+            onPrev: _page > 1 ? () => setState(() => _page--) : null,
+            onNext: () => setState(() => _page++),
           ),
         ],
       ),
@@ -185,9 +156,33 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
   }
 }
 
-// ============================================================================
-// EXEMPLE 4 : Détail d'un utilisateur avec refresh manuel
-// ============================================================================
+class _PaginationControls extends StatelessWidget {
+  final int page;
+  final VoidCallback? onPrev;
+  final VoidCallback onNext;
+
+  const _PaginationControls({
+    required this.page,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(icon: const Icon(Icons.chevron_left), onPressed: onPrev),
+        Text('Page $page'),
+        IconButton(icon: const Icon(Icons.chevron_right), onPressed: onNext),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Example 3 — Detail screen with manual refresh
+// ---------------------------------------------------------------------------
 
 class UserDetailScreen extends StatelessWidget {
   final int userId;
@@ -198,71 +193,53 @@ class UserDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Détail utilisateur'),
+        title: const Text('User detail'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () async {
-              // Méthode 1 : Invalider et le QoraBuilder va refetch
-              context.qora.invalidateQuery(QoraKey(['user', userId]));
-
-              // Méthode 2 : Fetch manuel
-              // await context.qora.fetchQuery(
-              //   key: QoraKey(['user', userId]),
-              //   fetcher: () => ApiService.getUser(userId),
-              // );
-            },
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.qora.invalidate(['users', userId]),
           ),
         ],
       ),
       body: QoraBuilder<User>(
-        queryKey: QoraKey(['user', userId]),
+        queryKey: ['users', userId],
         queryFn: () => ApiService.getUser(userId),
         builder: (context, state) {
-          return state.maybeWhen(
-            orElse: () => const SizedBox.shrink(),
-            onInitial: () => Center(child: Text('Chargement...')),
-            onLoading: (prev) => prev != null
-                ? UserDetailView(user: prev, isRefreshing: true)
-                : Center(child: CircularProgressIndicator()),
-            onSuccess: (user, updatedAt) {
-              return UserDetailView(
-                user: user,
+          return switch (state) {
+            Initial() || Loading(previousData: null) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            Loading(:final previousData?) => UserDetailView(
+                user: previousData,
+                isRefreshing: true,
+              ),
+            Success(:final data, :final updatedAt) => UserDetailView(
+                user: data,
                 updatedAt: updatedAt,
-              );
-            },
-            onError: (error, _, prev) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error, size: 64, color: Colors.red),
-                    SizedBox(height: 16),
-                    Text('Erreur: $error'),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.qora.invalidateQuery(
-                          QoraKey(['user', userId]),
-                        );
-                      },
-                      child: Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
+              ),
+            Failure(:final error, previousData: null) => _ErrorScreen(
+                message: '$error',
+                onRetry: () => context.qora.invalidate(['users', userId]),
+              ),
+            Failure(:final error, :final previousData?) => Column(
+                children: [
+                  Expanded(child: UserDetailView(user: previousData)),
+                  ErrorBanner(message: '$error'),
+                ],
+              ),
+          };
         },
       ),
     );
   }
 }
 
-// ============================================================================
-// EXEMPLE 5 : Utilisation de QoraStateBuilder (observe sans fetch)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Example 4 — QoraStateBuilder: observe without fetching
+// ---------------------------------------------------------------------------
 
+/// Shows the user avatar wherever it is needed in the tree, without
+/// triggering a second fetch — the data is owned by [UserDetailScreen].
 class UserAvatarWidget extends StatelessWidget {
   final int userId;
 
@@ -270,27 +247,24 @@ class UserAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ne fait que s'abonner à l'état, ne déclenche pas de fetch
     return QoraStateBuilder<User>(
-      queryKey: QoraKey(['user', userId]),
+      queryKey: ['users', userId],
       builder: (context, state) {
-        return state.maybeWhen(
-          orElse: () => const SizedBox.shrink(),
-          onInitial: () => CircleAvatar(child: Icon(Icons.person)),
-          onLoading: (_) => CircleAvatar(child: CircularProgressIndicator()),
-          onSuccess: (user, _) => CircleAvatar(
-            backgroundImage: NetworkImage(user.avatarUrl),
-          ),
-          onError: (_, __, ___) => CircleAvatar(child: Icon(Icons.error)),
-        );
+        return switch (state) {
+          Success(:final data) => CircleAvatar(
+              backgroundImage: NetworkImage(data.avatarUrl),
+            ),
+          Loading() => const CircleAvatar(child: CircularProgressIndicator()),
+          _ => const CircleAvatar(child: Icon(Icons.person)),
+        };
       },
     );
   }
 }
 
-// ============================================================================
-// EXEMPLE 6 : Mutation avec optimistic update
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Example 5 — Optimistic update
+// ---------------------------------------------------------------------------
 
 class UpdateUserButton extends StatelessWidget {
   final int userId;
@@ -302,41 +276,32 @@ class UpdateUserButton extends StatelessWidget {
     required this.newName,
   });
 
-  Future<void> _updateUser(BuildContext context) async {
-    final key = QoraKey(['user', userId]);
+  Future<void> _update(BuildContext context) async {
     final client = context.qora;
+    final key = ['users', userId];
 
-    // 1. Sauvegarder l'état actuel
-    final previousState = client.getState<User>(key);
-    final previousData = previousState.dataOrNull;
+    // 1. Snapshot current data for potential rollback.
+    final snapshot = client.getQueryData<User>(key);
+
+    // 2. Optimistic update — UI reflects the change immediately.
+    if (snapshot != null) {
+      client.setQueryData<User>(key, snapshot.copyWith(name: newName));
+    }
 
     try {
-      // 2. Optimistic update (mise à jour immédiate de l'UI)
-      if (previousData != null) {
-        client.setQueryData<User>(
-          key,
-          previousData.copyWith(name: newName),
-        );
-      }
+      // 3. Confirm with the real server response.
+      final updated = await ApiService.updateUser(userId, newName);
+      client.setQueryData<User>(key, updated);
 
-      // 3. Exécuter la mutation
-      final updatedUser = await ApiService.updateUser(userId, newName);
-
-      // 4. Mettre à jour avec les vraies données du serveur
-      client.setQueryData<User>(key, updatedUser);
-
-      // 5. Invalider les requêtes liées
-      client.invalidateQueries((k) => k == 'users');
+      // 4. Invalidate the user list so it reflects the new name.
+      client.invalidateWhere((k) => k.firstOrNull == 'users' && k.length == 1);
     } catch (error) {
-      // 6. Rollback en cas d'erreur
-      if (previousData != null) {
-        client.setQueryData<User>(key, previousData);
-      }
+      // 5. Roll back on failure.
+      client.restoreQueryData<User>(key, snapshot);
 
-      // Afficher un message d'erreur
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $error')),
+          SnackBar(content: Text('Update failed: $error')),
         );
       }
     }
@@ -345,15 +310,15 @@ class UpdateUserButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () => _updateUser(context),
-      child: Text('Mettre à jour'),
+      onPressed: () => _update(context),
+      child: const Text('Save'),
     );
   }
 }
 
-// ============================================================================
-// EXEMPLE 7 : enabled pour contrôle conditionnel
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Example 6 — Conditional (dependent) query
+// ---------------------------------------------------------------------------
 
 class ConditionalQueryWidget extends StatefulWidget {
   const ConditionalQueryWidget({super.key});
@@ -363,32 +328,34 @@ class ConditionalQueryWidget extends StatefulWidget {
 }
 
 class _ConditionalQueryWidgetState extends State<ConditionalQueryWidget> {
-  bool _shouldFetch = false;
+  bool _enabled = false;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Switch(
-          value: _shouldFetch,
-          onChanged: (value) => setState(() => _shouldFetch = value),
+        SwitchListTile(
+          title: const Text('Enable query'),
+          value: _enabled,
+          onChanged: (v) => setState(() => _enabled = v),
         ),
         QoraBuilder<String>(
-          queryKey: QoraKey(['conditional-data']),
-          queryFn: () => ApiService.getData(),
-          enabled: _shouldFetch, // Ne fetch que si true
-          builder: (context, state) {
-            return Text('État: ${state.runtimeType}');
-          },
+          queryKey: const ['conditional'],
+          queryFn: ApiService.getData,
+          enabled: _enabled,
+          builder: (context, state) => ListTile(
+            title: Text('State: ${state.runtimeType}'),
+            subtitle: state is Success<String> ? Text(state.data) : null,
+          ),
         ),
       ],
     );
   }
 }
 
-// ============================================================================
-// MODÈLES ET SERVICES (pour les exemples)
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Fake models and API
+// ---------------------------------------------------------------------------
 
 class User {
   final int id;
@@ -396,51 +363,51 @@ class User {
   final String email;
   final String avatarUrl;
 
-  User({
+  const User({
     required this.id,
     required this.name,
     required this.email,
     required this.avatarUrl,
   });
 
-  User copyWith({String? name, String? email}) {
-    return User(
-      id: id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      avatarUrl: avatarUrl,
-    );
-  }
+  User copyWith({String? name, String? email}) => User(
+        id: id,
+        name: name ?? this.name,
+        email: email ?? this.email,
+        avatarUrl: avatarUrl,
+      );
 }
 
 class ApiService {
   static Future<List<User>> getUsers() async {
-    await Future.delayed(Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(seconds: 1));
     return List.generate(
-        10,
-        (i) => User(
-              id: i,
-              name: 'User $i',
-              email: 'user$i@example.com',
-              avatarUrl: 'https://i.pravatar.cc/150?img=$i',
-            ));
+      10,
+      (i) => User(
+        id: i,
+        name: 'User $i',
+        email: 'user$i@example.com',
+        avatarUrl: 'https://i.pravatar.cc/150?img=$i',
+      ),
+    );
   }
 
-  static Future<List<User>> getUsersPaginated(int page) async {
-    await Future.delayed(Duration(milliseconds: 500));
-    final start = (page - 1) * 10;
+  static Future<List<User>> getUsersPaged(int page) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    final offset = (page - 1) * 10;
     return List.generate(
-        10,
-        (i) => User(
-              id: start + i,
-              name: 'User ${start + i}',
-              email: 'user${start + i}@example.com',
-              avatarUrl: 'https://i.pravatar.cc/150?img=${start + i}',
-            ));
+      10,
+      (i) => User(
+        id: offset + i,
+        name: 'User ${offset + i}',
+        email: 'user${offset + i}@example.com',
+        avatarUrl: 'https://i.pravatar.cc/150?img=${offset + i}',
+      ),
+    );
   }
 
   static Future<User> getUser(int id) async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     return User(
       id: id,
       name: 'User $id',
@@ -450,7 +417,7 @@ class ApiService {
   }
 
   static Future<User> updateUser(int id, String newName) async {
-    await Future.delayed(Duration(milliseconds: 300));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     return User(
       id: id,
       name: newName,
@@ -460,12 +427,15 @@ class ApiService {
   }
 
   static Future<String> getData() async {
-    await Future.delayed(Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(seconds: 1));
     return 'Some data';
   }
 }
 
-// Widgets helper pour les exemples
+// ---------------------------------------------------------------------------
+// Shared UI widgets
+// ---------------------------------------------------------------------------
+
 class UserListView extends StatelessWidget {
   final List<User> users;
 
@@ -475,14 +445,20 @@ class UserListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       itemCount: users.length,
-      itemBuilder: (context, index) {
-        final user = users[index];
+      itemBuilder: (context, i) {
+        final user = users[i];
         return ListTile(
           leading: CircleAvatar(
             backgroundImage: NetworkImage(user.avatarUrl),
           ),
           title: Text(user.name),
           subtitle: Text(user.email),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => UserDetailScreen(userId: user.id),
+            ),
+          ),
         );
       },
     );
@@ -504,24 +480,24 @@ class UserDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isRefreshing) LinearProgressIndicator(),
+          if (isRefreshing) const LinearProgressIndicator(),
           Center(
             child: CircleAvatar(
               radius: 50,
               backgroundImage: NetworkImage(user.avatarUrl),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(user.name, style: Theme.of(context).textTheme.headlineMedium),
           Text(user.email),
           if (updatedAt != null)
             Text(
-              'Mis à jour: ${updatedAt!.toLocal()}',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              'Updated: ${updatedAt!.toLocal()}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
         ],
       ),
@@ -530,30 +506,33 @@ class UserDetailView extends StatelessWidget {
 }
 
 class ErrorBanner extends StatelessWidget {
-  final String error;
+  final String message;
 
-  const ErrorBanner({super.key, required this.error});
+  const ErrorBanner({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.red[100],
-      padding: EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Icon(Icons.error, color: Colors.red),
-          SizedBox(width: 8),
-          Expanded(child: Text(error)),
-        ],
+    return ColoredBox(
+      color: Colors.red.shade100,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
       ),
     );
   }
 }
 
-class ErrorView extends StatelessWidget {
-  final String error;
+class _ErrorScreen extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
 
-  const ErrorView({super.key, required this.error});
+  const _ErrorScreen({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -561,9 +540,11 @@ class ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, size: 64, color: Colors.red),
-          SizedBox(height: 16),
-          Text('Erreur: $error'),
+          const Icon(Icons.cloud_off, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(message),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
