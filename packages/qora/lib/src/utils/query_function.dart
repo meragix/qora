@@ -2,6 +2,6 @@
 typedef QueryFunction<T> = Future<T> Function();
 
 /// Fonction de mutation
-typedef MutationFunction<TData, TVariables> = Future<TData> Function(
+typedef MutatorFunction<TData, TVariables> = Future<TData> Function(
   TVariables variables,
 );

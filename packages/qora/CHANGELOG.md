@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-24
+
+### Added
+
+- **`MutationController<TData, TVariables, TContext>`** — standalone controller managing the full mutation lifecycle: `MutationIdle → MutationPending → MutationSuccess | MutationFailure`
+- **`MutationState<TData, TVariables>`** — sealed class hierarchy with four variants: `MutationIdle`, `MutationPending`, `MutationSuccess`, `MutationFailure`; each carries typed `variables` for full traceability
+- **`MutationOptions<TData, TVariables, TContext>`** — per-mutation configuration with lifecycle callbacks:
+  - `onMutate(variables)` — called before the mutator; return value becomes `TContext` (snapshot for rollback)
+  - `onSuccess(data, variables, context)` — called on success
+  - `onError(error, variables, context)` — called on failure; use `context` to roll back optimistic updates via `restoreQueryData`
+  - `onSettled(data, error, variables, context)` — called after either outcome
+  - `retryCount` / `retryDelay` — optional retry with exponential backoff (default: 0 retries)
+- **`MutatorFunction<TData, TVariables>`** typedef — mirrors `QueryFunction<T>` for consistency (`mutator` parameter naming mirrors `fetcher`)
+- `MutationStateExtensions` — `fold<R>()` exhaustive mapper and `status` getter returning `MutationStatus` enum
+- `MutationStatus` enum — coarse-grained `idle | pending | success | error` values with boolean getters
+- `MutationStateStreamExtensions` — `whereSuccess()`, `whereError()`, `dataOrNull()` stream operators
+
+### Changed
+
+- **`MutationFunction` renamed to `MutatorFunction`** — aligns naming with the `fetcher`/`mutator` parameter convention used throughout the API
+
 ## [0.2.0] - 2026-02-22
 
 ### Added
@@ -46,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/0.2.0...HEAD
+[unreleased]: https://github.com/meragix/qora/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0

@@ -1,0 +1,172 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+import 'package:qora/qora.dart';
+
+/// A widget that manages a [MutationController] and rebuilds whenever the
+/// mutation state changes.
+///
+/// [MutationBuilder] creates an internal [MutationController] on mount and
+/// disposes it on unmount. The [builder] receives the current
+/// [MutationState] and a [mutate] callback to trigger the mutation from the
+/// UI.
+///
+/// ## Basic usage
+///
+/// ```dart
+/// MutationBuilder<Post, String, void>(
+///   mutator: (title) => api.createPost(title),
+///   builder: (context, state, mutate) {
+///     return ElevatedButton(
+///       onPressed: state.isPending ? null : () => mutate('New Post'),
+///       child: state.isPending
+///           ? const CircularProgressIndicator()
+///           : const Text('Create'),
+///     );
+///   },
+/// )
+/// ```
+///
+/// ## With optimistic updates and rollback
+///
+/// ```dart
+/// MutationBuilder<Post, String, List<Post>?>(
+///   mutator: (title) => api.createPost(title),
+///   options: MutationOptions(
+///     onMutate: (title) async {
+///       final prev = context.qora.getQueryData<List<Post>>(['posts']);
+///       context.qora.setQueryData<List<Post>>(
+///         ['posts'],
+///         [...?prev, Post.optimistic(title)],
+///       );
+///       return prev; // returned as TContext for rollback
+///     },
+///     onError: (error, variables, prev) async {
+///       context.qora.restoreQueryData(['posts'], prev);
+///     },
+///     onSuccess: (post, variables, _) async {
+///       context.qora.invalidate(['posts']);
+///     },
+///   ),
+///   builder: (context, state, mutate) {
+///     return ElevatedButton(
+///       onPressed: state.isPending ? null : () => mutate('New Post'),
+///       child: const Text('Create'),
+///     );
+///   },
+/// )
+/// ```
+///
+/// ## Handling success and errors in the builder
+///
+/// ```dart
+/// MutationBuilder<Post, String, void>(
+///   mutator: (title) => api.createPost(title),
+///   builder: (context, state, mutate) {
+///     return switch (state) {
+///       MutationIdle()                    => SubmitButton(onTap: () => mutate('Post')),
+///       MutationPending()                  => const CircularProgressIndicator(),
+///       MutationSuccess(:final data)       => Text('Created: ${data.title}'),
+///       MutationFailure(:final error)      => ErrorBanner(error),
+///     };
+///   },
+/// )
+/// ```
+class MutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
+  /// The async function that performs the server-side write.
+  ///
+  /// Named [mutator] to mirror the [fetcher] naming used in [QoraBuilder].
+  final MutatorFunction<TData, TVariables> mutator;
+
+  /// Lifecycle callbacks and retry configuration.
+  final MutationOptions<TData, TVariables, TContext>? options;
+
+  /// Builds the widget tree from the current [MutationState].
+  ///
+  /// The [mutate] callback triggers the mutation with the given variables.
+  /// It returns `null` on failure (errors are captured in [MutationFailure]
+  /// state).
+  final Widget Function(
+    BuildContext context,
+    MutationState<TData, TVariables> state,
+    Future<TData?> Function(TVariables variables) mutate,
+  ) builder;
+
+  const MutationBuilder({
+    super.key,
+    required this.mutator,
+    required this.builder,
+    this.options,
+  });
+
+  @override
+  State<MutationBuilder<TData, TVariables, TContext>> createState() =>
+      _MutationBuilderState<TData, TVariables, TContext>();
+}
+
+class _MutationBuilderState<TData, TVariables, TContext>
+    extends State<MutationBuilder<TData, TVariables, TContext>> {
+  late MutationController<TData, TVariables, TContext> _controller;
+  StreamSubscription<MutationState<TData, TVariables>>? _subscription;
+  MutationState<TData, TVariables> _state =
+      const MutationIdle<Never, Never>()
+          as MutationState<Never, Never>;
+
+  @override
+  void initState() {
+    super.initState();
+    _createController();
+    _subscribe();
+  }
+
+  @override
+  void didUpdateWidget(
+    MutationBuilder<TData, TVariables, TContext> oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+    // Recreate the controller only if the mutator itself changed identity.
+    if (!identical(widget.mutator, oldWidget.mutator) ||
+        !identical(widget.options, oldWidget.options)) {
+      _controller.dispose();
+      _subscription?.cancel();
+      _createController();
+      _subscribe();
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _createController() {
+    _controller = MutationController<TData, TVariables, TContext>(
+      mutator: widget.mutator,
+      options: widget.options,
+    );
+    _state = _controller.state;
+  }
+
+  void _subscribe() {
+    _subscription = _controller.stream.listen(
+      (state) {
+        if (!mounted) return;
+        setState(() => _state = state);
+      },
+      onError: (Object error) {
+        debugPrint('[MutationBuilder] Unexpected stream error: $error');
+      },
+    );
+  }
+
+  Future<TData?> _mutate(TVariables variables) {
+    return _controller.mutate(variables);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, _state, _mutate);
+  }
+}

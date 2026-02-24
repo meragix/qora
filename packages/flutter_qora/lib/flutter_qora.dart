@@ -89,6 +89,7 @@ export 'package:qora/qora.dart';
 // Widgets
 export 'src/widgets/qora_scope.dart';
 export 'src/widgets/qora_builder.dart';
+export 'src/widgets/mutation_builder.dart';
 
 // Extensions
 export 'src/extensions/build_context_extension.dart';
