@@ -51,7 +51,7 @@
 ///
 /// ```dart
 /// // Create codec
-/// final codec = ReqryStateCodec<User>(
+/// final codec = QoraStateCodec<User>(
 ///   encode: (user) => user.toJson(),
 ///   decode: (json) => User.fromJson(json),
 /// );

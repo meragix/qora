@@ -69,6 +69,3 @@ switch (state) {
 ## Documentation
 
 Full guides and API reference: **[qora.meragix.com](https://qora.meragix.com)**
-
-
-_github-pages-challenge-donfreddy.qora.meragix.dev

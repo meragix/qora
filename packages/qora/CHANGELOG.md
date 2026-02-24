@@ -46,6 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/qora-v0.2.0...HEAD
-[0.2.0]: https://github.com/meragix/qora/compare/qora-v0.1.0...qora-v0.2.0
-[0.1.0]: https://github.com/meragix/qora/releases/tag/qora-v0.1.0
+[unreleased]: https://github.com/meragix/qora/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
+[0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0
