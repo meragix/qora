@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:qora/qora.dart';
 import 'package:test/test.dart';
 
@@ -434,6 +436,253 @@ void main() {
             .status,
         MutationStatus.error,
       );
+    });
+
+    // ── MutationTracker / observability ──────────────────────────────────
+
+    test('controller has a unique id', () {
+      final a = MutationController<String, String, void>(
+        mutator: (v) async => v,
+      );
+      final b = MutationController<String, String, void>(
+        mutator: (v) async => v,
+      );
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+
+      expect(a.id, isNot(equals(b.id)));
+      expect(a.id, startsWith('mutation_'));
+    });
+
+    test('tracker receives all state transitions on mutate', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => 'ok:$v',
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      await controller.mutate('hello');
+
+      expect(events, hasLength(2));
+      expect(events[0].isPending, isTrue);
+      expect(events[0].variables, 'hello');
+      expect(events[1].isSuccess, isTrue);
+      expect(events[1].data, 'ok:hello');
+    });
+
+    test('tracker receives failure event on error', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final controller = MutationController<String, String, void>(
+        mutator: (_) async => throw Exception('boom'),
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      await controller.mutate('x');
+
+      expect(events.last.isError, isTrue);
+      expect(events.last.error, isA<Exception>());
+    });
+
+    test('activeMutations only contains pending mutations', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final completer = Completer<String>();
+      final controller = MutationController<String, String, void>(
+        mutator: (_) => completer.future,
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      // Fire without awaiting — mutation is now pending.
+      final future = controller.mutate('x');
+      await Future<void>.delayed(Duration.zero);
+
+      // While pending: entry is in the snapshot.
+      expect(client.activeMutations, contains(controller.id));
+      expect(client.activeMutations[controller.id]!.isPending, isTrue);
+
+      // Complete the mutation.
+      completer.complete('done');
+      await future;
+
+      // After success: auto-purged — snapshot is empty.
+      expect(client.activeMutations, isNot(contains(controller.id)));
+    });
+
+    test('reset emits idle event and snapshot stays empty', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.mutate('x');
+      // Already purged on success.
+      expect(client.activeMutations, isEmpty);
+
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      controller.reset();
+      await Future<void>.delayed(Duration.zero);
+
+      // Reset still emits the idle transition on the stream.
+      expect(events.single.isIdle, isTrue);
+      expect(client.activeMutations, isEmpty);
+    });
+
+    test('dispose removes pending entry from activeMutations silently', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final completer = Completer<String>();
+      final controller = MutationController<String, String, void>(
+        mutator: (_) => completer.future,
+        tracker: client,
+      );
+
+      // Fire without awaiting — mutation is pending.
+      unawaited(controller.mutate('x'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(client.activeMutations, contains(controller.id));
+
+      // Dispose removes the entry silently (no idle event emitted).
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      controller.dispose();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(client.activeMutations, isNot(contains(controller.id)));
+      expect(events, isEmpty); // dispose is silent
+    });
+
+    test('debugInfo active_mutations reflects only pending count', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final completer = Completer<String>();
+      final controller = MutationController<String, String, void>(
+        mutator: (_) => completer.future,
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      expect(client.debugInfo()['active_mutations'], 0);
+
+      final future = controller.mutate('x');
+      await Future<void>.delayed(Duration.zero);
+
+      // While pending: count is 1.
+      expect(client.debugInfo()['active_mutations'], 1);
+
+      // After completion: auto-purged, count back to 0.
+      completer.complete('done');
+      await future;
+      expect(client.debugInfo()['active_mutations'], 0);
+    });
+
+    test('DevTools late-connect sees pending snapshot then stream updates',
+        () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final completer = Completer<String>();
+      final controller = MutationController<String, String, void>(
+        mutator: (_) => completer.future,
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      // Mutation fires BEFORE DevTools connects and is still in-flight.
+      unawaited(controller.mutate('x'));
+      await Future<void>.delayed(Duration.zero);
+
+      // DevTools connects late: snapshot shows the running mutation.
+      final snapshot = Map<String, MutationEvent>.from(client.activeMutations);
+      expect(snapshot, contains(controller.id));
+      expect(snapshot[controller.id]!.isPending, isTrue);
+
+      // Subscribe to the stream for real-time updates.
+      final futureEvents = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(futureEvents.add);
+      addTearDown(sub.cancel);
+
+      // Complete the mutation.
+      completer.complete('done');
+      await Future<void>.delayed(Duration.zero);
+
+      // Stream delivered the success event; snapshot is now empty.
+      expect(futureEvents, hasLength(1));
+      expect(futureEvents[0].isSuccess, isTrue);
+      expect(client.activeMutations, isEmpty);
+    });
+
+    // ── metadata ─────────────────────────────────────────────────────────
+
+    test('metadata is forwarded to MutationEvent', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        tracker: client,
+        metadata: {'category': 'auth', 'screen': 'login'},
+      );
+      addTearDown(controller.dispose);
+
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      await controller.mutate('x');
+
+      expect(events, hasLength(2)); // pending + success
+      for (final event in events) {
+        expect(event.metadata, {'category': 'auth', 'screen': 'login'});
+      }
+    });
+
+    test('metadata is null when not provided', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        tracker: client,
+      );
+      addTearDown(controller.dispose);
+
+      final events = <MutationEvent>[];
+      final sub = client.mutationEvents.listen(events.add);
+      addTearDown(sub.cancel);
+
+      await controller.mutate('x');
+
+      for (final event in events) {
+        expect(event.metadata, isNull);
+      }
     });
 
     // ── Equality ─────────────────────────────────────────────────────────

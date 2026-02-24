@@ -8,15 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-02-24
+## [0.3.0] - 2026-02-25
 
 ### Added
 
 - **`MutationBuilder<TData, TVariables, TContext>`** — `StatefulWidget` that creates and manages a `MutationController` internally; the `builder` receives the current `MutationState` and a `mutate(variables)` callback
   - `mutator` parameter (mirrors `fetcher` in `QoraBuilder`) — the async function performing the write
   - `options` parameter — `MutationOptions` with `onMutate` / `onSuccess` / `onError` / `onSettled` lifecycle hooks
+  - `metadata` parameter — optional `Map<String, Object?>?` forwarded to every `MutationEvent`; attach domain context (e.g. `{'category': 'auth', 'screen': 'login'}`) visible in DevTools without modifying the core schema
   - Rebuilds on every state transition; controller is disposed automatically on widget unmount
-  - Recreates the controller if `mutator` or `options` identity changes across widget rebuilds
+  - Recreates the controller if `mutator`, `options`, or `metadata` identity changes across widget rebuilds
+  - Passes `QoraScope.maybeOf(context)` as `tracker` automatically; safe to use without a `QoraScope` ancestor (standalone mode, no DevTools wiring)
 
 ## [0.2.0] - 2026-02-22
 
@@ -42,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BuildContext` extensions: `context.qora`, `context.qoraOrNull`
 - `FlutterLifecycleManager` — invalidates all queries when the app resumes after a configurable background pause
 
-[unreleased]: https://github.com/meragix/qora/compare/0.3.0...HEAD
-[0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
+[unreleased]: https://github.com/meragix/qora/compare/flutter_qora-v0.3.0...HEAD
+[0.3.0]: https://github.com/meragix/qora/compare/flutter_qora-v0.2.0...flutter_qora-v0.3.0
 [0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0

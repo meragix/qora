@@ -43,12 +43,18 @@ abstract interface class MutationTracker {
   /// - Transitioning **to** [MutationIdle] (via [MutationController.reset])
   ///   signals that the controller finished and should be removed from any
   ///   active snapshot.
-  /// - All other states (`Pending`, `Success`, `Failure`) signal an active
-  ///   or recently completed mutation that should appear in the snapshot.
+  /// - [MutationPending] signals a currently running mutation that should
+  ///   appear in the active snapshot.
+  /// - [MutationSuccess] / [MutationFailure] are finished states; the snapshot
+  ///   entry is purged automatically.
+  ///
+  /// [metadata] contains arbitrary key-value pairs from
+  /// [MutationController.metadata], forwarded verbatim to [MutationEvent].
   void trackMutation<TData, TVariables>(
     String id,
-    MutationState<TData, TVariables> state,
-  );
+    MutationState<TData, TVariables> state, {
+    Map<String, Object?>? metadata,
+  });
 
   /// Called when a [MutationController] is disposed.
   ///

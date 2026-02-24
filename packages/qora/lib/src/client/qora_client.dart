@@ -5,6 +5,10 @@ import 'package:qora/src/cache/query_cache.dart';
 import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/mutation/mutation_event.dart';
+import 'package:qora/src/mutation/mutation_state.dart';
+import 'package:qora/src/mutation/mutation_state_extensions.dart';
+import 'package:qora/src/mutation/mutation_tracker.dart';
 import 'package:qora/src/state/qora_state.dart';
 
 /// The central engine of Qora — manages queries, cache, deduplication,
@@ -66,7 +70,7 @@ import 'package:qora/src/state/qora_state.dart';
 ///   client.restoreQueryData(['users', userId], snapshot);
 /// }
 /// ```
-class QoraClient {
+class QoraClient implements MutationTracker {
   /// Global configuration for this client instance.
   final QoraClientConfig config;
 
@@ -77,6 +81,25 @@ class QoraClient {
   /// Enables deduplication: concurrent [fetchQuery] or [watchQuery] calls
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
+
+  // ── Mutation tracking ─────────────────────────────────────────────────────
+
+  /// Snapshot of all **currently pending** mutations, keyed by controller ID.
+  ///
+  /// Only [MutationPending] entries are kept here. Finished mutations
+  /// ([MutationSuccess] / [MutationFailure]) are purged automatically by
+  /// [trackMutation] the moment they complete, and idle/disposed controllers
+  /// are removed as well.
+  ///
+  /// Designed for DevTools: read [activeMutations] on connect to see what is
+  /// currently running, then subscribe to [mutationEvents] for real-time
+  /// updates (including completed events that have already left the snapshot).
+  final Map<String, MutationEvent> _activeMutations = {};
+
+  final StreamController<MutationEvent> _mutationBus =
+      StreamController<MutationEvent>.broadcast();
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   Timer? _evictionTimer;
   bool _isDisposed = false;
@@ -455,6 +478,85 @@ class QoraClient {
     _log('Cache cleared');
   }
 
+  // ── Mutation observability ────────────────────────────────────────────────
+
+  /// Real-time stream of all mutation state changes from tracked
+  /// [MutationController]s.
+  ///
+  /// Emits a [MutationEvent] on every state transition — including reset to
+  /// [MutationIdle]. For the current snapshot on initial connect, read
+  /// [activeMutations] first.
+  ///
+  /// ```dart
+  /// client.mutationEvents.listen((event) {
+  ///   if (event.isError) showToast('Error: ${event.error}');
+  /// });
+  /// ```
+  Stream<MutationEvent> get mutationEvents => _mutationBus.stream;
+
+  /// Snapshot of all **currently running** (pending) mutations, keyed by
+  /// controller ID.
+  ///
+  /// An entry is added when a [MutationController] transitions to
+  /// [MutationPending] and is **automatically purged** as soon as the mutation
+  /// finishes ([MutationSuccess] or [MutationFailure]). Controllers that reset
+  /// to [MutationIdle] or are disposed are also removed.
+  ///
+  /// This means [activeMutations] never accumulates "ghost" entries for
+  /// completed mutations. For completed events, subscribe to [mutationEvents].
+  ///
+  /// Use this on DevTools connect to see what is currently in-flight — then
+  /// subscribe to [mutationEvents] for real-time state changes.
+  ///
+  /// ```dart
+  /// // On DevTools connect: read pending snapshot, then subscribe to stream.
+  /// final pending = client.activeMutations;
+  /// client.mutationEvents.listen((event) { ... });
+  /// ```
+  Map<String, MutationEvent> get activeMutations =>
+      Map.unmodifiable(_activeMutations);
+
+  // ── MutationTracker (called by MutationController) ────────────────────────
+
+  @override
+  void trackMutation<TData, TVariables>(
+    String id,
+    MutationState<TData, TVariables> state, {
+    Map<String, Object?>? metadata,
+  }) {
+    if (_isDisposed || _mutationBus.isClosed) return;
+
+    final event = MutationEvent(
+      mutatorId: id,
+      status: state.status,
+      data: state.dataOrNull,
+      error: state.errorOrNull,
+      variables: state.variablesOrNull,
+      timestamp: DateTime.now(),
+      metadata: metadata,
+    );
+
+    if (state.isIdle || event.isFinished) {
+      // Idle (reset) or finished (success/failure) — purge from snapshot so
+      // activeMutations only ever contains currently-running (pending) entries.
+      // The event is still emitted on the stream so subscribers see every
+      // transition, including completions.
+      _activeMutations.remove(id);
+    } else {
+      // MutationPending — add / update in the snapshot.
+      _activeMutations[id] = event;
+    }
+
+    _mutationBus.add(event);
+    _log('Mutation [$id]: ${state.runtimeType}');
+  }
+
+  @override
+  void untrackMutation(String id) {
+    // Called on dispose — remove silently, no event emitted.
+    _activeMutations.remove(id);
+  }
+
   // ── Inspection ───────────────────────────────────────────────────────────
 
   /// All currently cached query keys (normalised).
@@ -468,16 +570,17 @@ class QoraClient {
   /// ```
   Iterable<List<dynamic>> get cachedKeys => _cache.keys;
 
-  /// Returns a debug snapshot of the current cache state.
+  /// Returns a debug snapshot of the current cache and mutation state.
   ///
   /// ```dart
   /// print(client.debugInfo());
-  /// // {total_queries: 5, active_queries: 2, pending_requests: 1, ...}
+  /// // {total_queries: 5, active_queries: 2, pending_requests: 1, active_mutations: 1}
   /// ```
   Map<String, dynamic> debugInfo() {
     return {
       ..._cache.debugInfo(),
       'pending_requests': _pendingRequests.length,
+      'active_mutations': _activeMutations.length,
     };
   }
 
@@ -499,6 +602,8 @@ class QoraClient {
     _evictionTimer = null;
     _cache.clear();
     _pendingRequests.clear();
+    _activeMutations.clear();
+    _mutationBus.close();
     _log('QoraClient disposed');
   }
 

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-02-24
+## [0.3.0] - 2026-02-25
 
 ### Added
 
@@ -21,6 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `onSettled(data, error, variables, context)` — called after either outcome
   - `retryCount` / `retryDelay` — optional retry with exponential backoff (default: 0 retries)
 - **`MutatorFunction<TData, TVariables>`** typedef — mirrors `QueryFunction<T>` for consistency (`mutator` parameter naming mirrors `fetcher`)
+- **`MutationTracker`** — abstract interface implemented by `QoraClient`; decouples `MutationController` from the client to prevent circular imports
+- **`MutationEvent`** — type-erased event emitted on every mutation state transition:
+  - `mutatorId` — stable `mutation_N` identifier correlating events to a specific controller
+  - `status` / `isIdle` / `isPending` / `isSuccess` / `isError` / `isFinished` — coarse-grained status helpers
+  - `data`, `error`, `variables` — type-erased payload
+  - `metadata` — optional `Map<String, Object?>` forwarded from `MutationController.metadata`; attach domain context (e.g. `{'category': 'auth'}`) without modifying the core schema
+  - `timestamp` — emission time
+- **`QoraClient` implements `MutationTracker`** — global DevTools observability for all tracked mutations:
+  - `mutationEvents` — `Stream<MutationEvent>` of every state transition from all tracked controllers
+  - `activeMutations` — snapshot `Map<String, MutationEvent>` of **currently running** (pending) mutations only; finished entries are auto-purged on `Success`/`Failure`, preventing memory accumulation of "ghost" entries
+  - `debugInfo()` now includes `active_mutations` count
+- **`MutationController.metadata`** — optional `Map<String, Object?>?` forwarded verbatim to every `MutationEvent`; enables DevTools labelling without schema changes
+- **`MutationController.id`** — unique `mutation_N` identifier (monotonically increasing counter)
 - `MutationStateExtensions` — `fold<R>()` exhaustive mapper and `status` getter returning `MutationStatus` enum
 - `MutationStatus` enum — coarse-grained `idle | pending | success | error` values with boolean getters
 - `MutationStateStreamExtensions` — `whereSuccess()`, `whereError()`, `dataOrNull()` stream operators
@@ -28,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`MutationFunction` renamed to `MutatorFunction`** — aligns naming with the `fetcher`/`mutator` parameter convention used throughout the API
+
+### Fixed
+
+- **`MutationController.stream` race condition** — the previous `async*` implementation started the generator in the next microtask, causing events emitted before the first microtask (e.g. calling `mutate` synchronously after `listen`) to be lost on the broadcast stream. The stream getter now uses a `StreamController` whose `onListen` callback runs synchronously, capturing the current state and subscribing to the broadcast stream with no timing gap
 
 ## [0.2.0] - 2026-02-22
 
@@ -67,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/0.3.0...HEAD
-[0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
+[unreleased]: https://github.com/meragix/qora/compare/qora-v0.3.0...HEAD
+[0.3.0]: https://github.com/meragix/qora/compare/qora-v0.2.0...qora-v0.3.0
 [0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0

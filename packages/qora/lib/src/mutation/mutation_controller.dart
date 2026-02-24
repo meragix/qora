@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:qora/src/mutation/mutation_options.dart';
 import 'package:qora/src/mutation/mutation_state.dart';
+import 'package:qora/src/mutation/mutation_tracker.dart';
 import 'package:qora/src/utils/query_function.dart';
 
 /// Controls and tracks the lifecycle of a single mutation.
@@ -22,17 +23,14 @@ import 'package:qora/src/utils/query_function.dart';
 ///   mutator: (title) => api.createPost(title),
 /// );
 ///
-/// // Trigger the mutation
 /// await controller.mutate('New Post');
 ///
-/// // Observe state changes
 /// controller.stream.listen((state) {
 ///   if (state is MutationSuccess<Post, String>) {
 ///     print('Created: ${state.data}');
 ///   }
 /// });
 ///
-/// // Clean up
 /// controller.dispose();
 /// ```
 ///
@@ -45,18 +43,35 @@ import 'package:qora/src/utils/query_function.dart';
 ///     onMutate: (title) async {
 ///       final prev = client.getQueryData<List<Post>>(['posts']);
 ///       client.setQueryData<List<Post>>(['posts'], [...?prev, Post.optimistic(title)]);
-///       return prev; // snapshot saved as TContext
+///       return prev;
 ///     },
-///     onError: (err, variables, prev) async {
-///       client.restoreQueryData(['posts'], prev); // rollback
-///     },
-///     onSuccess: (post, variables, _) async {
-///       client.invalidate(['posts']); // refetch
-///     },
+///     onError: (err, variables, prev) async => client.restoreQueryData(['posts'], prev),
+///     onSuccess: (post, variables, _) async => client.invalidate(['posts']),
 ///   ),
 /// );
 /// ```
+///
+/// ## Observability
+///
+/// Pass a [MutationTracker] (typically [QoraClient]) to wire this controller
+/// into the global mutation event bus. [MutationBuilder] does this
+/// automatically.
+///
+/// ```dart
+/// MutationController(
+///   mutator: ...,
+///   tracker: client, // QoraClient implements MutationTracker
+/// )
+/// ```
 class MutationController<TData, TVariables, TContext> {
+  static int _counter = 0;
+
+  /// Unique identifier for this controller instance.
+  ///
+  /// Format: `mutation_N` (monotonically increasing).
+  /// Used as the key in [QoraClient.activeMutations] and [MutationEvent.mutatorId].
+  final String id = 'mutation_${++_counter}';
+
   /// The async function that performs the mutation.
   ///
   /// Named [mutator] to mirror the [fetcher] naming used in queries.
@@ -65,7 +80,29 @@ class MutationController<TData, TVariables, TContext> {
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
 
-  final StreamController<MutationState<TData, TVariables>> _controller =
+  /// Optional tracker (typically [QoraClient]) that receives state-change
+  /// notifications for DevTools observability.
+  ///
+  /// When null, this controller operates in standalone mode with no global
+  /// visibility. [MutationBuilder] sets this automatically via
+  /// [QoraScope.maybeOf], so it is safe to use without a [QoraScope] ancestor.
+  final MutationTracker? tracker;
+
+  /// Arbitrary key-value pairs forwarded to every [MutationEvent] emitted by
+  /// this controller.
+  ///
+  /// Use this to attach domain context that survives up to the DevTools
+  /// event bus without modifying the core schema:
+  ///
+  /// ```dart
+  /// MutationController(
+  ///   mutator: authApi.login,
+  ///   metadata: {'category': 'auth', 'screen': 'login'},
+  /// )
+  /// ```
+  final Map<String, Object?>? metadata;
+
+  final StreamController<MutationState<TData, TVariables>> _streamController =
       StreamController<MutationState<TData, TVariables>>.broadcast();
 
   MutationState<TData, TVariables> _state =
@@ -76,33 +113,63 @@ class MutationController<TData, TVariables, TContext> {
   MutationController({
     required this.mutator,
     this.options,
+    this.tracker,
+    this.metadata,
   });
 
   /// The current state of this mutation.
   MutationState<TData, TVariables> get state => _state;
 
-  /// A broadcast stream of state changes.
+  /// A stream of state changes.
   ///
-  /// Each new subscriber immediately receives the current state, then all
-  /// subsequent transitions.
-  Stream<MutationState<TData, TVariables>> get stream async* {
-    yield _state;
-    yield* _controller.stream;
+  /// Each new subscriber **immediately** receives the current state (synchronous
+  /// capture at subscribe time), then every subsequent transition.
+  ///
+  /// Multiple concurrent subscriptions are supported — each gets its own
+  /// single-subscription stream backed by the shared broadcast controller.
+  ///
+  /// ### Why not `async*`?
+  ///
+  /// An `async*` generator starts executing in the *next microtask*, not
+  /// synchronously on `listen()`. If [mutate] is called before the first
+  /// microtask fires, `_streamController.add(Pending)` runs before
+  /// `yield* _streamController.stream` has subscribed, causing the event to be
+  /// lost on the broadcast stream. The `StreamController.onListen` callback
+  /// runs synchronously inside `listen()`, closing that window.
+  Stream<MutationState<TData, TVariables>> get stream {
+    StreamSubscription<MutationState<TData, TVariables>>? forwardSub;
+    // `late` is required: sc is referenced inside its own onListen callback.
+    late final StreamController<MutationState<TData, TVariables>> sc;
+    sc = StreamController<MutationState<TData, TVariables>>(
+      onListen: () {
+        // Capture and emit current state synchronously at subscribe time.
+        sc.add(_state);
+        // Forward all future broadcast events — subscription set up before
+        // listen() returns, so no events can slip through the gap.
+        forwardSub = _streamController.stream.listen(
+          sc.add,
+          onError: sc.addError,
+          onDone: sc.close,
+        );
+      },
+      onCancel: () => forwardSub?.cancel(),
+    );
+    return sc.stream;
   }
 
   /// Executes the mutation with the given [variables].
   ///
   /// State transitions:
-  /// 1. Calls [MutationOptions.onMutate] (if provided) — optimistic update.
+  /// 1. Calls [MutationOptions.onMutate] — optimistic update + snapshot.
   /// 2. Transitions to [MutationPending].
-  /// 3. On success → [MutationSuccess], then [MutationOptions.onSuccess],
-  ///    then [MutationOptions.onSettled].
-  /// 4. On failure → [MutationFailure], then [MutationOptions.onError]
-  ///    (rollback), then [MutationOptions.onSettled].
+  /// 3. On success → [MutationSuccess], [MutationOptions.onSuccess],
+  ///    [MutationOptions.onSettled].
+  /// 4. On failure → [MutationFailure], [MutationOptions.onError] (rollback),
+  ///    [MutationOptions.onSettled].
   ///
   /// Returns the result data on success, or `null` on failure.
   /// Errors are captured in [MutationFailure] state and do **not** propagate
-  /// to the caller — check [MutationState.errorOrNull] if needed.
+  /// to the caller.
   ///
   /// Throws [StateError] if the controller has been disposed.
   Future<TData?> mutate(TVariables variables) async {
@@ -168,22 +235,26 @@ class MutationController<TData, TVariables, TContext> {
 
   /// Resets the state back to [MutationIdle].
   ///
+  /// Also removes this controller from the tracker's active snapshot.
   /// Useful after displaying an error to allow the user to retry.
   void reset() {
     _assertNotDisposed();
     _setState(
-      const MutationIdle<Never, Never>()
-          as MutationState<TData, TVariables>,
+      const MutationIdle<Never, Never>() as MutationState<TData, TVariables>,
     );
   }
 
   /// Disposes this controller and closes the internal stream.
   ///
+  /// Silently removes the controller from the tracker's snapshot without
+  /// emitting a final event.
+  ///
   /// After [dispose], any call to [mutate] or [reset] will throw.
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
-    _controller.close();
+    tracker?.untrackMutation(id);
+    _streamController.close();
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
@@ -203,8 +274,7 @@ class MutationController<TData, TVariables, TContext> {
         lastStackTrace = st;
 
         if (attempt < retryCount) {
-          // Exponential backoff: 1s, 2s, 4s, …
-          final delay = retryDelay * (1 << attempt);
+          final delay = retryDelay * (1 << attempt); // exponential backoff
           await Future<void>.delayed(delay);
         }
       }
@@ -217,7 +287,8 @@ class MutationController<TData, TVariables, TContext> {
   void _setState(MutationState<TData, TVariables> newState) {
     if (_isDisposed) return;
     _state = newState;
-    _controller.add(newState);
+    _streamController.add(newState);
+    tracker?.trackMutation(id, newState, metadata: metadata);
   }
 
   void _assertNotDisposed() {

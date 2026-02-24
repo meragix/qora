@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_qora/src/widgets/qora_scope.dart';
 import 'package:qora/qora.dart';
 
 /// A widget that manages a [MutationController] and rebuilds whenever the
@@ -81,6 +82,20 @@ class MutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
 
+  /// Arbitrary key-value pairs forwarded to every [MutationEvent] emitted by
+  /// this controller.
+  ///
+  /// Use this to label mutations with domain context visible in DevTools:
+  ///
+  /// ```dart
+  /// MutationBuilder(
+  ///   mutator: authApi.login,
+  ///   metadata: {'category': 'auth', 'screen': 'login'},
+  ///   builder: (context, state, mutate) { ... },
+  /// )
+  /// ```
+  final Map<String, Object?>? metadata;
+
   /// Builds the widget tree from the current [MutationState].
   ///
   /// The [mutate] callback triggers the mutation with the given variables.
@@ -97,6 +112,7 @@ class MutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
     required this.mutator,
     required this.builder,
     this.options,
+    this.metadata,
   });
 
   @override
@@ -124,9 +140,10 @@ class _MutationBuilderState<TData, TVariables, TContext>
     MutationBuilder<TData, TVariables, TContext> oldWidget,
   ) {
     super.didUpdateWidget(oldWidget);
-    // Recreate the controller only if the mutator itself changed identity.
+    // Recreate the controller only if identity-relevant parameters changed.
     if (!identical(widget.mutator, oldWidget.mutator) ||
-        !identical(widget.options, oldWidget.options)) {
+        !identical(widget.options, oldWidget.options) ||
+        !identical(widget.metadata, oldWidget.metadata)) {
       _controller.dispose();
       _subscription?.cancel();
       _createController();
@@ -145,6 +162,8 @@ class _MutationBuilderState<TData, TVariables, TContext>
     _controller = MutationController<TData, TVariables, TContext>(
       mutator: widget.mutator,
       options: widget.options,
+      tracker: QoraScope.maybeOf(context),
+      metadata: widget.metadata,
     );
     _state = _controller.state;
   }

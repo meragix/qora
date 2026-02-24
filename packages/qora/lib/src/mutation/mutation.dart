@@ -31,6 +31,8 @@
 library;
 
 export 'mutation_controller.dart';
+export 'mutation_event.dart';
 export 'mutation_options.dart';
 export 'mutation_state.dart';
 export 'mutation_state_extensions.dart';
+export 'mutation_tracker.dart';
