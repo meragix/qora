@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BuildContext` extensions: `context.qora`, `context.qoraOrNull`
 - `FlutterLifecycleManager` — invalidates all queries when the app resumes after a configurable background pause
 
-[unreleased]: https://github.com/meragix/qora/compare/flutter_qora-v0.3.0...HEAD
-[0.3.0]: https://github.com/meragix/qora/compare/flutter_qora-v0.2.0...flutter_qora-v0.3.0
+[unreleased]: https://github.com/meragix/qora/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0

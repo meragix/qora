@@ -16,12 +16,12 @@ Widget _wrap(Widget child) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
-  group('MutationBuilder', () {
+  group('QoraMutationBuilder', () {
     testWidgets('renders with initial MutationIdle state', (tester) async {
       await tester.pumpWidget(
         _wrap(
-          MutationBuilder<String, String, void>(
-            mutator: (v) async => v,
+          QoraMutationBuilder<String, String, void>(
+            mutationFn: (v) async => v,
             builder: (context, state, mutate) {
               return Text(state.isIdle ? 'idle' : 'other');
             },
@@ -35,8 +35,8 @@ void main() {
     testWidgets('transitions to success state after mutate', (tester) async {
       await tester.pumpWidget(
         _wrap(
-          MutationBuilder<String, String, void>(
-            mutator: (title) async => 'created:$title',
+          QoraMutationBuilder<String, String, void>(
+            mutationFn: (title) async => 'created:$title',
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -67,8 +67,8 @@ void main() {
     testWidgets('transitions to failure state on error', (tester) async {
       await tester.pumpWidget(
         _wrap(
-          MutationBuilder<String, String, void>(
-            mutator: (_) async => throw Exception('boom'),
+          QoraMutationBuilder<String, String, void>(
+            mutationFn: (_) async => throw Exception('boom'),
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -95,8 +95,8 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         _wrap(
-          MutationBuilder<String, String, void>(
-            mutator: (v) async => v,
+          QoraMutationBuilder<String, String, void>(
+            mutationFn: (v) async => v,
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -125,8 +125,8 @@ void main() {
 
       await tester.pumpWidget(
         _wrap(
-          MutationBuilder<String, String, void>(
-            mutator: (v) async {
+          QoraMutationBuilder<String, String, void>(
+            mutationFn: (v) async {
               mutateCallCount++;
               await Future<void>.delayed(const Duration(milliseconds: 50));
               return v;
@@ -165,8 +165,8 @@ void main() {
           home: QoraScope(
             client: client,
             child: Scaffold(
-              body: MutationBuilder<String, String, List<String>?>(
-                mutator: (_) async => throw Exception('server error'),
+              body: QoraMutationBuilder<String, String, List<String>?>(
+                mutationFn: (_) async => throw Exception('server error'),
                 options: MutationOptions(
                   onMutate: (item) async {
                     final prev =
