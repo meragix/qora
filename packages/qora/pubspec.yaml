@@ -1,6 +1,6 @@
 name: qora
 description: "A powerful async state management library for Dart, inspired by TanStack Query"
-version: 0.2.0
+version: 0.3.0
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora
 issue_tracker: https://github.com/meragix/qora/issues
