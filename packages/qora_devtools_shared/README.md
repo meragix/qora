@@ -1,39 +1,111 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# qora_devtools_shared
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Shared protocol package for Qora DevTools.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+This package contains the transport contracts used by:
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- `qora_devtools_extension` (runtime bridge, app side),
+- `qora_devtools_ui` (Flutter DevTools extension UI, client side).
+
+It is intentionally Flutter-agnostic and focuses on:
+
+- typed events,
+- typed commands,
+- JSON codecs,
+- VM extension method/event constants,
+- cache/mutation/query snapshots.
+
+## Why this package exists
+
+`qora` (the core state-management package) should not depend on visual tooling.
+`qora_devtools_shared` provides a stable protocol boundary so core, extension,
+and UI can evolve independently without circular imports.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- Event contracts:
+  - `QoraEvent`,
+  - `QueryEvent`,
+  - `MutationEvent`,
+  - `GenericQoraEvent` fallback for forward compatibility.
+- Command contracts:
+  - `RefetchCommand`,
+  - `InvalidateCommand`,
+  - `RollbackOptimisticCommand`,
+  - `GetCacheSnapshotCommand`,
+  - `GetPayloadChunkCommand`.
+- Codecs:
+  - `EventCodec`,
+  - `CommandCodec`.
+- Protocol constants:
+  - `QoraExtensionMethods` (`ext.qora.*`),
+  - `QoraExtensionEvents` (`qora:event`).
+- Snapshot DTOs:
+  - `QuerySnapshot`,
+  - `MutationSnapshot`,
+  - `CacheSnapshot`.
 
-## Getting started
+## Installation
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```yaml
+dependencies:
+  qora_devtools_shared:
+    path: ../qora_devtools_shared
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+### Decode incoming VM extension event
 
 ```dart
-const like = 'sample';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+void onRawEvent(Map<String, Object?> raw) {
+  final event = EventCodec.decode(raw);
+
+  if (event is QueryEvent) {
+    print('Query event: ${event.type} for ${event.key}');
+  }
+}
 ```
 
-## Additional information
+### Build and send command from UI
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+final command = RefetchCommand(queryKey: 'todos?page=1');
+
+final extensionName = '${QoraExtensionMethods.prefix}.${command.method}';
+final params = command.params;
+```
+
+### Snapshot serialization
+
+```dart
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+final snapshot = CacheSnapshot(
+  queries: const <QuerySnapshot>[],
+  mutations: const <MutationSnapshot>[],
+  emittedAtMs: DateTime.now().millisecondsSinceEpoch,
+);
+
+final json = snapshot.toJson();
+final restored = CacheSnapshot.fromJson(json);
+```
+
+## Protocol notes
+
+- Event payloads should stay lightweight by default.
+- Large data should be represented through metadata
+  (`hasLargePayload`, `payloadId`, `totalChunks`) and fetched lazily with
+  `GetPayloadChunkCommand`.
+- Unknown event kinds are decoded as `GenericQoraEvent` to avoid hard failures
+  when producer and consumer versions are not perfectly aligned.
+
+## Stability and versioning
+
+- Follow semantic versioning.
+- Breaking protocol changes must increment the major version.
+- Adding new event/command types should be backward-compatible when possible.

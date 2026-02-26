@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('EventCodec', () {
