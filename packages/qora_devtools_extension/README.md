@@ -1,39 +1,112 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# qora_devtools_extension
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Runtime VM service bridge for Qora DevTools.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+This package runs inside your app isolate and exposes Qora runtime activity to
+Flutter DevTools through Dart VM Service Extensions.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+It is responsible for:
+
+- publishing events (`developer.postEvent`),
+- registering `ext.qora.*` extension methods,
+- handling UI commands (refetch, invalidate, rollback),
+- serving cache snapshots,
+- lazy-loading large JSON payloads via chunked transport.
+
+## Architecture role
+
+- `qora`: core state management runtime.
+- `qora_devtools_shared`: protocol contracts (events, commands, codecs).
+- `qora_devtools_extension` (this package): runtime-side adapter/bridge.
+- `qora_devtools_ui`: DevTools extension client UI.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- `VmTracker` implementation of `QoraTracker`.
+- `VmEventPusher` abstraction around `developer.postEvent`.
+- `ExtensionRegistrar` + `ExtensionHandlers` for VM extension endpoints:
+  - `ext.qora.refetch`
+  - `ext.qora.invalidate`
+  - `ext.qora.rollbackOptimistic`
+  - `ext.qora.getCacheSnapshot`
+  - `ext.qora.getPayloadChunk`
+  - legacy alias: `ext.qora.getPayload`
+- Lazy payload transport:
+  - chunking (`PayloadChunker`),
+  - bounded in-memory storage (`PayloadStore`),
+  - retrieval orchestration (`LazyPayloadManager`).
 
-## Getting started
+## Quick start
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+### 1) Implement a tracking gateway
 
 ```dart
-const like = 'sample';
+import 'package:qora_devtools_extension/qora_devtools_extension.dart';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+class AppTrackingGateway implements TrackingGateway {
+  @override
+  Future<bool> refetch(String queryKey) async {
+    // call your runtime/client API
+    return true;
+  }
+
+  @override
+  Future<bool> invalidate(String queryKey) async {
+    return true;
+  }
+
+  @override
+  Future<bool> rollbackOptimistic(String queryKey) async {
+    return true;
+  }
+
+  @override
+  Future<CacheSnapshot> getCacheSnapshot() async {
+    return const CacheSnapshot(
+      queries: <QuerySnapshot>[],
+      mutations: <MutationSnapshot>[],
+      emittedAtMs: 0,
+    );
+  }
+}
 ```
 
-## Additional information
+### 2) Wire and register VM extensions
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```dart
+import 'package:qora_devtools_extension/qora_devtools_extension.dart';
+
+void setupQoraDevtoolsBridge() {
+  final lazy = LazyPayloadManager();
+  final gateway = AppTrackingGateway();
+
+  final handlers = ExtensionHandlers(
+    gateway: gateway,
+    lazyPayloadManager: lazy,
+  );
+
+  const pusher = VmEventPusher();
+  final tracker = VmTracker(
+    lazyPayloadManager: lazy,
+    eventPusher: pusher,
+  );
+
+  final registrar = ExtensionRegistrar(handlers: handlers);
+  registrar.registerAll();
+
+  // Inject `tracker` into your Qora client/runtime.
+}
+```
+
+## Memory safety notes
+
+- Event history is bounded (ring buffer).
+- Lazy payloads are bounded by byte budget and TTL.
+- Store eviction uses LRU order under memory pressure.
+- `VmTracker.dispose()` clears local retained state.
+
+## Compatibility notes
+
+- Protocol names are sourced from `qora_devtools_shared`.
+- Legacy `ext.qora.getPayload` remains registered for backward compatibility.
