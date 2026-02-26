@@ -1,39 +1,57 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# qora_devtools_ui
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Flutter Web DevTools extension UI for Qora.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+This package is the client-side interface rendered inside Flutter DevTools
+(VS Code / IntelliJ / browser DevTools). It consumes the protocol defined in
+`qora_devtools_shared` and communicates with the app runtime through Dart VM
+service extensions exposed by `qora_devtools_extension`.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## Responsibilities
 
-## Features
+- Listen to runtime extension events (`qora:event`).
+- Decode and render query/mutation/optimistic timeline data.
+- Send commands to runtime (`refetch`, `invalidate`, etc.).
+- Lazy-load large payloads in chunks for cache inspection.
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+## Architecture
 
-## Getting started
+- Data:
+  - `VmServiceClient`
+  - `EventRepositoryImpl`
+  - `PayloadRepositoryImpl`
+- Domain:
+  - repository contracts
+  - use-cases (`ObserveEventsUseCase`, `RefetchQueryUseCase`, `FetchLargePayloadUseCase`)
+- UI:
+  - app shell + screens
+  - controllers (`TimelineController`, `CacheController`)
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+## Entry point
 
 ```dart
-const like = 'sample';
+import 'package:devtools_extensions/devtools_extensions.dart';
+import 'package:qora_devtools_ui/src/ui/qora_devtools_app.dart';
+
+void main() {
+  runApp(const DevToolsExtension(child: QoraDevToolsApp()));
+}
 ```
 
-## Additional information
+## Runtime dependencies
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+This package expects the target app to register VM service methods:
+
+- `ext.qora.refetch`
+- `ext.qora.invalidate`
+- `ext.qora.rollbackOptimistic`
+- `ext.qora.getCacheSnapshot`
+- `ext.qora.getPayloadChunk`
+
+Those methods are typically provided by `qora_devtools_extension`.
+
+## Notes
+
+- Payload-heavy query data should be fetched lazily using `payloadId` and
+  `totalChunks` metadata.
+- Unknown event kinds are safely handled by the shared protocol fallback model.

@@ -1,0 +1,3 @@
+extensions:
+  - name: qora
+    path: ../../qora_devtools_ui   # chemin relatif vers l'UI

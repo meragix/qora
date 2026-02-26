@@ -12,6 +12,9 @@ dev_dependencies:
 workspace:
   - packages/qora
   - packages/flutter_qora
+  - packages/qora_devtools_extension
+  - packages/qora_devtools_ui
+  - packages/qora_devtools_shared
 
 melos:
   command:
@@ -49,10 +52,27 @@ melos:
         melos exec -- dart test --coverage=coverage
         melos exec -- dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
 
+    # Build l'UI DevTools Web + copie vers le package noyau
+    build:devtools:
+      description: Build DevTools Web UI and copy to qora package
+      run: |
+        cd packages/qora_devtools_ui && flutter build web \
+          --output build/devtools_extension &&
+        cp -r build/devtools_extension \
+          ../qora/extension/devtools/build
+
     # Publishing
     publish:check:
       description: Dry run publish
       run: melos exec -- dart pub publish --dry-run
+
+    # Publication dans l'ordre correct des dépendances
+    publish:
+      run: melos exec --depends-on="qora_devtools_shared" -- dart pub publish
+
+    # Vérification des imports circulaires
+    check:imports:
+      run: dart run import_lint:main
 
     # Version management
     version:

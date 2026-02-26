@@ -1,0 +1,6 @@
+name: Qora DevTools
+issueTracker: https://github.com/meragix/qora/issues
+extensions:
+  - name: qora
+    description: Inspect queries, mutations, cache & optimistic updates
+    icon: qora_logo.png

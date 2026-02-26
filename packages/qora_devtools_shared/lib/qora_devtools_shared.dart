@@ -16,6 +16,7 @@ library;
 export 'src/commands/get_cache_snapshot_command.dart';
 export 'src/commands/get_playload_chunk_command.dart';
 export 'src/commands/invalidate_command.dart';
+export 'src/commands/qora_command.dart';
 export 'src/commands/refetch_command.dart';
 export 'src/commands/rollback_optimic_command.dart';
 

@@ -57,5 +57,6 @@ export 'src/managers/connectivity_manager.dart';
 export 'src/managers/lifecycle_manager.dart';
 export 'src/mutation/mutation.dart';
 export 'src/state/state.dart';
+export 'src/tracking/qora_tracker.dart';
 export 'src/utils/qora_exception.dart';
 export 'src/utils/query_function.dart';
