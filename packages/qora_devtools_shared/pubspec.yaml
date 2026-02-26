@@ -1,10 +1,10 @@
 name: qora_devtools_shared
 description: Shared protocol contracts, models, and codecs for Qora DevTools.
-version: 0.0.1
+version: 0.1.0
 publish_to: none
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
+  sdk: ">=3.5.0 <4.0.0"
 
 resolution: workspace
 
