@@ -11,7 +11,7 @@ jobs:
   qora:
     uses: ./.github/workflows/_dart_package.yml
     with:
-      package: packages/dart/qora
+      package: packages/dart
     secrets: inherit
 
   qora_devtools_shared:
@@ -32,14 +32,14 @@ jobs:
   flutter_qora:
     uses: ./.github/workflows/_flutter_package.yml
     with:
-      package: packages/flutter/flutter_qora
+      package: packages/flutter
     needs: qora
     secrets: inherit
 
   qora_hooks:
     uses: ./.github/workflows/_flutter_package.yml
     with:
-      package: packages/flutter/qora_hooks
+      package: packages/hooks
     needs: flutter_qora
     secrets: inherit
 
