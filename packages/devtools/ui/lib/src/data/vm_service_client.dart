@@ -10,7 +10,8 @@ import 'package:vm_service/vm_service.dart';
 /// - command dispatch to `ext.qora.*` methods,
 /// - stream exposure for decoded [QoraEvent] instances.
 class VmServiceClient {
-  final StreamController<QoraEvent> _eventController = StreamController<QoraEvent>.broadcast();
+  final StreamController<QoraEvent> _eventController =
+      StreamController<QoraEvent>.broadcast();
 
   VmService? _service;
   String? _isolateId;
@@ -59,7 +60,8 @@ class VmServiceClient {
       args: command.params,
     );
 
-    return Map<String, dynamic>.from(response.json ?? const <String, dynamic>{});
+    return Map<String, dynamic>.from(
+        response.json ?? const <String, dynamic>{});
   }
 
   /// Disconnects from VM service and clears event subscriptions.

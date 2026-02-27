@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:qora_devtools_ui/src/data/event_repository_impl.dart';
 import 'package:qora_devtools_ui/src/data/payload_repository_impl.dart';
@@ -56,8 +55,8 @@ class _QoraDevToolsAppState extends State<QoraDevToolsApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: DevToolsColorScheme.light.materialTheme,
-      darkTheme: DevToolsColorScheme.dark.materialTheme,
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
       home: AppShell(
         timelineController: _timelineController,
         cacheController: _cacheController,

@@ -16,7 +16,7 @@ class DevtoolsHeader extends StatelessWidget {
     return Row(
       children: <Widget>[
         const Text(
-          'Qora Devtools',
+          'Qora DevTools',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(width: 12),

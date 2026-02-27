@@ -10,7 +10,8 @@ class PayloadRepositoryImpl implements PayloadRepository {
   final VmServiceClient _vmClient;
 
   /// Creates a payload repository.
-  const PayloadRepositoryImpl({required VmServiceClient vmClient}) : _vmClient = vmClient;
+  const PayloadRepositoryImpl({required VmServiceClient vmClient})
+      : _vmClient = vmClient;
 
   @override
   Future<Object?> fetchPayload({
