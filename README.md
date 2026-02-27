@@ -51,13 +51,13 @@ QoraBuilder<User>(
 
 This monorepo is organized into three domains.
 
-### `packages/dart/` — Pure Dart, no Flutter dependency
+### `packages/dart` — Pure Dart, no Flutter dependency
 
 | Package | Description |
 | ------- | ----------- |
 | [`qora`](./packages/dart) | Query client, cache, mutations, optimistic updates. Framework-agnostic — works in Flutter, CLI, or backend. |
 
-### `packages/flutter/` — Flutter widgets and integrations
+### `packages/flutter` — Flutter widgets and integrations
 
 | Package | Description |
 | ------- | ----------- |
