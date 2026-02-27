@@ -28,6 +28,7 @@ export 'src/codec/event_codec.dart';
 export 'src/events/mutation_event.dart';
 export 'src/events/qora_event.dart';
 export 'src/events/query_event.dart';
+export 'src/events/timeline_event.dart';
 
 // Models
 export 'src/models/cache_snapshot.dart';

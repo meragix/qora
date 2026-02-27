@@ -61,7 +61,7 @@ This monorepo is organized into three domains.
 
 | Package | Description |
 | ------- | ----------- |
-| [`qora_flutter`](./packages/flutter) | `QoraBuilder`, `QoraScope`, mutation builders. Depends on `qora`. |
+| [`flutter_qora`](./packages/flutter) | `QoraBuilder`, `QoraScope`, mutation builders. Depends on `qora`. |
 
 ### `packages/devtools/` — Debug tooling, never included in production builds
 
