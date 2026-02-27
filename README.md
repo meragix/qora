@@ -49,28 +49,13 @@ QoraBuilder<User>(
 
 ## Packages
 
-This monorepo is organized into three domains.
-
-### `packages/dart` — Pure Dart, no Flutter dependency
-
-| Package | Description |
-| ------- | ----------- |
-| [`qora`](./packages/dart) | Query client, cache, mutations, optimistic updates. Framework-agnostic — works in Flutter, CLI, or backend. |
-
-### `packages/flutter` — Flutter widgets and integrations
-
-| Package | Description |
-| ------- | ----------- |
-| [`flutter_qora`](./packages/flutter) | `QoraBuilder`, `QoraScope`, mutation builders. Depends on `qora`. |
-
-### `packages/devtools/` — Debug tooling, never included in production builds
-
-| Package | Description |
-| ------- | ----------- |
-| [`qora_devtools_shared`](./packages/devtools/shared) | Shared protocol — events, models, commands and JSON codecs. Pure Dart. |
-| [`qora_devtools_extension`](./packages/devtools/extension) | Dart VM Service bridge. Pushes events to the IDE DevTools panel. |
-| [`qora_devtools_ui`](./packages/devtools/ui) | Official IDE extension — native tab in VS Code and IntelliJ. |
-| [`qora_devtools_overlay`](./packages/devtools/overlay) | In-app overlay panel (debug only). Cache inspector, mutations timeline, optimistic updates, refetch actions. |
+| Package | CI | Likes | Downloads | Analysis |
+| ------- | -- | ----- | --------- | -------- |
+| [![qora](https://img.shields.io/pub/v/qora.svg?label=qora)](https://pub.dev/packages/qora) | [![build](https://github.com/meragix/qora/actions/workflows/dart.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/dart.yml) | [![likes](https://img.shields.io/pub/likes/qora)](https://pub.dev/packages/qora/score) | [![dm](https://img.shields.io/pub/dm/qora)](https://pub.dev/packages/qora/score) | [![pub points](https://img.shields.io/pub/points/qora)](https://pub.dev/packages/qora/score) |
+| [![flutter_qora](https://img.shields.io/pub/v/flutter_qora.svg?label=flutter_qora)](https://pub.dev/packages/flutter_qora) | [![build](https://github.com/meragix/qora/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/flutter.yml) | [![likes](https://img.shields.io/pub/likes/flutter_qora)](https://pub.dev/packages/flutter_qora/score) | [![dm](https://img.shields.io/pub/dm/flutter_qora)](https://pub.dev/packages/flutter_qora/score) | [![pub points](https://img.shields.io/pub/points/flutter_qora)](https://pub.dev/packages/flutter_qora/score) |
+| [![qora_hooks](https://img.shields.io/pub/v/qora_hooks.svg?label=qora_hooks)](https://pub.dev/packages/qora_hooks) | [![build](https://github.com/meragix/qora/actions/workflows/hooks.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/hooks.yml) | [![likes](https://img.shields.io/pub/likes/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![dm](https://img.shields.io/pub/dm/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![pub points](https://img.shields.io/pub/points/qora_hooks)](https://pub.dev/packages/qora_hooks/score) |
+| [![qora_devtools_extension](https://img.shields.io/pub/v/qora_devtools_extension.svg?label=qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension) | [![build](https://github.com/meragix/qora/actions/workflows/extension.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/extension.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) |
+| [![qora_devtools_overlay](https://img.shields.io/pub/v/qora_devtools_overlay.svg?label=qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay) | [![build](https://github.com/meragix/qora/actions/workflows/overlay.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/overlay.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) |
 
 ---
 
