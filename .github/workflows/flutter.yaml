@@ -1,0 +1,23 @@
+name: flutter_qora
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/flutter/**"
+      - "packages/dart/**"
+      - ".github/workflows/flutter.yml"
+      - ".github/workflows/_flutter_package.yml"
+  pull_request:
+    paths:
+      - "packages/flutter/**"
+      - "packages/dart/**"
+      - ".github/workflows/flutter.yml"
+      - ".github/workflows/_flutter_package.yml"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/flutter
+    secrets: inherit

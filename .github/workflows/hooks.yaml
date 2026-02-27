@@ -1,0 +1,25 @@
+name: qora_hooks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/hooks/**"
+      - "packages/flutter/**"
+      - "packages/dart/**"
+      - ".github/workflows/hooks.yml"
+      - ".github/workflows/_flutter_package.yml"
+  pull_request:
+    paths:
+      - "packages/hooks/**"
+      - "packages/flutter/**"
+      - "packages/dart/**"
+      - ".github/workflows/hooks.yml"
+      - ".github/workflows/_flutter_package.yml"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/hooks
+    secrets: inherit

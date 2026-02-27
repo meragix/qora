@@ -1,0 +1,25 @@
+name: qora_devtools_overlay
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/devtools/overlay/**"
+      - "packages/devtools/shared/**"
+      - "packages/dart/**"
+      - ".github/workflows/overlay.yml"
+      - ".github/workflows/_flutter_package.yml"
+  pull_request:
+    paths:
+      - "packages/devtools/overlay/**"
+      - "packages/devtools/shared/**"
+      - "packages/dart/**"
+      - ".github/workflows/overlay.yml"
+      - ".github/workflows/_flutter_package.yml"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/devtools/overlay
+    secrets: inherit

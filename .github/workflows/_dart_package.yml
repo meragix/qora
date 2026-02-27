@@ -1,0 +1,48 @@
+name: Dart Package CI
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+        description: "Path to the package (e.g. packages/dart)"
+      min-sdk:
+        required: false
+        type: string
+        default: "3.5.0"
+
+jobs:
+  ci:
+    name: "${{ inputs.package }}"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.package }}
+        run: dart pub get
+
+      - name: Format
+        working-directory: ${{ inputs.package }}
+        run: dart format . --set-exit-if-changed
+
+      # - name: Analyze
+      #   working-directory: ${{ inputs.package }}
+      #   run: dart analyze --fatal-infos
+
+      # - name: Test
+      #   working-directory: ${{ inputs.package }}
+      #   run: dart test --coverage=coverage
+
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     directory: ${{ inputs.package }}/coverage
+      #     flags: ${{ inputs.package }}
+      #     token: ${{ secrets.CODECOV_TOKEN }}

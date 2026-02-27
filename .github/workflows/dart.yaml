@@ -1,0 +1,21 @@
+name: qora
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/dart/**"
+      - ".github/workflows/dart.yml"
+      - ".github/workflows/_dart_package.yml"
+  pull_request:
+    paths:
+      - "packages/dart/**"
+      - ".github/workflows/dart.yml"
+      - ".github/workflows/_dart_package.yml"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dart_package.yml
+    with:
+      package: packages/dart
+    secrets: inherit

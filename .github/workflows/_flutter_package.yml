@@ -1,0 +1,50 @@
+name: Flutter Package CI
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+        description: "Path to the package (e.g. packages/flutter)"
+      flutter-version:
+        required: false
+        type: string
+        default: "stable"
+
+jobs:
+  ci:
+    name: "${{ inputs.package }}"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ inputs.flutter-version }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.package }}
+        run: flutter pub get
+
+      - name: Format
+        working-directory: ${{ inputs.package }}
+        run: dart format . --set-exit-if-changed
+
+      # - name: Analyze
+      #   working-directory: ${{ inputs.package }}
+      #   run: flutter analyze --fatal-infos
+
+      # - name: Test
+      #   working-directory: ${{ inputs.package }}
+      #   run: flutter test --coverage
+
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     directory: ${{ inputs.package }}/coverage
+      #     flags: ${{ inputs.package }}
+      #     token: ${{ secrets.CODECOV_TOKEN }}

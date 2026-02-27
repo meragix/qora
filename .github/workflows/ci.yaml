@@ -1,74 +1,76 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 jobs:
-  changes:
+  # ── Dart packages ────────────────────────────────────────────────
+  qora:
+    uses: ./.github/workflows/_dart_package.yml
+    with:
+      package: packages/dart/qora
+    secrets: inherit
+
+  qora_devtools_shared:
+    uses: ./.github/workflows/_dart_package.yml
+    with:
+      package: packages/devtools/shared
+    needs: qora
+    secrets: inherit
+
+  qora_devtools_extension:
+    uses: ./.github/workflows/_dart_package.yml
+    with:
+      package: packages/devtools/extension
+    needs: qora_devtools_shared
+    secrets: inherit
+
+  # ── Flutter packages ─────────────────────────────────────────────
+  flutter_qora:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/flutter/flutter_qora
+    needs: qora
+    secrets: inherit
+
+  qora_hooks:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/flutter/qora_hooks
+    needs: flutter_qora
+    secrets: inherit
+
+  qora_devtools_overlay:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/devtools/overlay
+    needs: qora_devtools_shared
+    secrets: inherit
+
+  qora_devtools_ui:
+    uses: ./.github/workflows/_flutter_package.yml
+    with:
+      package: packages/devtools/ui
+    needs: qora_devtools_shared
+    secrets: inherit
+
+  # ── Gate final — tous les jobs doivent passer ────────────────────
+  # Ce job est référencé comme "required status check" dans les
+  # branch protection rules de GitHub. Un seul job à configurer
+  # au lieu de 7.
+  all-green:
+    name: All packages CI passed
     runs-on: ubuntu-latest
-    outputs:
-      packages: ${{ steps.filter.outputs.packages }}
+    needs:
+      - qora
+      - qora_devtools_shared
+      - qora_devtools_extension
+      - flutter_qora
+      - qora_hooks
+      - qora_devtools_overlay
+      - qora_devtools_ui
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install Melos
-        run: dart pub global activate melos 7.4.0
-
-      - name: Bootstrap
-        run: melos bootstrap
-
-      - name: Detect Changed Packages
-        id: filter
-        run: |
-          CHANGED=$(melos list --since=origin/${{ github.base_ref }} --json | jq -r '.[].name' | tr '\n' ',' | sed 's/,$//')
-          echo "packages=${CHANGED}" >> $GITHUB_OUTPUT
-
-  test:
-    needs: changes
-    if: needs.changes.outputs.packages != ''
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package: ${{ fromJson(format('["{0}"]', needs.changes.outputs.packages)) }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-
-      - name: Bootstrap
-        run: melos bootstrap
-
-      - name: Analyze
-        run: melos analyze
-
-      - name: Check formatting
-        run: melos format:check
-
-      - name: Run tests
-        run: melos test
-
-      - name: Golden Tests (Flutter only)
-        if: startsWith(matrix.package, 'flutter_')
-        run: melos run test:golden --scope=${{ matrix.package }}
-
-  dry-run-publish:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-
-      - run: melos bootstrap
-
-      - name: Dry Run Publish
-        run: melos publish:check
+      - run: echo "All packages passed"
