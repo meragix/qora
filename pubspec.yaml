@@ -12,6 +12,7 @@ dev_dependencies:
 workspace:
   - packages/dart
   - packages/flutter
+  - packages/hooks
   - packages/devtools/extension
   - packages/devtools/overlay
   - packages/devtools/shared

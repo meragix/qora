@@ -1,0 +1,25 @@
+name: qora_hooks
+description: >-
+  flutter_hooks integration for qora.
+  useQuery, useMutation, useQueryClient and useInfiniteQuery.
+version: 0.1.0
+repository: https://github.com/meragix/qora/tree/main/packages/hooks
+
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  qora:
+    path: ../dart
+  flutter_hooks: ^0.21.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  
