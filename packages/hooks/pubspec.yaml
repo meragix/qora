@@ -14,8 +14,6 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  qora:
-    path: ../dart
   flutter_qora:
     path: ../flutter
   flutter_hooks: ^0.21.2

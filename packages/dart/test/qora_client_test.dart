@@ -1,4 +1,6 @@
-import '../lib/qora.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/key/qora_key.dart';
 import 'package:test/test.dart';
 
 void main() {

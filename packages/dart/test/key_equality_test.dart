@@ -1,9 +1,9 @@
 // ignore_for_file: avoid_print
 
 import 'package:meta/meta.dart';
-import '../lib/src/key/key_cache_map.dart';
-import '../lib/src/key/key_equality.dart';
-import '../lib/src/key/qora_key.dart';
+import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/key_equality.dart';
+import 'package:qora/src/key/qora_key.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -449,8 +449,7 @@ class _TestUser {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _TestUser && id == other.id && name == other.name;
+      identical(this, other) || other is _TestUser && id == other.id && name == other.name;
 
   @override
   int get hashCode => Object.hash(id, name);

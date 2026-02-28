@@ -1,5 +1,5 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:qora/qora.dart';
+import 'package:flutter_qora/flutter_qora.dart';
 
 /// Groups the current [MutationState] and the action callbacks returned by
 /// [useMutation].
@@ -105,6 +105,7 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
       mutator: mutator,
       options: options,
     ),
+    [mutator], // Recreates the controller if the mutator function changes
   );
 
   // Subscribe to state changes.

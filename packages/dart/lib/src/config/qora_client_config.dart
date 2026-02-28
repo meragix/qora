@@ -1,5 +1,6 @@
+import 'package:qora/src/utils/qora_exception.dart';
+
 import 'qora_options.dart';
-import '../utils/qora_exception.dart';
 
 /// Global configuration for [QoraClient].
 ///

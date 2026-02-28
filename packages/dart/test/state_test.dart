@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import '../lib/src/state/qora_state.dart';
-import '../lib/src/state/state_extensions.dart';
-import '../lib/src/state/state_serialization.dart';
+import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/state/state_extensions.dart';
+import 'package:qora/src/state/state_serialization.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -574,8 +574,7 @@ void main() {
       );
 
       final json = QoraStateSerialization.toJson(original, userToJson);
-      final restored =
-          QoraStateSerialization.fromJson<User>(json, userFromJson);
+      final restored = QoraStateSerialization.fromJson<User>(json, userFromJson);
 
       expect(restored, equals(original));
     });
@@ -658,9 +657,7 @@ class User {
   }
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is User && id == other.id && name == other.name;
+  bool operator ==(Object other) => identical(this, other) || other is User && id == other.id && name == other.name;
 
   @override
   int get hashCode => Object.hash(id, name);

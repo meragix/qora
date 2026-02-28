@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:qora/src/utils/query_function.dart';
+
 import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'mutation_tracker.dart';
-import '../utils/query_function.dart';
 
 /// Controls and tracks the lifecycle of a single mutation.
 ///

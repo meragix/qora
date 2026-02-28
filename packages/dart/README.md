@@ -6,7 +6,7 @@ Pure Dart server state management. Zero Flutter dependency — works in Flutter 
 
 ```yaml
 dependencies:
-  qora: ^1.0.0
+  qora: ^0.4.0
 ```
 
 ## Quick start

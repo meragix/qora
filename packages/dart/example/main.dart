@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print
 
-import '../lib/qora.dart';
+import 'package:qora/qora.dart';
 
 // ---------------------------------------------------------------------------
 // Fake data models

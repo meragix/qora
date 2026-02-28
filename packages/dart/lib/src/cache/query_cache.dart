@@ -1,7 +1,8 @@
+import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/state/qora_state.dart';
+
 import 'cached_entry.dart';
-import '../key/key_cache_map.dart';
-import '../key/qora_key.dart';
-import '../state/qora_state.dart';
 
 /// Internal LRU cache that stores [CacheEntry] instances keyed by normalised
 /// query keys.
@@ -11,8 +12,7 @@ import '../state/qora_state.dart';
 /// - Optional bounded size with LRU eviction of inactive entries.
 /// - [onEvict] callback for external notification (logging, storage sync).
 class QueryCache {
-  final KeyCacheMap<CacheEntry<dynamic>> _cache =
-      KeyCacheMap<CacheEntry<dynamic>>();
+  final KeyCacheMap<CacheEntry<dynamic>> _cache = KeyCacheMap<CacheEntry<dynamic>>();
   final void Function(List<dynamic> key)? _onEvict;
   final int? _maxSize;
 
@@ -56,9 +56,7 @@ class QueryCache {
   /// Triggers LRU eviction if [maxSize] is set and the cache is full.
   void set<T>(Object key, CacheEntry<T> entry) {
     final normalized = normalizeKey(key);
-    if (_maxSize != null &&
-        _cache.length >= _maxSize &&
-        !_cache.containsKey(normalized)) {
+    if (_maxSize != null && _cache.length >= _maxSize && !_cache.containsKey(normalized)) {
       _evictLRU();
     }
     _cache.set(normalized, entry);
@@ -83,8 +81,7 @@ class QueryCache {
   ///
   /// Use this for bulk operations (eviction sweeps, debug snapshots) that
   /// should not affect LRU order.
-  Iterable<MapEntry<List<dynamic>, CacheEntry<dynamic>>> get entries =>
-      _cache.entries;
+  Iterable<MapEntry<List<dynamic>, CacheEntry<dynamic>>> get entries => _cache.entries;
 
   /// Number of entries currently in the cache.
   int get length => _cache.length;
