@@ -1,111 +1,205 @@
 # qora_devtools_shared
 
-Shared protocol package for Qora DevTools.
+Protocol contracts, models, and codecs shared across the Qora DevTools
+ecosystem — the runtime bridge, the in-app overlay, and the DevTools UI.
 
-This package contains the transport contracts used by:
+This package is the **single source of truth** for the JSON communication
+contract. All consumers import it so that string constants, event shapes, and
+command structures stay in sync across independent releases.
 
-- `qora_devtools_extension` (runtime bridge, app side),
-- `qora_devtools_ui` (Flutter DevTools extension UI, client side).
+## Architecture role
 
-It is intentionally Flutter-agnostic and focuses on:
+```text
+App isolate                              DevTools UI
+(qora_devtools_extension)                (qora_devtools_ui)
+        │                                        │
+        │  push: developer.postEvent             │
+        │  ──── QoraExtensionEvents.qoraEvent ──►│
+        │       EventCodec.encode(event)         │
+        │                                        │
+        │  pull: callServiceExtension            │
+        │◄───── QoraExtensionMethods.refetch ────│
+        │       CommandCodec.decode(response)    │
 
-- typed events,
-- typed commands,
-- JSON codecs,
-- VM extension method/event constants,
-- cache/mutation/query snapshots.
+(qora_devtools_overlay)
+        │  uses TimelineEvent + TimelineEventType
+        │  for the in-app query/mutation overlay
+```
 
-## Why this package exists
-
-`qora` (the core state-management package) should not depend on visual tooling.
-`qora_devtools_shared` provides a stable protocol boundary so core, extension,
-and UI can evolve independently without circular imports.
+All three packages share this package. None of them imports the others.
 
 ## Features
 
-- Event contracts:
-  - `QoraEvent`,
-  - `QueryEvent`,
-  - `MutationEvent`,
-  - `GenericQoraEvent` fallback for forward compatibility.
-- Command contracts:
-  - `RefetchCommand`,
-  - `InvalidateCommand`,
-  - `RollbackOptimisticCommand`,
-  - `GetCacheSnapshotCommand`,
-  - `GetPayloadChunkCommand`.
-- Codecs:
-  - `EventCodec`,
-  - `CommandCodec`.
-- Protocol constants:
-  - `QoraExtensionMethods` (`ext.qora.*`),
-  - `QoraExtensionEvents` (`qora:event`).
-- Snapshot DTOs:
-  - `QuerySnapshot`,
-  - `MutationSnapshot`,
-  - `CacheSnapshot`.
+**Events (push) — App to DevTools:**
+
+- `QoraEvent` — base class with `eventId`, `kind`, `timestampMs`
+- `QueryEvent` — query lifecycle: `fetched`, `invalidated`, `added`, `updated`, `removed`
+- `MutationEvent` — mutation lifecycle: `started`, `settled`, `updated`
+- `GenericQoraEvent` — forward-compatible fallback for unknown kinds
+- `TimelineEvent` — lightweight record for the in-app overlay tracker
+
+**Commands (pull) — DevTools to App:**
+
+- `RefetchCommand`, `InvalidateCommand`, `RollbackOptimisticCommand`
+- `GetCacheSnapshotCommand`, `GetPayloadChunkCommand`
+
+**Codecs:**
+
+- `EventCodec` — decodes raw VM event maps into typed `QoraEvent` subclasses
+- `CommandCodec` — decodes raw maps into typed `QoraCommand` subclasses
+
+**Models:**
+
+- `CacheSnapshot`, `QuerySnapshot`, `MutationSnapshot` — JSON-serialisable DTOs
+
+**Protocol constants:**
+
+- `QoraExtensionMethods` — `ext.qora.*` VM extension method names
+- `QoraExtensionEvents` — `qora:event` stream key
 
 ## Installation
 
 ```yaml
 dependencies:
-  qora_devtools_shared:
-    path: ../qora_devtools_shared
+  qora_devtools_shared: ^0.1.0
 ```
 
 ## Usage
 
-### Decode incoming VM extension event
+### Encode and push an event (runtime bridge side)
+
+```dart
+import 'dart:developer' as developer;
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+// Push a query-fetched event to the DevTools UI.
+final event = QueryEvent.fetched(
+  key: '["users"]',
+  data: {'id': 1, 'name': 'Alice'},
+  status: 'success',
+);
+
+developer.postEvent(
+  QoraExtensionEvents.qoraEvent,
+  EventCodec.encode(event),
+);
+```
+
+### Decode an incoming event (DevTools UI side)
 
 ```dart
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
-void onRawEvent(Map<String, Object?> raw) {
+void onVmServiceEvent(Map<String, Object?> raw) {
   final event = EventCodec.decode(raw);
 
-  if (event is QueryEvent) {
-    print('Query event: ${event.type} for ${event.key}');
+  switch (event) {
+    case QueryEvent(:final key, :final type, :final hasLargePayload):
+      print('Query $type for $key — large: $hasLargePayload');
+    case MutationEvent(:final id, :final type, :final success):
+      print('Mutation $id $type — ok: $success');
+    case GenericQoraEvent(:final kind):
+      print('Unknown event kind: $kind');
   }
 }
 ```
 
-### Build and send command from UI
+`GenericQoraEvent` is returned for unrecognised kinds, ensuring the UI stays
+functional when the runtime sends events from a newer version of the package.
+
+### Send a command from the DevTools UI
 
 ```dart
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
-final command = RefetchCommand(queryKey: 'todos?page=1');
+// Build a typed command.
+final cmd = RefetchCommand(queryKey: '["users"]');
 
-final extensionName = '${QoraExtensionMethods.prefix}.${command.method}';
-final params = command.params;
+// Dispatch it via the VM service client (pseudo-code).
+await vmService.callServiceExtension(
+  '${QoraExtensionMethods.prefix}.${cmd.method}', // 'ext.qora.refetch'
+  args: cmd.params,                                // {'queryKey': '["users"]'}
+);
 ```
 
-### Snapshot serialization
+### Decode a command (for testing or logging)
+
+```dart
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+// Accepts both short ('refetch') and full ('ext.qora.refetch') method forms.
+final cmd = CommandCodec.decode({
+  'method': 'ext.qora.invalidate',
+  'params': {'queryKey': '["posts"]'},
+});
+
+if (cmd is InvalidateCommand) {
+  print('Invalidate: ${cmd.queryKey}');
+}
+```
+
+### Snapshot serialization roundtrip
 
 ```dart
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 final snapshot = CacheSnapshot(
-  queries: const <QuerySnapshot>[],
-  mutations: const <MutationSnapshot>[],
+  queries: [
+    QuerySnapshot(
+      key: '["users"]',
+      status: 'success',
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+      data: [{'id': 1, 'name': 'Alice'}],
+    ),
+  ],
+  mutations: const [],
   emittedAtMs: DateTime.now().millisecondsSinceEpoch,
 );
 
+// Serialise → transport → deserialise.
 final json = snapshot.toJson();
 final restored = CacheSnapshot.fromJson(json);
+
+print(restored.queries.first.key);   // ["users"]
+print(restored.queries.first.status); // success
+```
+
+### Timeline events (overlay tracker)
+
+`TimelineEvent` is a lightweight record used by the in-app overlay tracker.
+It carries a `TimelineEventType` with a `displayName` getter for UI labels.
+
+```dart
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+
+final event = TimelineEvent(
+  type: TimelineEventType.fetchStarted,
+  key: '["products"]',
+  timestamp: DateTime.now(),
+);
+
+print(event.type.displayName); // 'Fetch Started'
 ```
 
 ## Protocol notes
 
-- Event payloads should stay lightweight by default.
-- Large data should be represented through metadata
-  (`hasLargePayload`, `payloadId`, `totalChunks`) and fetched lazily with
-  `GetPayloadChunkCommand`.
-- Unknown event kinds are decoded as `GenericQoraEvent` to avoid hard failures
-  when producer and consumer versions are not perfectly aligned.
+- **Push direction** (App → DevTools): lightweight `QoraEvent` payloads via
+  `developer.postEvent` on the `"Extension"` VM service stream.
+- **Pull direction** (DevTools → App): commands via `callServiceExtension`.
+- **Large payloads**: when a query result exceeds ~80 KB, `QueryEvent` carries
+  only metadata (`hasLargePayload: true`, `payloadId`, `totalChunks`, `summary`).
+  The UI then pulls individual 80 KB chunks via `GetPayloadChunkCommand`.
+- **Forward compatibility**: unknown event kinds decode to `GenericQoraEvent`
+  rather than throwing, so UI and runtime can be updated independently.
 
-## Stability and versioning
+## Versioning discipline
 
-- Follow semantic versioning.
-- Breaking protocol changes must increment the major version.
-- Adding new event/command types should be backward-compatible when possible.
+| Change type             | Version bump |
+| ----------------------- | ------------ |
+| New event/command kind  | minor        |
+| New optional JSON field | minor        |
+| Renamed/removed field   | **major**    |
+| New required field      | **major**    |
+
+Both `qora_devtools_extension` and `qora_devtools_ui` must pin compatible
+version constraints whenever the JSON schema changes.

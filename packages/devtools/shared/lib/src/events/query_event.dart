@@ -154,7 +154,9 @@ final class QueryEvent extends QoraEvent {
   /// Unknown `kind` suffixes resolve to [QueryEventType.updated].
   factory QueryEvent.fromJson(Map<String, Object?> json) {
     final rawKind = (json['kind'] as String?) ?? 'query.updated';
-    final kindSuffix = rawKind.startsWith('query.') ? rawKind.substring('query.'.length) : rawKind;
+    final kindSuffix = rawKind.startsWith('query.')
+        ? rawKind.substring('query.'.length)
+        : rawKind;
     final type = QueryEventType.values.firstWhere(
       (value) => value.name == kindSuffix,
       orElse: () => QueryEventType.updated,
@@ -162,7 +164,8 @@ final class QueryEvent extends QoraEvent {
 
     return QueryEvent(
       eventId: (json['eventId'] as String?) ?? QoraEvent.generateId(),
-      timestampMs: (json['timestampMs'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      timestampMs: (json['timestampMs'] as int?) ??
+          DateTime.now().millisecondsSinceEpoch,
       type: type,
       key: (json['queryKey'] as String?) ?? '',
       status: json['status'] as String?,

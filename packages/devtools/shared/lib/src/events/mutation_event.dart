@@ -132,7 +132,9 @@ final class MutationEvent extends QoraEvent {
   /// Unknown `kind` suffixes resolve to [MutationEventType.updated].
   factory MutationEvent.fromJson(Map<String, Object?> json) {
     final rawKind = (json['kind'] as String?) ?? 'mutation.updated';
-    final kindSuffix = rawKind.startsWith('mutation.') ? rawKind.substring('mutation.'.length) : rawKind;
+    final kindSuffix = rawKind.startsWith('mutation.')
+        ? rawKind.substring('mutation.'.length)
+        : rawKind;
     final type = MutationEventType.values.firstWhere(
       (value) => value.name == kindSuffix,
       orElse: () => MutationEventType.updated,
@@ -140,7 +142,8 @@ final class MutationEvent extends QoraEvent {
 
     return MutationEvent(
       eventId: (json['eventId'] as String?) ?? QoraEvent.generateId(),
-      timestampMs: (json['timestampMs'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      timestampMs: (json['timestampMs'] as int?) ??
+          DateTime.now().millisecondsSinceEpoch,
       type: type,
       id: (json['mutationId'] as String?) ?? '',
       key: (json['queryKey'] as String?) ?? '',

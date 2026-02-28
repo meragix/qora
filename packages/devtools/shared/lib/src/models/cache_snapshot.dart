@@ -49,22 +49,28 @@ final class CacheSnapshot {
     return CacheSnapshot(
       queries: ((json['queries'] as List?) ?? const <Object?>[])
           .whereType<Map>()
-          .map((item) => QuerySnapshot.fromJson(Map<String, Object?>.from(item)))
+          .map(
+              (item) => QuerySnapshot.fromJson(Map<String, Object?>.from(item)))
           .toList(growable: false),
       mutations: ((json['mutations'] as List?) ?? const <Object?>[])
           .whereType<Map>()
           .map(
-            (item) => MutationSnapshot.fromJson(Map<String, Object?>.from(item)),
+            (item) =>
+                MutationSnapshot.fromJson(Map<String, Object?>.from(item)),
           )
           .toList(growable: false),
-      emittedAtMs: (json['emittedAtMs'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      emittedAtMs: (json['emittedAtMs'] as int?) ??
+          DateTime.now().millisecondsSinceEpoch,
     );
   }
 
   /// Converts the snapshot to JSON.
   Map<String, Object?> toJson() => <String, Object?>{
-        'queries': queries.map((query) => query.toJson()).toList(growable: false),
-        'mutations': mutations.map((mutation) => mutation.toJson()).toList(growable: false),
+        'queries':
+            queries.map((query) => query.toJson()).toList(growable: false),
+        'mutations': mutations
+            .map((mutation) => mutation.toJson())
+            .toList(growable: false),
         'emittedAtMs': emittedAtMs,
       };
 }

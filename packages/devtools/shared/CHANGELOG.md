@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-02-28
+
 ### Added
 
 - `TimelineEventType` enum with `displayName` getter and 8 variants (optimisticUpdate, mutationStarted/Success/Error, fetchStarted/Error, queryCreated, cacheCleared)

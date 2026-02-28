@@ -120,7 +120,8 @@ final class GenericQoraEvent extends QoraEvent {
     return GenericQoraEvent(
       eventId: (json['eventId'] as String?) ?? QoraEvent.generateId(),
       kind: (json['kind'] as String?) ?? 'unknown',
-      timestampMs: (json['timestampMs'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      timestampMs: (json['timestampMs'] as int?) ??
+          DateTime.now().millisecondsSinceEpoch,
       payload: Map<String, Object?>.from(json),
     );
   }

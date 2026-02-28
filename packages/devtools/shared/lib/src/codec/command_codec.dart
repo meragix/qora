@@ -68,7 +68,8 @@ abstract final class CommandCodec {
       case 'getPayload':
         return GetPayloadChunkCommand(
           payloadId: params['payloadId'] ?? '',
-          chunkIndex: int.tryParse(params['chunkIndex'] ?? params['chunk'] ?? '0') ?? 0,
+          chunkIndex:
+              int.tryParse(params['chunkIndex'] ?? params['chunk'] ?? '0') ?? 0,
         );
       default:
         throw FormatException('Unsupported command method: $rawMethod');
