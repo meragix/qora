@@ -12,6 +12,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.1.2
   qora:
     path: ../../dart
   qora_devtools_shared:

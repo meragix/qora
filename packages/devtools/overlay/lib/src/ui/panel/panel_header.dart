@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
 
 class PanelHeader extends StatelessWidget {
   final VoidCallback onClose;

@@ -1,7 +1,12 @@
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/responsive_panel_layout.dart';
+import 'package:qora_devtools_overlay/src/ui/panels/mutations/mutation_inspector_panel.dart';
+import 'package:qora_devtools_overlay/src/ui/panels/mutations/mutation_row.dart';
+import 'package:qora_devtools_overlay/src/ui/panels/mutations/secondary_tabs/data_diff_tab.dart';
+import 'package:qora_devtools_overlay/src/ui/panels/mutations/secondary_tabs/timeline_tab.dart';
+import 'package:qora_devtools_overlay/src/ui/panels/mutations/secondary_tabs/widget_tree_tab.dart';
 
 class MutationsTabView extends StatefulWidget {
   const MutationsTabView({super.key});
