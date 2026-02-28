@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 import '../widgets/qora_scope.dart';
 
-
 /// Convenience extension on [BuildContext] for accessing [QoraClient].
 ///
 /// Prefer `context.qora` over `QoraScope.of(context)` for brevity.

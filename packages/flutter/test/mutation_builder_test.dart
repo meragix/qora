@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../lib/flutter_qora.dart';
+import 'package:flutter_qora/flutter_qora.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -169,21 +169,24 @@ void main() {
                 mutationFn: (_) async => throw Exception('server error'),
                 options: MutationOptions(
                   onMutate: (item) async {
-                    final prev =
-                        client.getQueryData<List<String>>(['items']);
+                    final prev = client.getQueryData<List<String>>(['items']);
                     client.setQueryData<List<String>>(
                       ['items'],
                       [...?prev, item],
                     );
                     log.add(
-                      'optimistic:${client.getQueryData<List<String>>(['items'])?.join(',')}',
+                      'optimistic:${client.getQueryData<List<String>>([
+                            'items'
+                          ])?.join(',')}',
                     );
                     return prev;
                   },
                   onError: (error, variables, previous) async {
                     client.restoreQueryData(['items'], previous);
                     log.add(
-                      'rollback:${client.getQueryData<List<String>>(['items'])?.join(',')}',
+                      'rollback:${client.getQueryData<List<String>>([
+                            'items'
+                          ])?.join(',')}',
                     );
                   },
                 ),

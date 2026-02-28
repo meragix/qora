@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../lib/flutter_qora.dart';
+import 'package:flutter_qora/flutter_qora.dart';
 
 // ---------------------------------------------------------------------------
 // App entry point

@@ -123,8 +123,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
   late MutationController<TData, TVariables, TContext> _controller;
   StreamSubscription<MutationState<TData, TVariables>>? _subscription;
   MutationState<TData, TVariables> _state =
-      const MutationIdle<Never, Never>()
-          as MutationState<Never, Never>;
+      const MutationIdle<Never, Never>() as MutationState<Never, Never>;
 
   @override
   void initState() {

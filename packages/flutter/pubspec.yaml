@@ -4,7 +4,7 @@ version: 0.4.0
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora/tree/main/packages/flutter
 issue_tracker: https://github.com/meragix/qora/issues
-documentation: https://meragix.github.io/qora
+documentation: https://qora.meragix.dev
 
 # publish_to: none
 
@@ -17,7 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   qora: ^0.4.0
-  connectivity_plus: ^6.0.0
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
