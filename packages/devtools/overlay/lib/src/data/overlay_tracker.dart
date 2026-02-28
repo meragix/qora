@@ -71,8 +71,10 @@ class OverlayTracker implements QoraTracker {
   // ── Synchronous snapshots (for panel initialisation) ────────────────────────
 
   List<QueryEvent> get queryHistory => List.unmodifiable(_queryHistory);
-  List<MutationEvent> get mutationHistory => List.unmodifiable(_mutationHistory);
-  List<TimelineEvent> get timelineHistory => List.unmodifiable(_timelineHistory);
+  List<MutationEvent> get mutationHistory =>
+      List.unmodifiable(_mutationHistory);
+  List<TimelineEvent> get timelineHistory =>
+      List.unmodifiable(_timelineHistory);
   Map<String, QuerySnapshot> get cacheSnapshot => Map.unmodifiable(_cacheState);
 
   // ── QoraTracker ─────────────────────────────────────────────────────────────
@@ -117,7 +119,9 @@ class OverlayTracker implements QoraTracker {
     );
     _push(_mutationHistory, _mutationController, event);
     _emitTimeline(
-      success ? TimelineEventType.mutationSuccess : TimelineEventType.mutationError,
+      success
+          ? TimelineEventType.mutationSuccess
+          : TimelineEventType.mutationError,
       null,
       id: id,
     );

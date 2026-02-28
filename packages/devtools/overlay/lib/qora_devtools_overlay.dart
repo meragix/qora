@@ -20,7 +20,7 @@
 ///   ),
 /// );
 /// ```
-library qora_devtools_overlay;
+library;
 
 // Public API — the two types users need to wire the overlay.
 export 'src/data/overlay_tracker.dart' show OverlayTracker;

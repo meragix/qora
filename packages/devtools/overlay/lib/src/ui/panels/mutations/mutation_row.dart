@@ -66,7 +66,8 @@ class MutationListColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mutations = context.watch<MutationsNotifier>().mutations.reversed.toList();
+    final mutations =
+        context.watch<MutationsNotifier>().mutations.reversed.toList();
 
     if (mutations.isEmpty) {
       return const Center(

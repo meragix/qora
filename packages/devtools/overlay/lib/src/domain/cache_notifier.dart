@@ -15,5 +15,4 @@ class CacheNotifier extends ChangeNotifier {
 
   /// Current key → [QuerySnapshot] map from the tracker.
   Map<String, QuerySnapshot> get snapshot => _tracker.cacheSnapshot;
-
 }

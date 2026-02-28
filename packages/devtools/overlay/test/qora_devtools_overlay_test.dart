@@ -61,7 +61,8 @@ void main() {
       tracker.dispose();
 
       // Should not throw
-      expect(() => tracker.onQueryFetched('k', null, 'success'), returnsNormally);
+      expect(
+          () => tracker.onQueryFetched('k', null, 'success'), returnsNormally);
       expect(() => tracker.onCacheCleared(), returnsNormally);
     });
   });

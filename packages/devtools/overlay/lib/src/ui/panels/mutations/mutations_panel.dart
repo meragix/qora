@@ -29,8 +29,7 @@ class _MutationsTabViewState extends State<MutationsTabView> {
       listColumn: MutationListColumn(
         onMutationTap: (mutation) {
           inspector.select(mutation);
-          final isMobile =
-              MediaQuery.sizeOf(context).width < kMobileBreakpoint;
+          final isMobile = MediaQuery.sizeOf(context).width < kMobileBreakpoint;
           if (isMobile) setState(() => _mobileScreen = PanelScreen.inspector);
         },
       ),

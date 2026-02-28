@@ -25,15 +25,12 @@ class _ExpandableObjectState extends State<ExpandableObject> {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor = widget.isError
-        ? const Color(0xFFEF4444)
-        : const Color(0xFFE2E8F0);
-    final previewColor = widget.isError
-        ? const Color(0xFFEF4444)
-        : const Color(0xFF94A3B8);
-    final iconColor = widget.isError
-        ? const Color(0xFFEF4444)
-        : const Color(0xFF64748B);
+    final labelColor =
+        widget.isError ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0);
+    final previewColor =
+        widget.isError ? const Color(0xFFEF4444) : const Color(0xFF94A3B8);
+    final iconColor =
+        widget.isError ? const Color(0xFFEF4444) : const Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

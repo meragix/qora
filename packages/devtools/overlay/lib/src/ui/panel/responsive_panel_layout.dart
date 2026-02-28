@@ -62,7 +62,8 @@ class _MobileLayout extends StatelessWidget {
         final screenIndex = _screenIndex(currentScreen);
         final childScreenIndex = _screenIndexFromKey(child.key);
         final goingForward = childScreenIndex >= screenIndex;
-        final begin = goingForward ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0);
+        final begin =
+            goingForward ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0);
         return SlideTransition(
           position: Tween(begin: begin, end: Offset.zero).animate(
             CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
@@ -82,7 +83,9 @@ class _MobileLayout extends StatelessWidget {
                 title: 'Inspector',
                 onBack: () => onNavigate(PanelScreen.list),
                 forwardLabel: secondaryColumn != null ? 'Timeline' : null,
-                onForward: secondaryColumn != null ? () => onNavigate(PanelScreen.secondary) : null,
+                onForward: secondaryColumn != null
+                    ? () => onNavigate(PanelScreen.secondary)
+                    : null,
               ),
               Expanded(child: inspectorColumn ?? const SizedBox()),
             ]),
@@ -101,7 +104,11 @@ class _MobileLayout extends StatelessWidget {
     );
   }
 
-  int _screenIndex(PanelScreen s) => [PanelScreen.list, PanelScreen.inspector, PanelScreen.secondary].indexOf(s);
+  int _screenIndex(PanelScreen s) => [
+        PanelScreen.list,
+        PanelScreen.inspector,
+        PanelScreen.secondary
+      ].indexOf(s);
 
   int _screenIndexFromKey(Key? key) {
     if (key == const ValueKey(PanelScreen.list)) return 0;
@@ -136,8 +143,10 @@ class _MobileNavBar extends StatelessWidget {
         GestureDetector(
           onTap: onBack,
           child: const Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.chevron_left_rounded, color: Color(0xFF3B82F6), size: 20),
-            Text('Back', style: TextStyle(color: Color(0xFF3B82F6), fontSize: 13)),
+            Icon(Icons.chevron_left_rounded,
+                color: Color(0xFF3B82F6), size: 20),
+            Text('Back',
+                style: TextStyle(color: Color(0xFF3B82F6), fontSize: 13)),
           ]),
         ),
         // Titre centré
@@ -161,7 +170,8 @@ class _MobileNavBar extends StatelessWidget {
                 forwardLabel ?? 'Next',
                 style: const TextStyle(color: Color(0xFF3B82F6), fontSize: 13),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF3B82F6), size: 20),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFF3B82F6), size: 20),
             ]),
           )
         else
@@ -193,7 +203,8 @@ class _DesktopLayout extends StatelessWidget {
         if (inspectorColumn != null) Expanded(flex: 2, child: inspectorColumn!),
         if (secondaryColumn != null) _ColDivider(),
         // Col 3 — timeline / tabs secondaires
-        if (secondaryColumn != null) SizedBox(width: 300, child: secondaryColumn!),
+        if (secondaryColumn != null)
+          SizedBox(width: 300, child: secondaryColumn!),
       ],
     );
   }
@@ -201,5 +212,6 @@ class _DesktopLayout extends StatelessWidget {
 
 class _ColDivider extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(width: 1, color: const Color(0xFF1E293B));
+  Widget build(BuildContext context) =>
+      Container(width: 1, color: const Color(0xFF1E293B));
 }

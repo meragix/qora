@@ -18,10 +18,13 @@ class TimelineNotifier extends ChangeNotifier {
   List<TimelineEvent> get filteredEvents {
     final reversed = _events.reversed.toList();
     if (_filter.isEmpty) return reversed;
-    return reversed.where((e) =>
-        (e.key?.contains(_filter) ?? false) ||
-        e.type.name.toLowerCase().contains(_filter.toLowerCase()),
-    ).toList();
+    return reversed
+        .where(
+          (e) =>
+              (e.key?.contains(_filter) ?? false) ||
+              e.type.name.toLowerCase().contains(_filter.toLowerCase()),
+        )
+        .toList();
   }
 
   TimelineNotifier(this._tracker) {
@@ -34,10 +37,24 @@ class TimelineNotifier extends ChangeNotifier {
     });
   }
 
-  void togglePause() { _paused = !_paused; notifyListeners(); }
-  void setFilter(String v) { _filter = v; notifyListeners(); }
-  void clear() { _events.clear(); notifyListeners(); }
+  void togglePause() {
+    _paused = !_paused;
+    notifyListeners();
+  }
+
+  void setFilter(String v) {
+    _filter = v;
+    notifyListeners();
+  }
+
+  void clear() {
+    _events.clear();
+    notifyListeners();
+  }
 
   @override
-  void dispose() { _sub.cancel(); super.dispose(); }
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
 }

@@ -76,8 +76,9 @@ melos:
       description: Build DevTools Web UI and copy into the extension package
       run: |
         cd packages/devtools/ui
-        flutter build web --output build/devtools_extension
-        cp -r build/devtools_extension ../extension/build
+        flutter build web --pwa-strategy=none --release --no-tree-shake-icons
+        rm -rf ../extension/extension/devtools/build
+        cp -r build/web ../extension/extension/devtools/build
 
     # ── Publish ───────────────────────────────────────────────────────
     publish:check:

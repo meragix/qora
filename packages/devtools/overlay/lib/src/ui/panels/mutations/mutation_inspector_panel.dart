@@ -90,8 +90,7 @@ class MutationInspectorColumn extends StatelessWidget {
     );
   }
 
-  String _fmt(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
+  String _fmt(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}:'
       '${dt.second.toString().padLeft(2, '0')}.'
       '${dt.millisecond.toString().padLeft(3, '0')}';
@@ -169,7 +168,7 @@ class _MetaRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MetaRow(this.label, this.value, {super.key});
+  const _MetaRow(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {

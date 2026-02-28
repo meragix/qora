@@ -1,6 +1,10 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
 ## [Unreleased]
+
+## [0.1.0] - 2026-02-28
 
 ### Added
 
@@ -13,7 +17,4 @@
 - Shared widgets: `StatusBadge`, `ExpandableObject`, `BreadcrumbKey`
 - Stub tabs: `WidgetTreeTab`, `DataDiffTab` (coming soon)
 - `provider` dependency for `ChangeNotifier`-based state wiring
-
-## 0.0.1
-
 - Initial package scaffold.

@@ -54,14 +54,16 @@ class PanelHeader extends StatelessWidget {
           const Spacer(),
           // Expand
           IconButton(
-            icon: const Icon(Icons.open_in_full_rounded, color: Color(0xFF475569), size: 16),
+            icon: const Icon(Icons.open_in_full_rounded,
+                color: Color(0xFF475569), size: 16),
             onPressed: () {},
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           ),
           // Close
           IconButton(
-            icon: const Icon(Icons.close_rounded, color: Color(0xFF475569), size: 16),
+            icon: const Icon(Icons.close_rounded,
+                color: Color(0xFF475569), size: 16),
             onPressed: onClose,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),

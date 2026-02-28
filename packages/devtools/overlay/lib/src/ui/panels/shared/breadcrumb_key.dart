@@ -4,8 +4,11 @@ class BreadcrumbKey extends StatelessWidget {
   final String queryKey;
   const BreadcrumbKey({super.key, required this.queryKey});
 
-  List<String> get _segments =>
-      queryKey.split(RegExp(r'[./\[\],]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  List<String> get _segments => queryKey
+      .split(RegExp(r'[./\[\],]'))
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
