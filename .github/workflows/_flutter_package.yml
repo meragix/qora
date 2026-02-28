@@ -7,10 +7,6 @@ on:
         required: true
         type: string
         description: "Path to the package (e.g. packages/flutter)"
-      flutter-version:
-        required: false
-        type: string
-        default: "stable"
 
 jobs:
   ci:
@@ -22,7 +18,6 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ inputs.flutter-version }}
           channel: stable
           cache: true
 
