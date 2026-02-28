@@ -10,6 +10,8 @@ import '../mutation/mutation_state.dart';
 import '../mutation/mutation_state_extensions.dart';
 import '../mutation/mutation_tracker.dart';
 import '../state/qora_state.dart';
+import '../tracking/no_op_tracker.dart';
+import '../tracking/qora_tracker.dart';
 
 /// The central engine of Qora — manages queries, cache, deduplication,
 /// retries, and reactive state.
@@ -74,6 +76,12 @@ class QoraClient implements MutationTracker {
   /// Global configuration for this client instance.
   final QoraClientConfig config;
 
+  /// Observability hook called on query and mutation lifecycle events.
+  ///
+  /// Defaults to [NoOpTracker] (zero overhead).  Pass a `VmTracker` in
+  /// debug/profile builds to enable DevTools reporting.
+  final QoraTracker _tracker;
+
   final QueryCache _cache;
 
   /// In-flight request futures, keyed by stringified normalised key.
@@ -104,8 +112,23 @@ class QoraClient implements MutationTracker {
   Timer? _evictionTimer;
   bool _isDisposed = false;
 
-  QoraClient({QoraClientConfig? config})
+  /// Creates a [QoraClient].
+  ///
+  /// [config] — global defaults applied to every query and mutation.
+  /// [tracker] — observability hook for DevTools / logging.  Defaults to
+  /// [NoOpTracker] (zero overhead).  Inject a `VmTracker` in debug/profile
+  /// builds to stream events to Flutter DevTools.
+  ///
+  /// ```dart
+  /// // production
+  /// final client = QoraClient();
+  ///
+  /// // debug — enable DevTools
+  /// final client = QoraClient(tracker: VmTracker());
+  /// ```
+  QoraClient({QoraClientConfig? config, QoraTracker? tracker})
       : config = config ?? const QoraClientConfig(),
+        _tracker = tracker ?? const NoOpTracker(),
         _cache = QueryCache(
           maxSize: config?.maxCacheSize,
           onEvict: config?.onCacheEvict,
@@ -353,6 +376,7 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final entry = _getOrCreateEntry<T>(normalized);
     entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
+    _tracker.onOptimisticUpdate(_stringKey(normalized), data);
     _log('setQueryData: $normalized');
   }
 
@@ -398,6 +422,7 @@ class QoraClient implements MutationTracker {
             : Initial<dynamic>(),
       );
       _pendingRequests.remove(_stringKey(normalized));
+      _tracker.onQueryInvalidated(_stringKey(normalized));
     }
   }
 
@@ -475,6 +500,7 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     _cache.clear();
     _pendingRequests.clear();
+    _tracker.onCacheCleared();
     _log('Cache cleared');
   }
 
@@ -535,6 +561,21 @@ class QoraClient implements MutationTracker {
       timestamp: DateTime.now(),
       metadata: metadata,
     );
+
+    // Notify the tracker about mutation lifecycle transitions.
+    if (state.isPending) {
+      _tracker.onMutationStarted(
+        id,
+        metadata?['queryKey'] as String? ?? '',
+        state.variablesOrNull,
+      );
+    } else if (state.isSuccess || state.isError) {
+      _tracker.onMutationSettled(
+        id,
+        state.isSuccess,
+        state.isSuccess ? state.dataOrNull : state.errorOrNull,
+      );
+    }
 
     if (state.isIdle || event.isFinished) {
       // Idle (reset) or finished (success/failure) — purge from snapshot so
@@ -604,6 +645,7 @@ class QoraClient implements MutationTracker {
     _pendingRequests.clear();
     _activeMutations.clear();
     _mutationBus.close();
+    _tracker.dispose();
     _log('QoraClient disposed');
   }
 
@@ -636,6 +678,7 @@ class QoraClient implements MutationTracker {
     final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts)
         .then((data) {
       entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
+      _tracker.onQueryFetched(_stringKey(key), data, 'success');
       _pendingRequests.remove(sk);
       return data;
     }).catchError((Object error, StackTrace stackTrace) {

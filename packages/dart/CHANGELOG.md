@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraTracker` — abstract observability interface with lifecycle hooks for queries, mutations, and cache events
+- `NoOpTracker` — default `const` implementation with zero overhead (production safe)
+- `QoraClient(tracker:)` — optional tracker injection; defaults to `NoOpTracker`
+
 ## [0.3.0] - 2026-02-25
 
 ### Added
