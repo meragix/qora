@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    # branches: [main]
+    branches: [main1]
   push:
-    # branches: [main]
+    branches: [main1]
 
 jobs:
   # ── Dart packages ────────────────────────────────────────────────
