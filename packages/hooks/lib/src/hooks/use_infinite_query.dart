@@ -1,5 +1,5 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:qora/qora.dart';
+import 'package:flutter_qora/flutter_qora.dart';
 
 import 'use_query_client.dart';
 

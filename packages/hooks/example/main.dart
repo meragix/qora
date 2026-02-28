@@ -171,8 +171,7 @@ class EditProfileScreen extends HookWidget {
             const SizedBox(height: 16),
 
             // Show error banner when mutation fails.
-            if (mutation.isError)
-              _ErrorBanner(message: '${mutation.error}'),
+            if (mutation.isError) _ErrorBanner(message: '${mutation.error}'),
 
             // Show success message.
             if (mutation.isSuccess)
@@ -283,7 +282,8 @@ class ProfileScreen extends HookWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: switch (userState) {
-        Initial() || Loading(previousData: null) =>
+        Initial() ||
+        Loading(previousData: null) =>
           const Center(child: CircularProgressIndicator()),
         Loading(:final previousData?) =>
           _ProfileBody(user: previousData, mutation: updateMutation),
@@ -323,8 +323,7 @@ class _ProfileBody extends HookWidget {
             decoration: const InputDecoration(labelText: 'Name'),
           ),
           const SizedBox(height: 12),
-          if (mutation.isError)
-            _ErrorBanner(message: '${mutation.error}'),
+          if (mutation.isError) _ErrorBanner(message: '${mutation.error}'),
           FilledButton(
             onPressed: mutation.isPending
                 ? null

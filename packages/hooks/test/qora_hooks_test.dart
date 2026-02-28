@@ -39,7 +39,8 @@ void main() {
   // ── useQuery ───────────────────────────────────────────────────────────────
 
   group('useQuery', () {
-    testWidgets('starts in Initial then transitions to Success', (tester) async {
+    testWidgets('starts in Initial then transitions to Success',
+        (tester) async {
       final client = QoraClient();
       final states = <QoraState<String>>[];
 
@@ -236,7 +237,8 @@ void main() {
             handle = useInfiniteQuery<List<int>, int>(
               key: const ['inf-2'],
               fetcher: (page) async => [page],
-              getNextPageParam: (page) => page.first < 2 ? page.first + 1 : null,
+              getNextPageParam: (page) =>
+                  page.first < 2 ? page.first + 1 : null,
               initialPageParam: 0,
             );
             return const SizedBox.shrink();
@@ -252,8 +254,7 @@ void main() {
       expect(handle.pages, hasLength(2));
     });
 
-    testWidgets(
-        'hasNextPage becomes false when getNextPageParam returns null',
+    testWidgets('hasNextPage becomes false when getNextPageParam returns null',
         (tester) async {
       final client = QoraClient();
       late InfiniteQueryHandle<List<int>, int> handle;
