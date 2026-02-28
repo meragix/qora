@@ -24,7 +24,7 @@ color: success
   class: rounded-full
   ---
 
-  v0.1.0 is now available
+  v0.4.0 is now available
   :::
 
 #links
