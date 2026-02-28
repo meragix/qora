@@ -1,32 +1,68 @@
 /// Canonical VM service extension names and event stream keys for Qora.
 ///
-/// Keep all method names centralized in this file to avoid string drift
-/// between the runtime bridge and the DevTools UI.
+/// All method names are centralised here to prevent string drift between the
+/// runtime bridge (`qora_devtools_extension`) and the DevTools UI
+/// (`qora_devtools_ui`). **Never hard-code these strings elsewhere.**
+///
+/// ## Naming convention
+///
+/// - Push events (App → UI):  `qora:<domain>` — see [QoraExtensionEvents].
+/// - Pull commands (UI → App): `ext.qora.<verb><Object>` in camelCase.
+///
+/// ## Adding a new extension method
+///
+/// 1. Add a constant below following the `ext.qora.<verb><Object>` pattern.
+/// 2. Register the handler in `ExtensionRegistrar.registerAll()`.
+/// 3. Add a `handle<Verb>` method to `ExtensionHandlers`.
+/// 4. Create a matching [QoraCommand] subclass in the `commands/` directory.
+/// 5. Register the new case in [CommandCodec.decode].
+/// 6. Call it from the DevTools UI via `VmServiceClient.sendCommand`.
+///
+/// Bump the `shared` package minor version after any additive change.
 abstract final class QoraExtensionMethods {
-  /// VM service extension prefix.
+  /// VM service extension name prefix.
   static const String prefix = 'ext.qora';
 
-  /// Extension method used by the UI to request a query refetch.
+  /// Requests an immediate refetch for a given query key.
+  ///
+  /// Required param: `queryKey` (String).
   static const String refetch = '$prefix.refetch';
 
-  /// Extension method used by the UI to invalidate a query.
+  /// Marks a query stale and triggers a background refetch.
+  ///
+  /// Required param: `queryKey` (String).
   static const String invalidate = '$prefix.invalidate';
 
-  /// Extension method used by the UI to rollback an optimistic update.
+  /// Rolls back an in-progress optimistic update for a given query key.
+  ///
+  /// Required param: `queryKey` (String).
   static const String rollbackOptimistic = '$prefix.rollbackOptimistic';
 
-  /// Extension method used by the UI to fetch a full cache snapshot.
+  /// Returns a full [CacheSnapshot] — all active queries and mutations.
+  ///
+  /// No params required. Response may be large; consider pagination in future.
   static const String getCacheSnapshot = '$prefix.getCacheSnapshot';
 
-  /// Extension method used by the UI to fetch a large payload in chunks.
+  /// Returns one base64-encoded chunk from a previously stored lazy payload.
+  ///
+  /// Required params: `payloadId` (String), `chunkIndex` (int ≥ 0).
   static const String getPayloadChunk = '$prefix.getPayloadChunk';
 
-  /// Legacy alias kept for backward compatibility.
+  /// Legacy alias for [getPayloadChunk] kept for backward compatibility.
+  ///
+  /// Older DevTools UI builds may still dispatch this name. The runtime
+  /// registers both and routes them to the same handler.
   static const String getPayload = '$prefix.getPayload';
 }
 
-/// Known extension event names emitted by the runtime bridge.
+/// Known extension event stream keys emitted by the runtime bridge.
+///
+/// The DevTools UI subscribes to the `"Extension"` VM service stream and
+/// filters events by [qoraEvent] to receive Qora-specific payloads.
 abstract final class QoraExtensionEvents {
-  /// Main stream event kind used by Qora DevTools.
+  /// Primary stream kind for all Qora protocol events.
+  ///
+  /// Both sides must agree on this string. If it ever needs to change,
+  /// keep the old value active as a fallback for at least one minor version.
   static const String qoraEvent = 'qora:event';
 }

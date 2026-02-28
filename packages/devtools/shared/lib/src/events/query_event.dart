@@ -1,50 +1,101 @@
 import 'qora_event.dart';
 
 /// Enumerates query event subtypes emitted by the runtime.
+///
+/// The variant drives how the DevTools UI interprets the associated
+/// [QueryEvent] — e.g. `fetched` may carry large payload metadata while
+/// `invalidated` carries no data at all.
 enum QueryEventType {
-  /// A query has been fetched successfully or with an error status.
+  /// A query has completed a fetch cycle (success or error).
+  ///
+  /// This is the most common event kind. For large results the data is not
+  /// inlined — check [QueryEvent.hasLargePayload] and pull chunks via
+  /// `ext.qora.getPayloadChunk`.
   fetched,
 
-  /// A query has been invalidated.
+  /// A query has been marked stale and will be re-fetched on next access.
   invalidated,
 
-  /// A query has been inserted into the cache.
+  /// A new query key has been inserted into the cache.
   added,
 
-  /// A query has been updated in-place.
+  /// An existing cache entry has been updated in-place.
   updated,
 
-  /// A query has been removed from the cache.
+  /// A cache entry has been evicted or explicitly removed.
   removed,
 }
 
 /// Typed protocol event for query lifecycle changes.
+///
+/// ## Lazy payload protocol
+///
+/// VM service extension payloads are limited to ~10 MB. For large query
+/// results Qora uses a **push-metadata / pull-data** strategy:
+///
+/// 1. The runtime pushes a [QueryEvent] with [hasLargePayload] `= true`,
+///    [payloadId], [totalChunks], and a [summary] (lightweight statistics).
+/// 2. The DevTools UI detects `hasLargePayload` and pulls each chunk on
+///    demand via `ext.qora.getPayloadChunk`.
+/// 3. The UI reassembles the JSON from base64-encoded 80 KB chunks.
+///
+/// When [hasLargePayload] is `false`, [data] contains the full payload and
+/// no additional pull is necessary.
+///
+/// ## Scaling note — summary field
+///
+/// [summary] is always populated regardless of payload size and provides a
+/// lightweight preview (`approxBytes`, `itemCount`) that the cache inspector
+/// can display without fetching the full payload. This minimises latency for
+/// large cache panels with many simultaneous active queries.
 final class QueryEvent extends QoraEvent {
-  /// Query event subtype.
+  /// Query event subtype driving UI interpretation.
   final QueryEventType type;
 
-  /// Stable query key representation.
+  /// Stable query key as serialised by the runtime (e.g. `"todos?page=1"`).
   final String key;
 
   /// Optional runtime status string (`loading`, `success`, `error`, ...).
+  ///
+  /// `null` for events where status is irrelevant (e.g. `removed`).
   final String? status;
 
-  /// Optional data payload (small payloads only).
+  /// Inlined payload for **small** results only.
+  ///
+  /// `null` when [hasLargePayload] is `true`. In that case use [payloadId]
+  /// and [totalChunks] to pull the data in chunks.
   final Object? data;
 
-  /// Indicates whether the actual payload should be fetched in chunks.
+  /// `true` when the payload exceeds the inline size threshold (~80 KB).
+  ///
+  /// When `true`, [payloadId] and [totalChunks] are set and [data] is `null`.
   final bool hasLargePayload;
 
-  /// Opaque payload identifier used for lazy loading.
+  /// Opaque server-side identifier used to pull chunks from the runtime.
+  ///
+  /// Only set when [hasLargePayload] is `true`. Expires after 30 seconds on
+  /// the runtime side ([PayloadStore] TTL) — pull all chunks promptly after
+  /// receiving the event.
   final String? payloadId;
 
-  /// Number of chunks available for lazy payload retrieval.
+  /// Total number of base64-encoded chunks available for [payloadId].
+  ///
+  /// Only set when [hasLargePayload] is `true`.
   final int? totalChunks;
 
-  /// Optional lightweight summary of the payload.
+  /// Lightweight payload summary shown before the full data is pulled.
+  ///
+  /// Typical fields:
+  /// - `approxBytes` (int) — approximate serialised size in bytes.
+  /// - `itemCount` (int) — element count for lists and maps.
+  ///
+  /// May be `null` for non-data events such as `invalidated`.
   final Map<String, Object?>? summary;
 
   /// Creates a query event.
+  ///
+  /// Prefer the named factories ([QueryEvent.fetched], [QueryEvent.invalidated])
+  /// which auto-generate [eventId] and [timestampMs].
   QueryEvent({
     required super.eventId,
     required super.timestampMs,
@@ -59,6 +110,8 @@ final class QueryEvent extends QoraEvent {
   }) : super(kind: 'query.${type.name}');
 
   /// Helper constructor for `query.fetched`.
+  ///
+  /// Auto-generates [QoraEvent.eventId] and timestamps the event at call time.
   factory QueryEvent.fetched({
     required String key,
     Object? data,
@@ -83,6 +136,8 @@ final class QueryEvent extends QoraEvent {
   }
 
   /// Helper constructor for `query.invalidated`.
+  ///
+  /// Auto-generates [QoraEvent.eventId] and timestamps the event at call time.
   factory QueryEvent.invalidated({required String key}) {
     return QueryEvent(
       eventId: QoraEvent.generateId(),
@@ -92,7 +147,11 @@ final class QueryEvent extends QoraEvent {
     );
   }
 
-  /// Deserializes a query event.
+  /// Deserializes a query event from a raw JSON map.
+  ///
+  /// Tolerant of missing fields: falls back to sensible defaults so that
+  /// partial payloads (e.g. emitted by an older runtime) do not throw.
+  /// Unknown `kind` suffixes resolve to [QueryEventType.updated].
   factory QueryEvent.fromJson(Map<String, Object?> json) {
     final rawKind = (json['kind'] as String?) ?? 'query.updated';
     final kindSuffix = rawKind.startsWith('query.') ? rawKind.substring('query.'.length) : rawKind;

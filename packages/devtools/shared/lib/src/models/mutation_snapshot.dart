@@ -1,27 +1,45 @@
 /// Immutable view of a mutation state used by DevTools timeline and details.
+///
+/// [MutationSnapshot] is included in [CacheSnapshot.mutations] and exposes
+/// all in-flight or recently settled mutations at snapshot time.
+///
+/// ## Lifecycle correlation
+///
+/// Use [id] to correlate this snapshot with [MutationEvent] entries in the
+/// timeline: a snapshot entry and its matching events share the same [id].
+/// The elapsed time `(settledAtMs ?? now) - startedAtMs` gives the duration.
 final class MutationSnapshot {
-  /// Mutation identifier.
+  /// Runtime-assigned mutation identifier, stable across retries.
   final String id;
 
-  /// Associated query/cache key.
+  /// Associated query/cache key invalidated or updated on settlement.
   final String key;
 
-  /// Mutation status (`started`, `running`, `settled`, ...).
+  /// Mutation lifecycle status.
+  ///
+  /// Common values: `'started'`, `'running'`, `'settled'`.
   final String status;
 
-  /// Input variables.
+  /// Input variables dispatched to the mutation function.
   final Object? variables;
 
-  /// Output result.
+  /// Settlement result — server response on success or error details on failure.
+  ///
+  /// `null` before settlement.
   final Object? result;
 
-  /// Whether the mutation settled with success.
+  /// Settlement outcome — `true` on success, `false` on failure.
+  ///
+  /// `null` before settlement.
   final bool? success;
 
-  /// Mutation start timestamp in unix epoch milliseconds.
+  /// Unix epoch milliseconds when the mutation was initiated.
   final int startedAtMs;
 
-  /// Optional mutation settle timestamp in unix epoch milliseconds.
+  /// Unix epoch milliseconds when the mutation settled.
+  ///
+  /// `null` for in-flight mutations. Use `DateTime.now().millisecondsSinceEpoch`
+  /// as an upper-bound for elapsed-time calculations.
   final int? settledAtMs;
 
   /// Creates a mutation snapshot.

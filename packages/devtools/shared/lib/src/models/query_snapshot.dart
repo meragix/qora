@@ -1,27 +1,51 @@
 /// Immutable view of a cached query used by DevTools screens.
+///
+/// A [QuerySnapshot] is a lightweight DTO extracted from the live
+/// `QoraClient` cache. It represents the state of one query at the moment
+/// `ext.qora.getCacheSnapshot` was called.
+///
+/// ## Large payload handling
+///
+/// When the cached data exceeds the inline threshold (~80 KB), [data] is
+/// `null` and [hasLargePayload] is `true`. The DevTools UI should:
+/// 1. Display [summary] immediately (counts, approximate bytes).
+/// 2. Pull the full payload on user demand via `ext.qora.getPayloadChunk`
+///    using [payloadId] and [totalChunks].
+///
+/// See [QueryEvent] for the same pattern applied to streamed events.
 final class QuerySnapshot {
-  /// Stable query key representation.
+  /// Stable query key as serialised by the runtime.
   final String key;
 
-  /// Runtime query status (`idle`, `loading`, `success`, `error`, ...).
+  /// Runtime query status string.
+  ///
+  /// Common values: `'idle'`, `'loading'`, `'success'`, `'error'`.
   final String status;
 
-  /// Optional payload (small payloads only).
+  /// Inlined payload for small results only.
+  ///
+  /// `null` when [hasLargePayload] is `true` — use [payloadId] instead.
   final Object? data;
 
-  /// Last update timestamp in unix epoch milliseconds.
+  /// Unix epoch milliseconds of the last successful cache update.
   final int updatedAtMs;
 
-  /// Indicates whether payload must be requested through chunk endpoint.
+  /// `true` when [data] exceeds the inline size limit and must be pulled in
+  /// chunks via `ext.qora.getPayloadChunk`.
   final bool hasLargePayload;
 
-  /// Opaque payload identifier for lazy loading.
+  /// Opaque server-side identifier for lazy chunk pulling.
+  ///
+  /// Only set when [hasLargePayload] is `true`. Expires on the runtime after
+  /// ~30 seconds ([PayloadStore] TTL).
   final String? payloadId;
 
-  /// Number of chunks available for lazy loading.
+  /// Total chunk count available for [payloadId].
   final int? totalChunks;
 
-  /// Optional compact payload summary.
+  /// Lightweight metadata shown in the cache inspector before payload is pulled.
+  ///
+  /// Typical fields: `approxBytes` (int), `itemCount` (int).
   final Map<String, Object?>? summary;
 
   /// Creates a query snapshot.
