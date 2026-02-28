@@ -2,7 +2,7 @@ name: qora_devtools_extension
 description: Runtime VM service bridge that exposes Qora state to DevTools.
 version: 0.1.0
 homepage: https://github.com/meragix/qora
-repository: https://github.com/meragix/qora
+repository: https://github.com/meragix/qora/tree/main/packages/devtools/extension
 issue_tracker: https://github.com/meragix/qora/issues
 publish_to: none
 
@@ -19,4 +19,4 @@ dependencies:
 
 dev_dependencies:
   test: ^1.26.0
-  flutter_lints: ^6.0.0
+  lints: ^6.1.0

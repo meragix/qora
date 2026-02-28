@@ -16,16 +16,9 @@ workspace:
   - packages/devtools/extension
   - packages/devtools/overlay
   - packages/devtools/shared
+  - packages/devtools/ui
 
 melos:
-  packages:
-    - packages/dart
-    - packages/flutter
-    - packages/hooks
-    - packages/devtools/extension
-    - packages/devtools/overlay
-    - packages/devtools/shared
-    - packages/devtools/ui
   command:
     version:
       # Versioning indépendant par package (pas de version globale forcée)
