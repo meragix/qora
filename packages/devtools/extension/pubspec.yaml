@@ -1,10 +1,12 @@
 name: qora_devtools_extension
-description: Runtime VM service bridge that exposes Qora state to DevTools.
+description: >-
+  Runtime VM service bridge for Qora DevTools. Publishes query and mutation
+  events via developer.postEvent and registers ext.qora.* VM extensions for
+  the DevTools inspector panel.
 version: 0.1.0
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora/tree/main/packages/devtools/extension
 issue_tracker: https://github.com/meragix/qora/issues
-publish_to: none
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -12,10 +14,8 @@ environment:
 resolution: workspace
 
 dependencies:
-  qora:
-    path: ../../dart
-  qora_devtools_shared:
-    path: ../shared
+  qora: ^0.4.0
+  qora_devtools_shared: ^0.1.0
 
 dev_dependencies:
   test: ^1.26.0

@@ -1,4 +1,8 @@
-## 0.0.1
+# Changelog
+
+## [Unreleased]
+
+## [0.1.0] - 2026-02-28
 
 * Initial implementation of the Qora runtime DevTools bridge.
 * Added public package entrypoint exports for:
