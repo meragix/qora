@@ -26,14 +26,11 @@ jobs:
           channel: stable
           cache: true
 
-       # Supprime les overrides Melos qui tirent tout le workspace
-      - name: Remove workspace overrides
-        working-directory: ${{ inputs.package }}
-        run: rm -f pubspec_overrides.yaml
+      - name: Install Melos
+        run: dart pub global activate melos 7.4.0
 
-      - name: Install dependencies
-        working-directory: ${{ inputs.package }}
-        run: flutter pub get
+      - name: Bootstrap
+        run: melos bootstrap
 
       - name: Format
         working-directory: ${{ inputs.package }}

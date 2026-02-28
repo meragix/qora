@@ -21,9 +21,7 @@ workspace:
 melos:
   command:
     version:
-      # Versioning indépendant par package (pas de version globale forcée)
       independent: true
-      # Generate commit links in package changelogs.
       linkToCommits: true
       workspaceChangelog: false
       message: "chore: release {version}"
@@ -31,164 +29,72 @@ melos:
       runPubGetInParallel: true
 
   scripts:
-    # Analysis
-    analyze:
-      description: Run static analysis on all packages
-      run: melos exec -- dart analyze .
 
-    # Formatting
+    # ── Format ────────────────────────────────────────────────────────
     format:
       description: Format all packages
       run: melos exec -- dart format .
 
     format:check:
-      description: Check formatting
+      description: Check formatting on all packages (CI)
       run: melos exec -- dart format --output=none --set-exit-if-changed .
 
-    # Testing
-    test:
-      description: Run all tests
-      run: melos exec --fail-fast -- dart test --coverage=coverage
+    # ── Analyze ───────────────────────────────────────────────────────
+    analyze:
+      description: Run static analysis on all packages
+      run: melos exec -- dart analyze --fatal-infos .
 
-    test:coverage:
-      description: Generate coverage report
+    # ── Test ──────────────────────────────────────────────────────────
+    test:dart:
+      description: Run tests on pure Dart packages
+      run: melos exec -- dart test --coverage=coverage
+      packageFilters:
+        flutter: false          # uniquement les packages sans Flutter SDK
+
+    test:flutter:
+      description: Run tests on Flutter packages
+      run: melos exec -- flutter test --coverage
+      packageFilters:
+        flutter: true           # uniquement les packages avec Flutter SDK
+
+    test:all:
+      description: Run all tests (dart + flutter)
       run: |
-        melos exec -- dart test --coverage=coverage
-        melos exec -- dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+        melos run test:dart
+        melos run test:flutter
 
-    # Build l'UI DevTools Web + copie vers le package noyau
+    # ── Coverage ──────────────────────────────────────────────────────
+    coverage:
+      description: Generate lcov coverage report
+      run: |
+        melos run test:all
+        melos exec -- dart run coverage:format_coverage \
+          --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+
+    # ── Build DevTools UI ─────────────────────────────────────────────
     build:devtools:
-      description: Build DevTools Web UI and copy to qora package
+      description: Build DevTools Web UI and copy into the extension package
       run: |
-        cd packages/qora_devtools_ui && flutter build web \
-          --output build/devtools_extension &&
-        cp -r build/devtools_extension \
-          ../qora/extension/devtools/build
+        cd packages/devtools/ui
+        flutter build web --output build/devtools_extension
+        cp -r build/devtools_extension ../extension/build
 
-    # Publishing
+    # ── Publish ───────────────────────────────────────────────────────
     publish:check:
-      description: Dry run publish
+      description: Dry-run publish on all packages
       run: melos exec -- dart pub publish --dry-run
 
-    # Publication dans l'ordre correct des dépendances
     publish:
-    run: melos exec --depends-on="qora_devtools_shared" -- dart pub publish
+      description: Publish all packages in dependency order
+      run: |
+        melos exec --scope="qora" -- dart pub publish --force
+        melos exec --scope="qora_devtools_shared" -- dart pub publish --force
+        melos exec --scope="qora_devtools_extension" -- dart pub publish --force
+        melos exec --scope="flutter_qora" -- dart pub publish --force
+        melos exec --scope="qora_hooks" -- dart pub publish --force
+        melos exec --scope="qora_devtools_overlay" -- dart pub publish --force
 
-    # Vérification des imports circulaires
-    check:imports:
-      run: dart run import_lint:main
-
-    # Version management
-    version:
-      description: Update version across packages
-      run: melos version
-
-    # Clean
+    # ── Clean ─────────────────────────────────────────────────────────
     clean:
       description: Clean all packages
-      run: melos exec -- dart pub cache clean
-
-
-# # melos.yaml
-# name: qora_workspace
-# sdkPath: auto
-
-# packages:
-#   - packages/dart/**
-#   - packages/flutter/**
-#   - packages/devtools/**
-
-# command:
-#   version:
-#     # Versioning indépendant par package (pas de version globale forcée)
-#     independent: true
-#     # Changelog auto depuis les commits conventionnels
-#     workspaceChangelog: true
-
-#   bootstrap:
-#     # dart pub get dans tous les packages en parallèle
-#     runPubGetInParallel: true
-#     # Lier les packages locaux entre eux (path dependencies)
-#     usePubspecOverrides: true
-
-# scripts:
-
-#   # ── Qualité ────────────────────────────────────────────────────────
-#   analyze:
-#     run: melos exec -- dart analyze --fatal-infos
-#     description: Analyse statique sur tous les packages
-#     packageFilters:
-#       ignore:
-#         - "*example*"
-
-#   format:
-#     run: melos exec -- dart format . --set-exit-if-changed
-#     description: Vérifie le formatage
-
-#   # ── Tests par domaine ─────────────────────────────────────────────
-#   test:dart:
-#     run: melos exec -- dart test
-#     description: Tests unitaires packages dart/
-#     packageFilters:
-#       scope:
-#         - "qora_core"
-#         - "qora_devtools_shared"
-#         - "qora_devtools_extension"
-
-#   test:flutter:
-#     run: melos exec -- flutter test
-#     description: Tests packages flutter/ et devtools/ Flutter
-#     packageFilters:
-#       scope:
-#         - "qora"
-#         - "qora_devtools_overlay"
-
-#   test:all:
-#     run: melos run test:dart && melos run test:flutter
-#     description: Tous les tests
-
-#   # ── Build DevTools UI ─────────────────────────────────────────────
-#   build:devtools:
-#     run: |
-#       cd packages/devtools/qora_devtools_ui
-#       flutter build web --output build/devtools_extension
-#       cp -r build/devtools_extension \
-#         ../../dart/qora_core/extension/devtools/build
-#     description: Build l'UI Web DevTools et copie vers qora_core
-
-#   # ── Publication ordonnée ──────────────────────────────────────────
-#   # L'ordre est critique : les dépendances d'abord
-#   publish:dart:
-#     run: melos exec --scope="qora_core" -- dart pub publish --dry-run
-#     description: Publie qora_core (doit être premier)
-
-#   publish:devtools:shared:
-#     run: melos exec --scope="qora_devtools_shared" -- dart pub publish
-#     description: Publie le protocole partagé
-
-#   publish:all:
-#     run: |
-#       melos exec --scope="qora_core" -- dart pub publish
-#       melos exec --scope="qora_devtools_shared" -- dart pub publish
-#       melos exec --scope="qora_devtools_extension" -- dart pub publish
-#       melos exec --scope="qora" -- dart pub publish
-#       melos exec --scope="qora_devtools_overlay" -- dart pub publish
-#       melos exec --scope="qora_devtools_ui" -- dart pub publish
-#     description: Publication complète dans le bon ordre
-
-#   # ── Vérification des dépendances inter-domaines ───────────────────
-#   check:deps:
-#     run: dart run tools/check_domain_deps.dart
-#     description: |
-#       Vérifie qu'aucun package dart/ ou flutter/ ne dépend de devtools/
-#       et qu'aucun package dart/ ne dépend de flutter/
-
-#   # ── Nettoyage ─────────────────────────────────────────────────────
-#   clean:
-#     run: melos exec -- flutter clean
-#     description: Clean tous les packages
-
-#   clean:deep:
-#     run: |
-#       melos clean
-#       melos exec -- rm -rf .dart_tool pubspec_overrides.yaml
+      run: melos exec -- dart run build_runner clean
