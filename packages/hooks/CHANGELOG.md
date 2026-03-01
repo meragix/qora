@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-01
+
+### Changed
+
+- Updated dependency to `flutter_qora: ^0.5.0` for suite alignment with core 0.5.0 persistence release
+
 ## [0.1.0] - 2026-02-28
 
 ### Added
