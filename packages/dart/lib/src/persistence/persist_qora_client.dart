@@ -349,7 +349,8 @@ class PersistQoraClient extends QoraClient {
       _pendingHydration[storageKey] = _HydrationEntry(
         typeName: envelope.typeName,
         data: data,
-        persistedAt: DateTime.fromMillisecondsSinceEpoch(envelope.persistedAtMs),
+        persistedAt:
+            DateTime.fromMillisecondsSinceEpoch(envelope.persistedAtMs),
       );
       _persistLog(
         'Queued "${envelope.typeName}" for lazy hydration ($storageKey)',
@@ -517,9 +518,8 @@ class PersistQoraClient extends QoraClient {
       data: serialized,
       persistedAtMs: DateTime.now().millisecondsSinceEpoch,
       // Duration.zero → null so isExpired() returns false (indefinite).
-      ttlMs: effectiveTtl.inMilliseconds == 0
-          ? null
-          : effectiveTtl.inMilliseconds,
+      ttlMs:
+          effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
     );
 
     final storageKey = _encodeStorageKey(key);

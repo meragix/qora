@@ -449,7 +449,8 @@ class _TestUser {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || other is _TestUser && id == other.id && name == other.name;
+      identical(this, other) ||
+      other is _TestUser && id == other.id && name == other.name;
 
   @override
   int get hashCode => Object.hash(id, name);

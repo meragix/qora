@@ -387,23 +387,28 @@ void main() {
       const MutationIdle<String, String>().when(onIdle: () => called = 'idle');
       expect(called, 'idle');
 
-      const MutationPending<String, String>(variables: 'v').when(onPending: (_) => called = 'pending');
+      const MutationPending<String, String>(variables: 'v')
+          .when(onPending: (_) => called = 'pending');
       expect(called, 'pending');
 
-      const MutationSuccess<String, String>(data: 'd', variables: 'v').when(onSuccess: (_, __) => called = 'success');
+      const MutationSuccess<String, String>(data: 'd', variables: 'v')
+          .when(onSuccess: (_, __) => called = 'success');
       expect(called, 'success');
 
-      const MutationFailure<String, String>(error: 'e', variables: 'v').when(onError: (_, __, ___) => called = 'error');
+      const MutationFailure<String, String>(error: 'e', variables: 'v')
+          .when(onError: (_, __, ___) => called = 'error');
       expect(called, 'error');
     });
 
     test('MutationState.maybeWhen returns orElse for unhandled states', () {
-      final result = const MutationPending<String, String>(variables: 'v').maybeWhen(orElse: () => 'fallback');
+      final result = const MutationPending<String, String>(variables: 'v')
+          .maybeWhen(orElse: () => 'fallback');
       expect(result, 'fallback');
     });
 
     test('MutationStateExtensions.fold is exhaustive', () {
-      final result = const MutationSuccess<String, String>(data: 'd', variables: 'v').fold(
+      final result =
+          const MutationSuccess<String, String>(data: 'd', variables: 'v').fold(
         onIdle: () => 'idle',
         onPending: (_) => 'pending',
         onSuccess: (data, _) => 'success:$data',
@@ -426,7 +431,8 @@ void main() {
         MutationStatus.success,
       );
       expect(
-        const MutationFailure<String, String>(error: 'e', variables: 'v').status,
+        const MutationFailure<String, String>(error: 'e', variables: 'v')
+            .status,
         MutationStatus.error,
       );
     });
@@ -543,7 +549,8 @@ void main() {
       expect(client.activeMutations, isEmpty);
     });
 
-    test('dispose removes pending entry from activeMutations silently', () async {
+    test('dispose removes pending entry from activeMutations silently',
+        () async {
       final client = QoraClient();
       addTearDown(client.dispose);
 
@@ -596,7 +603,8 @@ void main() {
       expect(client.debugInfo()['active_mutations'], 0);
     });
 
-    test('DevTools late-connect sees pending snapshot then stream updates', () async {
+    test('DevTools late-connect sees pending snapshot then stream updates',
+        () async {
       final client = QoraClient();
       addTearDown(client.dispose);
 

@@ -103,14 +103,16 @@ class CacheEntry<T> {
   bool isStale(Duration? staleTime) {
     if (staleTime == null) return false;
     return switch (_state) {
-      Success(:final updatedAt) => DateTime.now().difference(updatedAt) > staleTime,
+      Success(:final updatedAt) =>
+        DateTime.now().difference(updatedAt) > staleTime,
       _ => true,
     };
   }
 
   /// Returns `true` when the entry has been idle (no access) longer than
   /// [cacheTime] and is safe to garbage-collect.
-  bool shouldEvict(Duration cacheTime) => DateTime.now().difference(lastAccessedAt) > cacheTime;
+  bool shouldEvict(Duration cacheTime) =>
+      DateTime.now().difference(lastAccessedAt) > cacheTime;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
