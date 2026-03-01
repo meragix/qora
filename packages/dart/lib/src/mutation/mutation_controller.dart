@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:qora/src/utils/query_function.dart';
 
+import '../network/network_mode.dart';
+import '../network/offline_mutation_queue.dart';
+import '../network/pending_mutation.dart';
 import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'mutation_tracker.dart';
@@ -52,10 +55,27 @@ import 'mutation_tracker.dart';
 /// );
 /// ```
 ///
+/// ## Offline queue
+///
+/// When [isOnline] returns `false` and [MutationOptions.offlineQueue] is
+/// `true`, [mutate] enqueues the call instead of executing it:
+///
+/// ```dart
+/// final controller = MutationController<Post, String, void>(
+///   mutator: (title) => api.createPost(title),
+///   isOnline: () => client.isOnline,
+///   offlineQueue: client.offlineMutationQueue,
+///   options: MutationOptions(
+///     offlineQueue: true,
+///     optimisticResponse: (title) => Post.draft(title),
+///   ),
+/// );
+/// ```
+///
 /// ## Observability
 ///
 /// Pass a [MutationTracker] (typically [QoraClient]) to wire this controller
-/// into the global mutation event bus. [MutationBuilder] does this
+/// into the global mutation event bus. [QoraMutationBuilder] does this
 /// automatically.
 ///
 /// ```dart
@@ -85,7 +105,7 @@ class MutationController<TData, TVariables, TContext> {
   /// notifications for DevTools observability.
   ///
   /// When null, this controller operates in standalone mode with no global
-  /// visibility. [MutationBuilder] sets this automatically via
+  /// visibility. [QoraMutationBuilder] sets this automatically via
   /// [QoraScope.maybeOf], so it is safe to use without a [QoraScope] ancestor.
   final MutationTracker? tracker;
 
@@ -103,6 +123,20 @@ class MutationController<TData, TVariables, TContext> {
   /// ```
   final Map<String, Object?>? metadata;
 
+  /// Reports whether the device is currently online.
+  ///
+  /// Injected by [QoraMutationBuilder] from [QoraClient.isOnline]. When
+  /// `null`, offline-queue logic is disabled — the mutation always executes
+  /// immediately.
+  final bool Function()? isOnline;
+
+  /// The shared offline mutation queue owned by [QoraClient].
+  ///
+  /// When [MutationOptions.offlineQueue] is `true` and [isOnline] returns
+  /// `false`, [mutate] enqueues a [PendingMutation] here instead of
+  /// executing the mutator. [QoraClient] replays the queue on reconnect.
+  final OfflineMutationQueue? offlineQueue;
+
   final StreamController<MutationState<TData, TVariables>> _streamController =
       StreamController<MutationState<TData, TVariables>>.broadcast();
 
@@ -116,9 +150,14 @@ class MutationController<TData, TVariables, TContext> {
     this.options,
     this.tracker,
     this.metadata,
+    this.isOnline,
+    this.offlineQueue,
   });
 
   /// The current state of this mutation.
+  ///
+  /// Includes [MutationSuccess.isOptimistic] to distinguish server-confirmed
+  /// results from locally-enqueued optimistic ones.
   MutationState<TData, TVariables> get state => _state;
 
   /// A stream of state changes.
@@ -160,15 +199,26 @@ class MutationController<TData, TVariables, TContext> {
 
   /// Executes the mutation with the given [variables].
   ///
-  /// State transitions:
+  /// ### Normal flow (online)
+  ///
   /// 1. Calls [MutationOptions.onMutate] — optimistic update + snapshot.
   /// 2. Transitions to [MutationPending].
-  /// 3. On success → [MutationSuccess], [MutationOptions.onSuccess],
-  ///    [MutationOptions.onSettled].
+  /// 3. On success → [MutationSuccess] (`isOptimistic: false`),
+  ///    [MutationOptions.onSuccess], [MutationOptions.onSettled].
   /// 4. On failure → [MutationFailure], [MutationOptions.onError] (rollback),
   ///    [MutationOptions.onSettled].
   ///
-  /// Returns the result data on success, or `null` on failure.
+  /// ### Offline flow (when [isOnline] returns `false`)
+  ///
+  /// Requires [MutationOptions.offlineQueue] `true` and [offlineQueue] set:
+  ///
+  /// - If [MutationOptions.optimisticResponse] is provided:
+  ///   transitions immediately to `MutationSuccess(isOptimistic: true)` and
+  ///   enqueues for replay on reconnect.
+  /// - Otherwise: transitions to [MutationPending] and enqueues for replay.
+  ///   The state remains pending until the queue is replayed.
+  ///
+  /// Returns the result data on success, or `null` on failure / when queued.
   /// Errors are captured in [MutationFailure] state and do **not** propagate
   /// to the caller.
   ///
@@ -176,6 +226,47 @@ class MutationController<TData, TVariables, TContext> {
   Future<TData?> mutate(TVariables variables) async {
     _assertNotDisposed();
 
+    final opts = options;
+    final shouldQueueOffline = opts?.offlineQueue == true &&
+        opts?.networkMode != NetworkMode.always &&
+        isOnline != null &&
+        isOnline!() == false;
+
+    if (shouldQueueOffline) {
+      return _handleOfflineMutate(variables, opts!);
+    }
+
+    return _executeOnline(variables);
+  }
+
+  /// Resets the state back to [MutationIdle].
+  ///
+  /// Also removes this controller from the tracker's active snapshot.
+  /// Useful after displaying an error to allow the user to retry.
+  void reset() {
+    _assertNotDisposed();
+    _setState(
+      const MutationIdle<Never, Never>() as MutationState<TData, TVariables>,
+    );
+  }
+
+  /// Disposes this controller and closes the internal stream.
+  ///
+  /// Silently removes the controller from the tracker's snapshot without
+  /// emitting a final event.
+  ///
+  /// After [dispose], any call to [mutate] or [reset] will throw.
+  void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    tracker?.untrackMutation(id);
+    _streamController.close();
+  }
+
+  // ── Private ──────────────────────────────────────────────────────────────
+
+  /// Standard online execution path.
+  Future<TData?> _executeOnline(TVariables variables) async {
     TContext? context;
 
     // 1. onMutate — optimistic update + snapshot
@@ -234,31 +325,46 @@ class MutationController<TData, TVariables, TContext> {
     }
   }
 
-  /// Resets the state back to [MutationIdle].
+  /// Offline enqueue path.
   ///
-  /// Also removes this controller from the tracker's active snapshot.
-  /// Useful after displaying an error to allow the user to retry.
-  void reset() {
-    _assertNotDisposed();
-    _setState(
-      const MutationIdle<Never, Never>() as MutationState<TData, TVariables>,
+  /// Emits an optimistic [MutationSuccess] if [MutationOptions.optimisticResponse]
+  /// is provided, or stays [MutationPending] otherwise. Enqueues a
+  /// [PendingMutation] that replays the full [_executeOnline] on reconnect.
+  Future<TData?> _handleOfflineMutate(
+    TVariables variables,
+    MutationOptions<TData, TVariables, TContext> opts,
+  ) {
+    // Enqueue for replay when connectivity is restored.
+    offlineQueue?.enqueue(
+      PendingMutation(
+        mutatorId: id,
+        variables: variables,
+        enqueuedAt: DateTime.now(),
+        replay: () async {
+          // Re-run the full online path, which emits the real success/failure
+          // state on this controller's stream and calls onSuccess/onError hooks.
+          await _executeOnline(variables);
+        },
+      ),
     );
-  }
 
-  /// Disposes this controller and closes the internal stream.
-  ///
-  /// Silently removes the controller from the tracker's snapshot without
-  /// emitting a final event.
-  ///
-  /// After [dispose], any call to [mutate] or [reset] will throw.
-  void dispose() {
-    if (_isDisposed) return;
-    _isDisposed = true;
-    tracker?.untrackMutation(id);
-    _streamController.close();
-  }
+    if (opts.optimisticResponse != null) {
+      // Immediately show optimistic success — data is local, not server-confirmed.
+      final optimisticData = opts.optimisticResponse!(variables);
+      _setState(
+        MutationSuccess<TData, TVariables>(
+          data: optimisticData,
+          variables: variables,
+          isOptimistic: true,
+        ),
+      );
+      return Future.value(optimisticData);
+    }
 
-  // ── Private ──────────────────────────────────────────────────────────────
+    // No optimistic response — stay pending until replay.
+    _setState(MutationPending<TData, TVariables>(variables: variables));
+    return Future.value(null);
+  }
 
   Future<TData> _executeWithRetry(TVariables variables) async {
     final retryCount = options?.retryCount ?? 0;

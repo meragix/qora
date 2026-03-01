@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`NetworkMode`** — per-query enum (`online` / `always` / `offlineFirst`) controlling fetch behaviour while the device is offline
+- **`FetchStatus`** — second-axis enum (`fetching` / `paused` / `idle`) emitted independently of `QoraState`; observable via `QoraClient.watchFetchStatus(key)`
+- **`ReconnectStrategy`** — global config for thundering-herd prevention on reconnect: `maxConcurrent` batching + random `jitter` between batches; named constructors `instant()` and `conservative()`
+- **`OfflineMutationQueue`** — FIFO in-memory queue for write operations that could not be sent offline; replays in order on reconnect; `stopOnFirstError` flag for ordered dependencies; `OfflineReplayResult` surface (succeeded / failed / skipped counts)
+- **`PendingMutation`** — type-erased container (`mutatorId`, `variables`, `enqueuedAt`, `replay`) representing a queued write
+- **`QoraOfflineException`** — thrown by `fetchQuery` when offline and no cached data exists
+- **`QoraClient.attachConnectivityManager()`** — late-attach a `ConnectivityManager` after construction; called automatically by `QoraScope`
+- **`QoraClient.isOnline`** / **`networkStatus`** — real-time connectivity state getters
+- **`QoraClient.watchFetchStatus(key)`** — stream of `FetchStatus` transitions for a given query key
+- **`QoraClient.offlineMutationQueue`** — exposes the shared `OfflineMutationQueue` instance
+- **`MutationSuccess.isOptimistic`** — `bool` flag; `true` when the mutation was queued offline and an `optimisticResponse` was provided; surfaced on the sealed class getter, `when()` / `maybeWhen()` callbacks, and `MutationEvent`
+- **`MutationOptions.offlineQueue`** — opt a mutation into the `OfflineMutationQueue` when offline
+- **`MutationOptions.optimisticResponse`** — function returning a synthetic `TData` for immediate UI feedback while the mutation is queued
+- **`QoraClientConfig.reconnectStrategy`** — inject a `ReconnectStrategy`; defaults to `ReconnectStrategy()` (5 concurrent, 100 ms jitter)
+- **`QoraOptions.networkMode`** — per-query `NetworkMode`; defaults to `NetworkMode.online`
+
 ## [0.5.0] - 2026-03-01
 
 ### Added

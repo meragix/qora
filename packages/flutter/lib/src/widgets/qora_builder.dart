@@ -13,13 +13,20 @@ import 'package:qora/qora.dart';
 ///   (e.g. after a lifecycle event or an explicit [QoraClient.invalidate] call)
 /// - Cancels the subscription cleanly on dispose
 ///
+/// The [builder] receives both the [QoraState] and a [FetchStatus] so the UI
+/// can distinguish between actively fetching and waiting for network
+/// (`FetchStatus.paused`).
+///
 /// ## Basic usage
 ///
 /// ```dart
 /// QoraBuilder<User>(
 ///   queryKey: ['users', userId],
 ///   queryFn: () => api.getUser(userId),
-///   builder: (context, state) {
+///   builder: (context, state, fetchStatus) {
+///     if (fetchStatus == FetchStatus.paused) {
+///       return OfflinePlaceholder(staleData: state.dataOrNull);
+///     }
 ///     return switch (state) {
 ///       Initial()                          => const SizedBox.shrink(),
 ///       Loading(:final previousData)       =>
@@ -43,7 +50,7 @@ import 'package:qora/qora.dart';
 ///   queryKey: ['profiles', userId],
 ///   queryFn: () => api.getProfile(userId!),
 ///   enabled: userId != null,
-///   builder: (context, state) { ... },
+///   builder: (context, state, fetchStatus) { ... },
 /// )
 /// ```
 ///
@@ -54,7 +61,7 @@ import 'package:qora/qora.dart';
 ///   queryKey: ['posts', page],
 ///   queryFn: () => api.getPosts(page),
 ///   keepPreviousData: true,
-///   builder: (context, state) {
+///   builder: (context, state, fetchStatus) {
 ///     // Loading state always carries the last page's data
 ///     final posts = state.dataOrNull ?? [];
 ///     return PostList(posts: posts, isRefreshing: state.isLoading);
@@ -70,8 +77,20 @@ class QoraBuilder<T> extends StatefulWidget {
   /// The async function that performs the network/IO request.
   final Future<T> Function() queryFn;
 
-  /// Builds the widget tree from the current [QoraState].
-  final Widget Function(BuildContext context, QoraState<T> state) builder;
+  /// Builds the widget tree from the current [QoraState] and [FetchStatus].
+  ///
+  /// [fetchStatus] is the second axis of query state:
+  /// - [FetchStatus.fetching] — a network request is in-flight.
+  /// - [FetchStatus.paused] — offline, waiting for reconnect.
+  /// - [FetchStatus.idle] — no request in progress.
+  ///
+  /// Use [FetchStatus.paused] to render an "Awaiting connection…" indicator
+  /// instead of a generic spinner, keeping stale data visible to the user.
+  final Widget Function(
+    BuildContext context,
+    QoraState<T> state,
+    FetchStatus fetchStatus,
+  ) builder;
 
   /// Per-query configuration (stale time, retry count, polling interval, …).
   ///
@@ -102,7 +121,7 @@ class QoraBuilder<T> extends StatefulWidget {
   /// ```dart
   /// QoraBuilder(
   ///   keepPreviousData: true,
-  ///   builder: (context, state) {
+  ///   builder: (context, state, fetchStatus) {
   ///     final items = state.dataOrNull ?? [];
   ///     return ListView(children: items.map(ItemTile.new).toList());
   ///   },
@@ -127,8 +146,10 @@ class QoraBuilder<T> extends StatefulWidget {
 
 class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   late QoraClient _client;
-  StreamSubscription<QoraState<T>>? _subscription;
+  StreamSubscription<QoraState<T>>? _stateSub;
+  StreamSubscription<FetchStatus>? _fetchStatusSub;
   QoraState<T> _state = Initial<T>();
+  FetchStatus _fetchStatus = FetchStatus.idle;
 
   /// Tracks the last successfully fetched value so that [keepPreviousData]
   /// can augment [Loading] / [Failure] states.
@@ -160,7 +181,8 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _stateSub?.cancel();
+    _fetchStatusSub?.cancel();
     super.dispose();
   }
 
@@ -169,8 +191,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   }
 
   void _subscribe() {
-    _subscription?.cancel();
-    _subscription = _client.watchState<T>(widget.queryKey).listen(
+    _stateSub?.cancel();
+    _fetchStatusSub?.cancel();
+
+    // Subscribe to query state changes.
+    _stateSub = _client.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
         setState(() {
@@ -178,13 +203,13 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
           if (state is Success<T>) _lastKnownData = state.data;
         });
 
-        // When the query is invalidated externally (e.g. lifecycle event or an
-        // explicit client.invalidate() call), the state transitions to
-        // Loading(previousData: X). We call fetchQuery here to ensure an actual
-        // network request is dispatched.
+        // When the query is invalidated externally (e.g. lifecycle event or
+        // an explicit client.invalidate() call), the state transitions to
+        // Loading(previousData: X). We call fetchQuery here to ensure an
+        // actual network request is dispatched.
         //
-        // If a fetch is already in-flight, the client's deduplication
-        // mechanism returns the same future — no extra network call is made.
+        // If a fetch is already in-flight or paused, the client's
+        // deduplication mechanism prevents duplicate requests.
         if (widget.enabled &&
             state is Loading<T> &&
             state.previousData != null) {
@@ -201,6 +226,14 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         debugPrint('[QoraBuilder] Unexpected stream error: $error');
       },
     );
+
+    // Subscribe to fetch status (fetching / paused / idle).
+    _fetchStatusSub = _client.watchFetchStatus(widget.queryKey).listen(
+      (status) {
+        if (!mounted) return;
+        setState(() => _fetchStatus = status);
+      },
+    );
   }
 
   Future<void> _executeFetch() async {
@@ -210,8 +243,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         fetcher: widget.queryFn,
         options: widget.options,
       );
+    } on QoraOfflineException {
+      // Handled gracefully — FetchStatus.paused is emitted by the client and
+      // received via _fetchStatusSub.
     } catch (_) {
-      // Errors are captured in the Failure state and forwarded via the stream.
+      // Other errors are captured in the Failure state and forwarded by stream.
     }
   }
 
@@ -219,7 +255,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   Widget build(BuildContext context) {
     final effectiveState =
         widget.keepPreviousData ? _withPreviousData(_state) : _state;
-    return widget.builder(context, effectiveState);
+    return widget.builder(context, effectiveState, _fetchStatus);
   }
 
   /// Augments [Loading] and [Failure] states with [_lastKnownData] when the

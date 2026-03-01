@@ -1,5 +1,6 @@
 import 'package:qora/src/utils/qora_exception.dart';
 
+import '../network/reconnect_strategy.dart';
 import 'qora_options.dart';
 
 /// Global configuration for [QoraClient].
@@ -86,6 +87,23 @@ class QoraClientConfig {
   /// - `false` — only fetch if no data or data is stale.
   final bool refetchOnMount;
 
+  /// Controls how paused queries are replayed in batches when the device
+  /// reconnects.
+  ///
+  /// Prevents the "thundering herd" problem when many queries were paused
+  /// while offline and all attempt to execute simultaneously on reconnect.
+  ///
+  /// Default: `ReconnectStrategy()` — 5 concurrent queries, 100 ms jitter.
+  ///
+  /// ```dart
+  /// // Aggressive — replay everything instantly (e.g. integration tests)
+  /// reconnectStrategy: const ReconnectStrategy.instant(),
+  ///
+  /// // Conservative — slow backend, many queries
+  /// reconnectStrategy: const ReconnectStrategy.conservative(),
+  /// ```
+  final ReconnectStrategy reconnectStrategy;
+
   const QoraClientConfig({
     this.defaultOptions = const QoraOptions(),
     this.errorMapper,
@@ -93,5 +111,6 @@ class QoraClientConfig {
     this.maxCacheSize,
     this.onCacheEvict,
     this.refetchOnMount = true,
+    this.reconnectStrategy = const ReconnectStrategy(),
   });
 }

@@ -90,6 +90,8 @@ export 'package:qora/qora.dart';
 export 'src/widgets/qora_scope.dart';
 export 'src/widgets/qora_builder.dart';
 export 'src/widgets/qora_mutation_builder.dart';
+export 'src/widgets/network_status_builder.dart';
+export 'src/widgets/network_status_indicator.dart';
 
 // Extensions
 export 'src/extensions/build_context_extension.dart';

@@ -48,6 +48,14 @@ class MutationEvent {
   /// `null` when the controller was created without [MutationController.metadata].
   final Map<String, Object?>? metadata;
 
+  /// `true` when this success event carries optimistic (unconfirmed) data.
+  ///
+  /// Set when a mutation was enqueued offline with an [optimisticResponse].
+  /// Transitions to `false` once the queued mutation successfully replays on
+  /// reconnect. Forwarded as-is to the DevTools event bus so the UI can show
+  /// a "pending sync" indicator.
+  final bool isOptimistic;
+
   const MutationEvent({
     required this.mutatorId,
     required this.status,
@@ -56,6 +64,7 @@ class MutationEvent {
     this.error,
     this.variables,
     this.metadata,
+    this.isOptimistic = false,
   });
 
   bool get isIdle => status == MutationStatus.idle;
@@ -74,5 +83,6 @@ class MutationEvent {
 
   @override
   String toString() =>
-      'MutationEvent(id: $mutatorId, status: $status, at: $timestamp)';
+      'MutationEvent(id: $mutatorId, status: $status, isOptimistic: $isOptimistic, '
+      'at: $timestamp)';
 }

@@ -1,7 +1,10 @@
+import '../network/network_mode.dart';
+
 /// Per-query configuration that overrides global [QoraClientConfig] defaults.
 ///
 /// Pass to [QoraClient.fetchQuery] or [QoraClient.watchQuery] to customise
-/// caching, retries, staleness, and polling on a per-query basis.
+/// caching, retries, staleness, polling, and network behaviour on a per-query
+/// basis.
 ///
 /// All fields have sensible defaults. Override only what you need:
 ///
@@ -13,6 +16,7 @@
 ///     staleTime: Duration(seconds: 10),
 ///     refetchInterval: Duration(seconds: 5),
 ///     retryCount: 1,
+///     networkMode: NetworkMode.online, // default: pause while offline
 ///   ),
 /// );
 /// ```
@@ -117,6 +121,20 @@ class QoraOptions {
   /// - `null` (default) — falls back to [QoraClientConfig.refetchOnMount].
   final bool? refetchOnMount;
 
+  /// Controls how this query behaves when the device is offline.
+  ///
+  /// - [NetworkMode.online] (default) — pause while offline, replay on
+  ///   reconnect. The query transitions to `Loading(paused)` so the UI can
+  ///   show an "Awaiting connection…" indicator.
+  /// - [NetworkMode.always] — always execute regardless of network status.
+  /// - [NetworkMode.offlineFirst] — serve cache immediately, refetch in the
+  ///   background when online.
+  ///
+  /// Requires a [ConnectivityManager] to be attached to [QoraClient].
+  /// If no manager is configured, this option is ignored and fetches always
+  /// execute.
+  final NetworkMode networkMode;
+
   const QoraOptions({
     this.staleTime = Duration.zero,
     this.cacheTime = const Duration(minutes: 5),
@@ -128,6 +146,7 @@ class QoraOptions {
     this.refetchOnReconnect = true,
     this.refetchInterval,
     this.refetchOnMount,
+    this.networkMode = NetworkMode.online,
   });
 
   /// Returns the retry delay for the given zero-based [attemptIndex].
@@ -159,6 +178,7 @@ class QoraOptions {
       refetchOnReconnect: other.refetchOnReconnect,
       refetchInterval: other.refetchInterval ?? refetchInterval,
       refetchOnMount: other.refetchOnMount ?? refetchOnMount,
+      networkMode: other.networkMode,
     );
   }
 }

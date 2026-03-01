@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`NetworkStatusBuilder`** — low-level widget that subscribes to the `ConnectivityManager` stream and rebuilds on every `NetworkStatus` transition; accepts optional `child` to avoid rebuilding expensive sub-trees
+- **`NetworkStatusIndicator`** — high-level wrapper that overlays an offline banner on `NetworkStatus.offline`; built-in default banner (wifi-off icon, "Offline mode" text, no Material dependency); customisable via `offlineBanner` or full `builder` escape-hatch
+- **`QoraScope.connectivityManagerOf(context)`** — static method exposing the active `ConnectivityManager` to descendant widgets; used internally by `NetworkStatusBuilder`
+- **`QoraMutationBuilder`** — now injects `isOnline` callback and `offlineMutationQueue` from `QoraClient` into `MutationController` automatically
+- **`QoraBuilder`** — builder signature extended to three arguments `(BuildContext, QoraState<T>, FetchStatus)`; subscribes to `client.watchFetchStatus(key)` alongside state stream; catches `QoraOfflineException` silently (handled via `FetchStatus.paused`)
+
+### Changed
+
+- **`FlutterConnectivityManager`** — now a **pure signal provider**; constructor takes no arguments; removed `QoraClient` dependency and direct `invalidateWhere()` call; all reconnect logic delegated to `QoraClient.attachConnectivityManager()`
+- **`QoraScope`** — calls `client.attachConnectivityManager(cm)` after `connectivityManager.start()` in `initState`; exposes manager via `_InheritedQoraScope`
+
 ## [0.5.0] - 2026-03-01
 
 ### Changed

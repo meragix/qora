@@ -47,6 +47,24 @@ sealed class MutationState<TData, TVariables> {
         _ => null,
       };
 
+  /// `true` when the success state is optimistic — the mutation was enqueued
+  /// offline and has not yet been confirmed by the server.
+  ///
+  /// Use this to render a "pending sync" indicator (e.g. greyed text,
+  /// clock icon) on items that exist locally but may not yet be on the server.
+  ///
+  /// ```dart
+  /// case MutationSuccess(:final data, :final isOptimistic):
+  ///   return ListTile(
+  ///     title: Text(data.title),
+  ///     trailing: isOptimistic ? const Icon(Icons.schedule) : null,
+  ///   );
+  /// ```
+  bool get isOptimistic => switch (this) {
+        MutationSuccess(:final isOptimistic) => isOptimistic,
+        _ => false,
+      };
+
   /// The error if the mutation failed, otherwise null.
   Object? get errorOrNull => switch (this) {
         MutationFailure(:final error) => error,
@@ -67,7 +85,8 @@ sealed class MutationState<TData, TVariables> {
   void when({
     void Function()? onIdle,
     void Function(TVariables variables)? onPending,
-    void Function(TData data, TVariables variables)? onSuccess,
+    void Function(TData data, TVariables variables, bool isOptimistic)?
+        onSuccess,
     void Function(
       Object error,
       StackTrace? stackTrace,
@@ -79,8 +98,8 @@ sealed class MutationState<TData, TVariables> {
         onIdle?.call();
       case MutationPending(:final variables):
         onPending?.call(variables);
-      case MutationSuccess(:final data, :final variables):
-        onSuccess?.call(data, variables);
+      case MutationSuccess(:final data, :final variables, :final isOptimistic):
+        onSuccess?.call(data, variables, isOptimistic);
       case MutationFailure(:final error, :final stackTrace, :final variables):
         onError?.call(error, stackTrace, variables);
     }
@@ -92,7 +111,8 @@ sealed class MutationState<TData, TVariables> {
   ///
   /// ```dart
   /// final label = state.maybeWhen(
-  ///   onSuccess: (data, _) => 'Created: $data',
+  ///   onSuccess: (data, _, isOptimistic) =>
+  ///       isOptimistic ? 'Pending sync…' : 'Created: $data',
   ///   orElse: () => 'Submit',
   /// );
   /// ```
@@ -100,7 +120,7 @@ sealed class MutationState<TData, TVariables> {
     required R Function() orElse,
     R Function()? onIdle,
     R Function(TVariables variables)? onPending,
-    R Function(TData data, TVariables variables)? onSuccess,
+    R Function(TData data, TVariables variables, bool isOptimistic)? onSuccess,
     R Function(
       Object error,
       StackTrace? stackTrace,
@@ -111,8 +131,8 @@ sealed class MutationState<TData, TVariables> {
       MutationIdle() => onIdle?.call() ?? orElse(),
       MutationPending(:final variables) =>
         onPending?.call(variables) ?? orElse(),
-      MutationSuccess(:final data, :final variables) =>
-        onSuccess?.call(data, variables) ?? orElse(),
+      MutationSuccess(:final data, :final variables, :final isOptimistic) =>
+        onSuccess?.call(data, variables, isOptimistic) ?? orElse(),
       MutationFailure(:final error, :final stackTrace, :final variables) =>
         onError?.call(error, stackTrace, variables) ?? orElse(),
     };
@@ -161,18 +181,45 @@ final class MutationPending<TData, TVariables>
 }
 
 /// Success state — mutation completed successfully.
+///
+/// ## Optimistic offline success
+///
+/// When a mutation is enqueued offline (see [MutationOptions.offlineQueue] and
+/// [MutationOptions.optimisticResponse]), this state is emitted immediately
+/// with [isOptimistic] set to `true`. Once the mutation replays on reconnect
+/// and the server confirms, [isOptimistic] becomes `false`.
+///
+/// Use [isOptimistic] to render a "pending sync" indicator:
+///
+/// ```dart
+/// case MutationSuccess(:final data, :final isOptimistic):
+///   return ListTile(
+///     title: Text(data.title,
+///         style: TextStyle(color: isOptimistic ? Colors.grey : null)),
+///     trailing: isOptimistic ? const Icon(Icons.schedule, size: 16) : null,
+///   );
+/// ```
 @immutable
 final class MutationSuccess<TData, TVariables>
     extends MutationState<TData, TVariables> {
-  /// The data returned by the mutator.
+  /// The data returned by the mutator (or the optimistic response).
   final TData data;
 
   /// The variables used in this mutation call.
   final TVariables variables;
 
+  /// `true` when this success is optimistic — the mutation has been enqueued
+  /// offline and has not yet been confirmed by the server.
+  ///
+  /// Exposed on [MutationController.state] so that any widget or business
+  /// logic layer can react to the unconfirmed state. Transitions to `false`
+  /// once the queued mutation successfully replays on reconnect.
+  final bool isOptimistic;
+
   const MutationSuccess({
     required this.data,
     required this.variables,
+    this.isOptimistic = false,
   });
 
   @override
@@ -180,15 +227,23 @@ final class MutationSuccess<TData, TVariables>
       identical(this, other) ||
       other is MutationSuccess<TData, TVariables> &&
           data == other.data &&
-          variables == other.variables;
+          variables == other.variables &&
+          isOptimistic == other.isOptimistic;
 
   @override
-  int get hashCode =>
-      Object.hash(MutationSuccess, TData, TVariables, data, variables);
+  int get hashCode => Object.hash(
+        MutationSuccess,
+        TData,
+        TVariables,
+        data,
+        variables,
+        isOptimistic,
+      );
 
   @override
   String toString() =>
-      'MutationSuccess<$TData, $TVariables>(data: $data, variables: $variables)';
+      'MutationSuccess<$TData, $TVariables>(data: $data, variables: $variables, '
+      'isOptimistic: $isOptimistic)';
 }
 
 /// Failure state — mutation failed.

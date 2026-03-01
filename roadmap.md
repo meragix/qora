@@ -1,7 +1,7 @@
 <!-- v0.1.0 - MVP Core         ✅ Pure Dart foundation -->
 <!-- v0.2.0 - Flutter Basic    🎨 Basic Flutter widgets -->
 <!-- v0.3.0 - Mutations        🔄 Optimistic updates -->
-v0.4.0 - Persistence      💾 Offline-first
+<!-- v0.4.0 - Persistence      💾 Offline-first -->
 v0.5.0 - Network Aware    📡 Connectivity management
 v0.6.0 - Infinite         ∞  Pagination support
 <!-- v0.7.0 - Hooks            🪝 flutter_hooks integration -->
@@ -11,65 +11,65 @@ v1.0.0 - Production Ready 🎉 Stable release
 
 
 
-## v0.5.0 - Persistence 💾
+## v0.6.0 - Network Aware 📡
 
-**Objectif** : Support de la persistence pour offline-first
+**Objectif** : Gestion automatique de la connectivité réseau
 
 ### Packages
 ```
-packages/reqry/                      (extension)
-packages/reqry_storage_hive/         (NEW)
-packages/reqry_storage_isar/         (NEW)
-packages/reqry_storage_drift/        (NEW)
-packages/reqry_storage_shared_prefs/ (NEW)
+packages/reqry/          (extension)
+packages/reqry_flutter/  (extension)
 Features
 
-✅ QueryStorage interface (pure Dart)
-✅ PersistReqryClient extends ReqryClient
-✅ hydrate() pour charger le cache au démarrage
-✅ Serialization/Deserialization avec deserializers globaux
-✅ TTL (Time To Live) pour les données persistées
-✅ Storage adapters :
-
-HiveStorage
-IsarStorage
-DriftStorage
-SharedPreferencesStorage
-
-
+✅ ConnectivityManager interface (pure Dart)
+✅ FlutterConnectivityManager (connectivity_plus)
+✅ NetworkStatus enum
+✅ Automatic refetch on reconnect
+✅ Offline queue pour mutations
+✅ NetworkStatusIndicator widget
+✅ Pause queries pendant offline
+✅ Replay mutations queue au retour du réseau
 
 API
 dartvoid main() async {
-  final storage = HiveStorage();
-  await storage.init();
+  final client = ReqryClient();
   
-  final client = PersistReqryClient(
-    storage: storage,
-    maxAge: Duration(days: 7),
+  final connectivityManager = FlutterConnectivityManager(
+    queryClient: client,
   );
+  await connectivityManager.start();
   
-  // Register deserializers
-  client.registerDeserializer<User>((json) => User.fromJson(json));
-  client.registerDeserializer<List<User>>(
-    (json) => (json['data'] as List).map((e) => User.fromJson(e)).toList(),
+  runApp(
+    ReqryProvider(
+      client: client,
+      connectivityManager: connectivityManager,
+      child: NetworkStatusIndicator(child: MyApp()),
+    ),
   );
-  
-  // Hydrate from storage
-  await client.hydrate();
-  
-  runApp(ReqryProvider(client: client, child: MyApp()));
 }
+Widget
+dartNetworkStatusIndicator(
+  builder: (context, status) {
+    return Stack(
+      children: [
+        child,
+        if (status == NetworkStatus.offline)
+          Banner(text: 'Offline mode'),
+      ],
+    );
+  },
+  child: MyApp(),
+)
 ```
 
 ### Examples
-- ✅ `examples/offline_first_app/`
-- ✅ App qui fonctionne 100% offline
-- ✅ Sync quand réseau revient
+- ✅ `examples/network_aware_app/`
+- ✅ App qui détecte offline/online
+- ✅ Queue de mutations rejoué au retour réseau
 
 ### Tests
-- ✅ Test de la persistence
-- ✅ Test de l'hydration
-- ✅ Test du TTL
-- ✅ Mock storage tests
+- ✅ Mock connectivity tests
+- ✅ Test offline queue
+- ✅ Test refetch on reconnect
 
-**Durée estimée** : 3 semaines
+**Durée estimée** : 2 semaines

@@ -12,6 +12,10 @@ import 'package:qora/qora.dart';
 /// [MutationState] and a [mutate] callback to trigger the mutation from the
 /// UI.
 ///
+/// When a [QoraScope] with a [ConnectivityManager] is present, the controller
+/// is automatically wired to the client's network status and offline queue,
+/// enabling [MutationOptions.offlineQueue] behaviour without any extra setup.
+///
 /// ## Basic usage
 ///
 /// ```dart
@@ -24,6 +28,31 @@ import 'package:qora/qora.dart';
 ///           ? const CircularProgressIndicator()
 ///           : const Text('Create'),
 ///     );
+///   },
+/// )
+/// ```
+///
+/// ## With optimistic offline queue
+///
+/// ```dart
+/// QoraMutationBuilder<Post, String, void>(
+///   mutationFn: (title) => api.createPost(title),
+///   options: MutationOptions(
+///     offlineQueue: true,
+///     optimisticResponse: (title) => Post.draft(title),
+///     onSuccess: (post, _, __) async => context.qora.invalidate(['posts']),
+///   ),
+///   builder: (context, state, mutate) {
+///     return switch (state) {
+///       MutationIdle() => SubmitButton(onTap: () => mutate('My Post')),
+///       MutationPending() => const CircularProgressIndicator(),
+///       MutationSuccess(:final data, :final isOptimistic) => ListTile(
+///           title: Text(data.title),
+///           // Clock icon while optimistic — not yet confirmed by server.
+///           trailing: isOptimistic ? const Icon(Icons.schedule) : null,
+///         ),
+///       MutationFailure(:final error) => ErrorBanner(error),
+///     };
 ///   },
 /// )
 /// ```
@@ -57,22 +86,6 @@ import 'package:qora/qora.dart';
 ///   },
 /// )
 /// ```
-///
-/// ## Handling success and errors in the builder
-///
-/// ```dart
-/// QoraMutationBuilder<Post, String, void>(
-///   mutationFn: (title) => api.createPost(title),
-///   builder: (context, state, mutate) {
-///     return switch (state) {
-///       MutationIdle()                    => SubmitButton(onTap: () => mutate('Post')),
-///       MutationPending()                  => const CircularProgressIndicator(),
-///       MutationSuccess(:final data)       => Text('Created: ${data.title}'),
-///       MutationFailure(:final error)      => ErrorBanner(error),
-///     };
-///   },
-/// )
-/// ```
 class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// The async function that performs the server-side write.
   final MutatorFunction<TData, TVariables> mutationFn;
@@ -97,8 +110,18 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// Builds the widget tree from the current [MutationState].
   ///
   /// The [mutate] callback triggers the mutation with the given variables.
-  /// It returns `null` on failure (errors are captured in [MutationFailure]
-  /// state).
+  /// It returns the result data on success, or `null` on failure / when
+  /// queued offline (errors are captured in [MutationFailure] state).
+  ///
+  /// Pattern-match on [MutationSuccess.isOptimistic] to render a "pending
+  /// sync" indicator for mutations queued while offline:
+  ///
+  /// ```dart
+  /// MutationSuccess(:final data, :final isOptimistic) => ListTile(
+  ///   title: Text(data.title),
+  ///   trailing: isOptimistic ? const Icon(Icons.schedule) : null,
+  /// ),
+  /// ```
   final Widget Function(
     BuildContext context,
     MutationState<TData, TVariables> state,
@@ -156,11 +179,16 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
   }
 
   void _createController() {
+    final client = QoraScope.maybeOf(context);
+
     _controller = MutationController<TData, TVariables, TContext>(
       mutator: widget.mutationFn,
       options: widget.options,
-      tracker: QoraScope.maybeOf(context),
+      tracker: client,
       metadata: widget.metadata,
+      // Wire offline support when a QoraScope with connectivity is present.
+      isOnline: client != null ? () => client.isOnline : null,
+      offlineQueue: client?.offlineMutationQueue,
     );
     _state = _controller.state;
   }
