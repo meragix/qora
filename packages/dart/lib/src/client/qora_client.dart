@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import '../cache/cached_entry.dart';
 import '../cache/query_cache.dart';
 import '../config/qora_client_config.dart';
@@ -625,6 +627,55 @@ class QoraClient implements MutationTracker {
     };
   }
 
+  // ── Persistence hooks ────────────────────────────────────────────────────
+
+  /// Extension point for subclasses. Called synchronously after every
+  /// successful fetch inside [_doFetch] — covering both direct fetches and
+  /// SWR background revalidations.
+  ///
+  /// The default implementation is a no-op. Override in [PersistQoraClient]
+  /// (or any subclass) to react to fresh data without duplicating the full
+  /// [fetchQuery] / [watchQuery] logic.
+  ///
+  /// Fire-and-forget async work inside the override using [unawaited] so that
+  /// the fetch caller is never blocked by storage I/O.
+  @visibleForOverriding
+  void onFetchSuccess<T>(List<dynamic> key, T data) {}
+
+  /// Pre-populate the cache with a previously persisted value.
+  ///
+  /// Inserts a [Success] state for [key] with [data] and the given [updatedAt]
+  /// timestamp. Typically called by [PersistQoraClient.hydrate] at startup to
+  /// restore persisted data before the first network request.
+  ///
+  /// Behaviour:
+  /// - **No-op** when the entry already has a non-[Initial] state — avoids
+  ///   overwriting a live in-flight fetch (race condition on slow storage).
+  /// - Passing the original `persistedAt` as [updatedAt] lets
+  ///   [QoraOptions.staleTime] determine freshness correctly: if the data is
+  ///   older than `staleTime`, the first [watchQuery] mount will trigger a
+  ///   SWR background revalidation automatically.
+  ///
+  /// ```dart
+  /// // Restore a previously fetched user from disk:
+  /// client.hydrateQuery<User>(
+  ///   ['users', userId],
+  ///   persistedUser,
+  ///   updatedAt: persistedAt,
+  /// );
+  /// ```
+  void hydrateQuery<T>(Object key, T data, {DateTime? updatedAt}) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _getOrCreateEntry<T>(normalized);
+    if (entry.state is Initial<T>) {
+      entry.updateState(
+        Success<T>(data: data, updatedAt: updatedAt ?? DateTime.now()),
+      );
+      _log('Hydrated: $normalized');
+    }
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
   /// Release all resources held by this client.
@@ -679,6 +730,7 @@ class QoraClient implements MutationTracker {
         .then((data) {
       entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
       _tracker.onQueryFetched(_stringKey(key), data, 'success');
+      onFetchSuccess<T>(key, data);
       _pendingRequests.remove(sk);
       return data;
     }).catchError((Object error, StackTrace stackTrace) {

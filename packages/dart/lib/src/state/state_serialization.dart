@@ -49,7 +49,7 @@ class QoraStateSerialization {
           'updatedAt': updatedAt.toIso8601String(),
         },
       Failure(:final error, :final previousData) => {
-          'type': 'error',
+          'type': 'failure',
           'error': error.toString(),
           if (previousData != null) 'previousData': dataToJson(previousData),
         },

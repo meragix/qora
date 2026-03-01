@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+## [0.5.0] - 2026-03-01
+
+### Added
+
+- **`PersistQoraClient`** — `QoraClient` subclass that persists successful query results to a `StorageAdapter` and restores them on startup via `hydrate()`; fully backwards-compatible drop-in replacement
+- **`StorageAdapter`** — abstract key/value interface for pluggable storage backends; ships with `InMemoryStorageAdapter` (suitable for tests)
+- **`QoraSerializer<T>`** — pair of `toJson`/`fromJson` converters (`dynamic` in/out); supports objects, collections, and primitives without extra wrappers
+- **`PersistQoraClient.registerSerializer<T>`** — registers a serializer for type `T`; accepts an optional explicit `name` to remain stable under Flutter Web / `--obfuscate` tree-shaking
+- **`PersistQoraClient.hydrate()`** — reads all valid entries from storage, validates TTL, and queues them in a lazy typed hydration map; corrupt/expired entries are deleted and skipped
+- **`PersistQoraClient.persistQuery<T>`** — force-persist the current cached value with an optional per-entry TTL override
+- **`PersistQoraClient.evictFromStorage`** / **`clearStorage`** — targeted and bulk storage eviction without touching the in-memory cache
+- **`QoraClient.hydrateQuery<T>`** — inject a typed `Success<T>` with a custom `updatedAt` into an `Initial` cache entry; used internally by persistence and available for advanced use cases
+- **`QoraClient.onFetchSuccess<T>`** — protected override hook called after every successful fetch (direct and SWR background revalidation); enables subclasses to react without duplicating fetch logic
+
+### Fixed
+
+- `QoraStateSerialization.toJson` wrote `'type': 'error'` for `Failure` states while `fromJson` matched on `'failure'`; `Failure` states were never correctly restored from JSON
+
 ## [0.4.0] - 2026-02-28
 
 ### Added
@@ -92,7 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/qora-v0.3.0...HEAD
+[unreleased]: https://github.com/meragix/qora/compare/qora-v0.5.0...HEAD
+[0.5.0]: https://github.com/meragix/qora/compare/qora-v0.4.0...qora-v0.5.0
+[0.4.0]: https://github.com/meragix/qora/compare/qora-v0.3.0...qora-v0.4.0
 [0.3.0]: https://github.com/meragix/qora/compare/qora-v0.2.0...qora-v0.3.0
 [0.2.0]: https://github.com/meragix/qora/releases/tag/0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0
