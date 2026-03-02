@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-02
+
 ### Added
 
 - **Query Inspector (live)** — `CacheInspectorScreen` rebuilt with a real-time query list driven by live `QueryEvent`s; includes a filter bar, summary strip, and per-row Refetch / Invalidate actions with an expandable JSON data preview.

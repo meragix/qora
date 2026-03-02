@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-02
+
 ### Added
 
 - **`VmTracker.onQueryFetching()`** — records the fetch start timestamp (ms since epoch) per query key in an internal `_fetchStartTimes` map; cleared in `dispose()`.

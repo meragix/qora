@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-02
+
 ### Added
 
 - **`QueryEvent.fetchDurationMs`** — nullable `int` field on `QueryEvent.fetched` events carrying the wall-clock duration (milliseconds) between fetch-started and fetch-completed; `null` when timing data is unavailable (e.g. legacy trackers or events replayed from the ring buffer without a recorded start time).

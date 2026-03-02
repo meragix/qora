@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-02
+
 ### Added
 
 - **`OverlayTracker.onQueryFetching()`** — no-op override satisfying the new `QoraTracker` interface hook; the overlay tracks fetch completion only.
