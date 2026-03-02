@@ -1197,6 +1197,7 @@ class QoraClient implements MutationTracker {
     final previousData = entry.state.dataOrNull;
     entry.updateState(Loading<T>(previousData: previousData));
     _emitFetchStatus(sk, FetchStatus.fetching);
+    _tracker.onQueryFetching(sk);
 
     final future =
         _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(

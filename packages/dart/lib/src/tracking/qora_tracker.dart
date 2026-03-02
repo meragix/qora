@@ -41,6 +41,14 @@
 /// All hooks are called **synchronously** on the Flutter/Dart main isolate.
 /// Implementations do not need to guard against concurrent access.
 abstract interface class QoraTracker {
+  /// Called when a fetch transitions to the [Loading] state — immediately
+  /// before the async fetcher is invoked.
+  ///
+  /// [key] is the string-serialised normalised key. Pair this event with the
+  /// subsequent [onQueryFetched] call to compute fetch duration in
+  /// implementations such as `VmTracker`.
+  void onQueryFetching(String key);
+
   /// Called after a query fetch completes successfully and the [Success] state
   /// is committed to the cache.
   ///

@@ -46,6 +46,9 @@ final class NoOpTracker implements QoraTracker {
   const NoOpTracker();
 
   @override
+  void onQueryFetching(String key) {}
+
+  @override
   void onQueryFetched(String key, Object? data, dynamic status) {}
 
   @override
