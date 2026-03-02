@@ -135,6 +135,68 @@ class QoraOptions {
   /// execute.
   final NetworkMode networkMode;
 
+  /// Static data to pre-populate the cache before the first fetch completes.
+  ///
+  /// When set, the query immediately starts in [Success] state with this value
+  /// instead of [Initial] — eliminating the first loading flash entirely.
+  ///
+  /// The data is marked with [initialDataUpdatedAt] (default: epoch) so it
+  /// is considered immediately stale and a background refetch is triggered on
+  /// first mount, replacing it transparently.
+  ///
+  /// Type note: must match the `<T>` of the query that consumes it. A runtime
+  /// type mismatch is silently ignored (the entry stays [Initial]).
+  ///
+  /// ```dart
+  /// fetchQuery<User>(
+  ///   key: ['user', id],
+  ///   fetcher: () => api.getUser(id),
+  ///   options: QoraOptions(initialData: User.empty()),
+  /// );
+  /// ```
+  final Object? initialData;
+
+  /// The timestamp to attach to [initialData] for stale-time calculation.
+  ///
+  /// Defaults to [DateTime.fromMillisecondsSinceEpoch(0)] (epoch), which
+  /// means the initial data is immediately stale and a background refetch
+  /// is always triggered on the first mount.
+  ///
+  /// Set to `DateTime.now()` to treat the initial data as fresh for the
+  /// duration of [staleTime]:
+  ///
+  /// ```dart
+  /// QoraOptions(
+  ///   initialData: cachedUser,
+  ///   initialDataUpdatedAt: prefs.lastFetchedAt,
+  ///   staleTime: Duration(minutes: 5),
+  /// )
+  /// ```
+  final DateTime? initialDataUpdatedAt;
+
+  /// Lazy function that returns placeholder data from an already-cached query.
+  ///
+  /// Called once when the cache entry is first created (state is [Initial]).
+  /// If it returns a non-null value of the correct type, the entry transitions
+  /// to [Success] immediately — same semantics as [initialData] (epoch
+  /// timestamp → always stale → background refetch).
+  ///
+  /// Prefer [placeholderData] over [initialData] when the value must be
+  /// derived from another live cache entry:
+  ///
+  /// ```dart
+  /// QoraOptions(
+  ///   placeholderData: () {
+  ///     final list = client.getQueryData<List<User>>(['users']);
+  ///     return list?.firstWhereOrNull((u) => u.id == userId);
+  ///   },
+  /// )
+  /// ```
+  ///
+  /// Type note: the returned value must match the `<T>` of the consuming
+  /// query. A type mismatch is silently ignored.
+  final Object? Function()? placeholderData;
+
   const QoraOptions({
     this.staleTime = Duration.zero,
     this.cacheTime = const Duration(minutes: 5),
@@ -147,6 +209,9 @@ class QoraOptions {
     this.refetchInterval,
     this.refetchOnMount,
     this.networkMode = NetworkMode.online,
+    this.initialData,
+    this.initialDataUpdatedAt,
+    this.placeholderData,
   });
 
   /// Returns the retry delay for the given zero-based [attemptIndex].
@@ -179,6 +244,9 @@ class QoraOptions {
       refetchInterval: other.refetchInterval ?? refetchInterval,
       refetchOnMount: other.refetchOnMount ?? refetchOnMount,
       networkMode: other.networkMode,
+      initialData: other.initialData ?? initialData,
+      initialDataUpdatedAt: other.initialDataUpdatedAt ?? initialDataUpdatedAt,
+      placeholderData: other.placeholderData ?? placeholderData,
     );
   }
 }

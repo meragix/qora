@@ -345,6 +345,9 @@ class QoraClient implements MutationTracker {
 
     final entry = _getOrCreateEntry<T>(normalized);
 
+    // Apply initialData / placeholderData to brand-new [Initial] entries.
+    _applyInitialData<T>(entry, opts);
+
     // ① Fresh cache hit — return immediately, no network call.
     if (entry.state is Success<T> && !entry.isStale(opts.staleTime)) {
       _log('Cache HIT (fresh): $normalized');
@@ -354,9 +357,13 @@ class QoraClient implements MutationTracker {
 
     // ② Stale-While-Revalidate — return stale data, refetch in background.
     if (entry.state is Success<T>) {
+      // Capture data BEFORE _doFetch — the method synchronously transitions
+      // the entry to Loading, so reading entry.state after the call would cast
+      // a Loading<T> as Success<T> and throw.
+      final staleData = (entry.state as Success<T>).data;
       _log('Cache HIT (stale): $normalized — revalidating in background');
       unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
-      return (entry.state as Success<T>).data;
+      return staleData;
     }
 
     // ③ Cache miss — fetch and await.
@@ -405,6 +412,10 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final opts = config.defaultOptions.merge(options);
     final entry = _getOrCreateEntry<T>(normalized);
+
+    // Apply initialData / placeholderData before the subscriber is counted
+    // so isFirstFetch reflects the pre-populated state correctly.
+    _applyInitialData<T>(entry, opts);
 
     // Register subscriber — prevents GC while stream is active.
     entry.addSubscriber();
@@ -504,6 +515,8 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final opts = config.defaultOptions.merge(options);
     final entry = _getOrCreateEntry<T>(normalized);
+
+    _applyInitialData<T>(entry, opts);
 
     if (entry.state is Success<T> && !entry.isStale(opts.staleTime)) {
       _log('Prefetch skipped (fresh): $normalized');
@@ -1301,6 +1314,32 @@ class QoraClient implements MutationTracker {
     }
 
     throw lastError!;
+  }
+
+  /// If [entry] is still in [Initial] state and [opts] supplies
+  /// [QoraOptions.initialData] or [QoraOptions.placeholderData], pre-populate
+  /// the entry with a [Success] state so callers never see an [Initial] flash.
+  ///
+  /// The [Success] timestamp defaults to the Unix epoch, making the data
+  /// immediately stale → a background refetch is always triggered on mount,
+  /// keeping the placeholder ephemeral.
+  ///
+  /// A runtime type mismatch between the provided value and `<T>` is silently
+  /// ignored — the entry remains [Initial] and fetches normally.
+  void _applyInitialData<T>(CacheEntry<T> entry, QoraOptions opts) {
+    if (entry.state is! Initial<T>) return;
+
+    final raw = opts.initialData ?? opts.placeholderData?.call();
+    if (raw == null || raw is! T) return;
+
+    entry.updateState(
+      Success<T>(
+        data: raw as T, // safe: guarded by `raw is! T` check above
+        updatedAt: opts.initialDataUpdatedAt ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+    );
+    _log('initialData applied: ${entry.state}');
   }
 
   /// Return an existing [CacheEntry] or create a fresh [Initial] one.
