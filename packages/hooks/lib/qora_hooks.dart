@@ -38,3 +38,5 @@ export 'src/hooks/use_query.dart';
 export 'src/hooks/use_mutation.dart' show MutationHandle, useMutation;
 export 'src/hooks/use_infinite_query.dart'
     show InfiniteQueryHandle, useInfiniteQuery;
+export 'src/hooks/use_is_fetching.dart';
+export 'src/hooks/use_is_mutating.dart';

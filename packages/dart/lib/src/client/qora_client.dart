@@ -150,6 +150,11 @@ class QoraClient implements MutationTracker {
   final StreamController<MutationEvent> _mutationBus =
       StreamController<MutationEvent>.broadcast();
 
+  /// Broadcast stream that emits the number of in-flight query requests each
+  /// time that count changes.  Derive a boolean from `count > 0`.
+  final StreamController<int> _fetchingCountBus =
+      StreamController<int>.broadcast();
+
   // ─────────────────────────────────────────────────────────────────────────
 
   Timer? _evictionTimer;
@@ -569,6 +574,7 @@ class QoraClient implements MutationTracker {
             : Initial<dynamic>(),
       );
       _pendingRequests.remove(_stringKey(normalized));
+      _emitFetchingCount();
       _tracker.onQueryInvalidated(_stringKey(normalized));
     }
   }
@@ -635,6 +641,7 @@ class QoraClient implements MutationTracker {
     final sk = _stringKey(normalized);
     _cache.remove(normalized);
     _pendingRequests.remove(sk);
+    _emitFetchingCount();
     _pausedFetches.remove(sk);
     _log('Removed: $normalized');
   }
@@ -649,10 +656,35 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     _cache.clear();
     _pendingRequests.clear();
+    _emitFetchingCount();
     _pausedFetches.clear();
     _tracker.onCacheCleared();
     _log('Cache cleared');
   }
+
+  // ── Fetch observability ───────────────────────────────────────────────────
+
+  /// The number of query requests currently in flight.
+  ///
+  /// Useful as an initial value for hooks — read this synchronously, then
+  /// subscribe to [fetchingCountStream] for reactive updates.
+  ///
+  /// ```dart
+  /// print(client.isFetchingCount); // 0, 1, 2 …
+  /// ```
+  int get isFetchingCount => _pendingRequests.length;
+
+  /// Stream that emits the total number of in-flight query requests each time
+  /// the count changes.
+  ///
+  /// Subscribe to this to drive a global loading indicator:
+  ///
+  /// ```dart
+  /// client.fetchingCountStream.map((n) => n > 0).distinct().listen(
+  ///   (isFetching) => showGlobalSpinner(isFetching),
+  /// );
+  /// ```
+  Stream<int> get fetchingCountStream => _fetchingCountBus.stream;
 
   // ── Mutation observability ────────────────────────────────────────────────
 
@@ -872,6 +904,7 @@ class QoraClient implements MutationTracker {
     }
     _fetchStatusBus.clear();
     _mutationBus.close();
+    _fetchingCountBus.close();
     _tracker.dispose();
     _log('QoraClient disposed');
   }
@@ -945,6 +978,12 @@ class QoraClient implements MutationTracker {
     _fetchStatusBus[sk]?.add(status);
   }
 
+  void _emitFetchingCount() {
+    if (!_fetchingCountBus.isClosed) {
+      _fetchingCountBus.add(_pendingRequests.length);
+    }
+  }
+
   // ── Core fetch ────────────────────────────────────────────────────────────
 
   /// Core fetch implementation with deduplication, network-mode awareness,
@@ -1015,6 +1054,7 @@ class QoraClient implements MutationTracker {
         _tracker.onQueryFetched(_stringKey(key), data, 'success');
         onFetchSuccess<T>(key, data);
         _pendingRequests.remove(sk);
+        _emitFetchingCount();
         _emitFetchStatus(sk, FetchStatus.idle);
         return data;
       },
@@ -1028,12 +1068,14 @@ class QoraClient implements MutationTracker {
         ),
       );
       _pendingRequests.remove(sk);
+      _emitFetchingCount();
       _emitFetchStatus(sk, FetchStatus.idle);
       // Re-throw so that await fetchQuery propagates the error to the caller.
       throw mapped; // ignore: only_throw_errors
     });
 
     _pendingRequests[sk] = future;
+    _emitFetchingCount();
     return future;
   }
 

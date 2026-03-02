@@ -1,6 +1,19 @@
+<!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 # Changelog
 
 ## [Unreleased]
+
+## [0.6.0] - 2026-03-02
+
+### Added
+
+- `useIsFetching()` — returns `true` while at least one query managed by the
+  nearest `QoraClient` has a network request in flight. Initialises
+  synchronously from `QoraClient.isFetchingCount` and subscribes to the new
+  `QoraClient.fetchingCountStream` for reactive updates.
+- `useIsMutating()` — returns `true` while at least one mutation managed by the
+  nearest `QoraClient` is in `MutationPending` state. Initialises from
+  `QoraClient.activeMutations` and subscribes to `QoraClient.mutationEvents`.
 
 ## [0.5.0] - 2026-03-01
 
