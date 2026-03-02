@@ -97,7 +97,7 @@ class _TimelineTabState extends State<TimelineTab>
                 ],
               ),
               const WidgetTreeTab(),
-              const DataDiffTab(),
+              DataDiffTab(controller: widget.controller),
             ],
           ),
         ),

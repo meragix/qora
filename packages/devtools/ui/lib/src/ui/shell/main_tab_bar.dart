@@ -16,6 +16,9 @@ class MainTabBar extends StatelessWidget implements PreferredSizeWidget {
         Tab(text: 'QUERIES'),
         Tab(text: 'MUTATIONS'),
         Tab(text: 'MUTATION INSPECTOR'),
+        Tab(text: 'NETWORK'),
+        Tab(text: 'PERFORMANCE'),
+        Tab(text: 'GRAPH'),
       ],
     );
   }

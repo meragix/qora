@@ -55,4 +55,31 @@ class QueriesNotifier extends ChangeNotifier {
       ..addAll(items);
     notifyListeners();
   }
+
+  /// Adds [query] to the list if no entry with the same [QuerySnapshot.key]
+  /// already exists.  No-op when the key is already tracked.
+  void addQuery(QuerySnapshot query) {
+    if (_queryList.any((q) => q.key == query.key)) return;
+    _queryList.add(query);
+    notifyListeners();
+  }
+
+  /// Replaces the entry whose [QuerySnapshot.key] matches [query.key] in-place.
+  /// Falls back to [addQuery] if no matching entry exists.
+  void updateQuery(QuerySnapshot query) {
+    final index = _queryList.indexWhere((q) => q.key == query.key);
+    if (index == -1) {
+      _queryList.add(query);
+    } else {
+      _queryList[index] = query;
+    }
+    notifyListeners();
+  }
+
+  /// Removes the entry with [key] from the list.  No-op if not found.
+  void removeQuery(String key) {
+    final before = _queryList.length;
+    _queryList.removeWhere((q) => q.key == key);
+    if (_queryList.length != before) notifyListeners();
+  }
 }

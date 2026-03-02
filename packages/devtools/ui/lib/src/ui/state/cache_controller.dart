@@ -1,37 +1,43 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
+import 'package:qora_devtools_ui/src/domain/queries_notifier.dart';
 import 'package:qora_devtools_ui/src/domain/repositories/event_repository.dart';
+import 'package:qora_devtools_ui/src/domain/usecases/observe_events.dart';
 
 /// UI controller for the cache inspector panel.
 ///
 /// [CacheController] fetches a [CacheSnapshot] on demand from the runtime
-/// bridge via `ext.qora.getCacheSnapshot` and exposes it to the
-/// `CacheInspectorScreen`. It follows a simple loading / success / error
-/// state machine built on [ChangeNotifier].
+/// bridge via `ext.qora.getCacheSnapshot` and keeps [QueriesNotifier] updated
+/// in real-time by subscribing to the live [QoraEvent] stream.
 ///
-/// ## Usage
+/// ## Live updates
 ///
-/// ```dart
-/// final controller = CacheController(repository: myRepository);
-/// await controller.refresh(); // fetches and notifies listeners
-/// ```
+/// Incoming [QueryEvent]s are mapped to granular [QueriesNotifier] operations:
+/// - `added`       → [QueriesNotifier.addQuery]
+/// - `fetched` / `updated` / `invalidated` → [QueriesNotifier.updateQuery]
+/// - `removed`     → [QueriesNotifier.removeQuery]
 ///
-/// ## Scaling note — large snapshots
-///
-/// [CacheSnapshot] payload size grows linearly with the number of active
-/// queries and mutations. For very large caches:
-/// - [QuerySnapshot.data] is omitted for large entries (lazy chunking applies
-///   at the runtime level).
-/// - [QuerySnapshot.summary] provides a lightweight preview immediately.
-///
-/// If the snapshot response itself becomes too large, add server-side
-/// filtering/pagination to `getCacheSnapshot` in a future version.
+/// A manual [refresh] re-syncs the full snapshot, correcting any drift from
+/// missed events.
 class CacheController extends ChangeNotifier {
-  /// Creates a cache controller bound to the given [repository].
-  CacheController({required EventRepository repository})
-      : _repository = repository;
+  /// Creates a cache controller.
+  ///
+  /// [observeEvents] drives the live stream for real-time query updates.
+  /// [queriesNotifier] is kept in sync as [QueryEvent]s arrive.
+  CacheController({
+    required EventRepository repository,
+    required ObserveEventsUseCase observeEvents,
+    required QueriesNotifier queriesNotifier,
+  })  : _repository = repository,
+        _queriesNotifier = queriesNotifier {
+    _subscription = observeEvents().listen(_onEvent);
+  }
 
   final EventRepository _repository;
+  final QueriesNotifier _queriesNotifier;
+  late final StreamSubscription<QoraEvent> _subscription;
 
   CacheSnapshot? _snapshot;
   bool _loading = false;
@@ -47,10 +53,36 @@ class CacheController extends ChangeNotifier {
   /// Human-readable error string from the last failed [refresh], or `null`.
   String? get error => _error;
 
+  void _onEvent(QoraEvent event) {
+    if (event is! QueryEvent) return;
+
+    final q = QuerySnapshot(
+      key: event.key,
+      status: event.status ?? 'unknown',
+      updatedAtMs: event.timestampMs,
+      data: event.data,
+      hasLargePayload: event.hasLargePayload,
+      payloadId: event.payloadId,
+      totalChunks: event.totalChunks,
+      summary: event.summary,
+    );
+
+    switch (event.type) {
+      case QueryEventType.added:
+        _queriesNotifier.addQuery(q);
+      case QueryEventType.removed:
+        _queriesNotifier.removeQuery(event.key);
+      case QueryEventType.fetched:
+      case QueryEventType.updated:
+      case QueryEventType.invalidated:
+        _queriesNotifier.updateQuery(q);
+    }
+  }
+
   /// Fetches a fresh [CacheSnapshot] from the runtime bridge.
   ///
-  /// Transitions through: loading → success | error. Notifies listeners on
-  /// each transition. Concurrent calls are safe — each call is independent.
+  /// Also resets [QueriesNotifier] to the snapshot's full query list so any
+  /// drift accumulated from live events is corrected.
   Future<void> refresh() async {
     _loading = true;
     _error = null;
@@ -60,11 +92,18 @@ class CacheController extends ChangeNotifier {
       final response =
           await _repository.sendCommand(const GetCacheSnapshotCommand());
       _snapshot = CacheSnapshot.fromJson(Map<String, Object?>.from(response));
+      _queriesNotifier.setQueries(_snapshot!.queries);
     } catch (exception) {
       _error = '$exception';
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }
