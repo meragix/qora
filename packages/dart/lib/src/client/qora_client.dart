@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
@@ -123,6 +124,13 @@ typedef QueryFilter = bool Function(
   QoraOptions? lastOptions,
 );
 
+/// Internal record holding a deserialized value waiting to be injected into
+/// the typed cache via [QoraClient._applyPendingHydration].
+///
+/// Stored in [QoraClient._pendingHydration] by [QoraClient.queueHydration]
+/// and consumed lazily on the first typed API call for that key.
+typedef _HydrationEntry = ({dynamic data, DateTime? updatedAt});
+
 class QoraClient implements MutationTracker {
   /// Global configuration for this client instance.
   final QoraClientConfig config;
@@ -140,6 +148,14 @@ class QoraClient implements MutationTracker {
   /// Enables deduplication: concurrent [fetchQuery] or [watchQuery] calls
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
+
+  /// Deserialized values awaiting typed injection into the cache.
+  ///
+  /// Keyed by JSON-encoded normalised key (same encoding as
+  /// [PersistQoraClient._encodeStorageKey] and [SsrHydrator]).
+  /// Populated by [queueHydration]; consumed (and removed) lazily by
+  /// [_applyPendingHydration] on the first typed API call for that key.
+  final Map<String, _HydrationEntry> _pendingHydration = {};
 
   /// Dedicated cache for infinite (paginated) queries.
   ///
@@ -373,7 +389,22 @@ class QoraClient implements MutationTracker {
       throw StateError('Query is disabled: $normalized');
     }
 
+    // dependsOn — throw immediately if the dependency has no data yet.
+    // Use watchQuery for reactive dependent queries.
+    if (opts.dependsOn != null) {
+      final depNorm = normalizeKey(opts.dependsOn!);
+      if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) {
+        throw StateError(
+          'fetchQuery: dependency $depNorm is not yet resolved. '
+          'Use watchQuery for reactive dependent queries.',
+        );
+      }
+    }
+
     final entry = _getOrCreateEntry<T>(normalized);
+
+    // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
+    _applyPendingHydration<T>(normalized);
 
     // Apply initialData / placeholderData to brand-new [Initial] entries.
     _applyInitialData<T>(entry, opts);
@@ -444,6 +475,9 @@ class QoraClient implements MutationTracker {
     final opts = config.defaultOptions.merge(options);
     final entry = _getOrCreateEntry<T>(normalized);
 
+    // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
+    _applyPendingHydration<T>(normalized);
+
     // Apply initialData / placeholderData before the subscriber is counted
     // so isFirstFetch reflects the pre-populated state correctly.
     _applyInitialData<T>(entry, opts);
@@ -451,6 +485,9 @@ class QoraClient implements MutationTracker {
     // Register subscriber — prevents GC while stream is active.
     entry.addSubscriber();
     entry.gcTimer?.cancel();
+
+    // Dependency subscription — cancelled in finally.
+    StreamSubscription<QoraState<dynamic>>? depSub;
 
     try {
       if (opts.enabled) {
@@ -460,8 +497,30 @@ class QoraClient implements MutationTracker {
         final isFirstFetch = entry.state is Initial<T>;
         final isStale = entry.isStale(opts.staleTime);
 
-        if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
-          unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+        if (opts.dependsOn != null) {
+          // Reactive dependent query: wait for the dependency to have data.
+          final depNorm = normalizeKey(opts.dependsOn!);
+          final depEntry = _getOrCreateEntry<dynamic>(depNorm);
+
+          if (depEntry.state.dataOrNull != null) {
+            // Dependency already resolved — proceed with normal fetch logic.
+            if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
+              unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+            }
+          } else {
+            // Dependency not yet ready — subscribe and fire when it resolves.
+            depSub = depEntry.stream.listen((depState) {
+              if (depState.dataOrNull != null && !_isDisposed && entry.isActive) {
+                depSub?.cancel();
+                depSub = null;
+                unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
+              }
+            });
+          }
+        } else {
+          if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
+            unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+          }
         }
 
         // Setup polling interval.
@@ -478,6 +537,7 @@ class QoraClient implements MutationTracker {
       // Yield the current state then forward all future updates.
       yield* entry.stream;
     } finally {
+      depSub?.cancel();
       entry.removeSubscriber();
       entry.refetchTimer?.cancel();
       _scheduleGC(normalized);
@@ -510,6 +570,7 @@ class QoraClient implements MutationTracker {
   Stream<QoraState<T>> watchState<T>(Object key) async* {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
+    _applyPendingHydration<T>(normalized);
     final entry = _getOrCreateEntry<T>(normalized);
     entry.addSubscriber();
     entry.gcTimer?.cancel();
@@ -546,7 +607,20 @@ class QoraClient implements MutationTracker {
 
     final normalized = normalizeKey(key);
     final opts = config.defaultOptions.merge(options);
+
+    // dependsOn — silently skip if dependency not resolved (doc contract).
+    if (opts.dependsOn != null) {
+      final depNorm = normalizeKey(opts.dependsOn!);
+      if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) {
+        _log('Prefetch skipped (dependency not resolved): $normalized');
+        return;
+      }
+    }
+
     final entry = _getOrCreateEntry<T>(normalized);
+
+    // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
+    _applyPendingHydration<T>(normalized);
 
     _applyInitialData<T>(entry, opts);
 
@@ -698,7 +772,9 @@ class QoraClient implements MutationTracker {
   /// ```
   T? getQueryData<T>(Object key) {
     _assertNotDisposed();
-    return _cache.get<T>(normalizeKey(key))?.state.dataOrNull;
+    final normalized = normalizeKey(key);
+    _applyPendingHydration<T>(normalized);
+    return _cache.get<T>(normalized)?.state.dataOrNull;
   }
 
   /// Returns the full [QoraState] for [key], or [Initial] if not cached.
@@ -711,7 +787,9 @@ class QoraClient implements MutationTracker {
   /// ```
   QoraState<T> getQueryState<T>(Object key) {
     _assertNotDisposed();
-    return _cache.get<T>(normalizeKey(key))?.state ?? Initial<T>();
+    final normalized = normalizeKey(key);
+    _applyPendingHydration<T>(normalized);
+    return _cache.get<T>(normalized)?.state ?? Initial<T>();
   }
 
   // ── Infinite queries ──────────────────────────────────────────────────────
@@ -1099,6 +1177,49 @@ class QoraClient implements MutationTracker {
     }
   }
 
+  /// Enqueue a pre-deserialized value to be injected into the typed cache on
+  /// the first typed API call ([fetchQuery], [watchQuery], etc.) for [key].
+  ///
+  /// This is the shared hydration mechanism used by [PersistQoraClient] and
+  /// [SsrHydrator]. Prefer those higher-level APIs unless you are building a
+  /// custom hydration source.
+  ///
+  /// The actual injection is deferred to avoid Dart's sound type-system cast
+  /// failure: a [CacheEntry<dynamic>] cannot be cast to [CacheEntry<T>] at
+  /// runtime unless the entry was originally created as [CacheEntry<T>].
+  /// By calling [_applyPendingHydration<T>] at the first typed call site, the
+  /// entry is created with the correct [T] from the start.
+  ///
+  /// [data] must be the already-deserialized Dart object (not raw JSON).
+  /// [updatedAt] is used for stale-time calculation — defaults to epoch (always
+  /// stale, triggers SWR revalidation on first mount).
+  void queueHydration(
+    Object key,
+    dynamic data, {
+    DateTime? updatedAt,
+  }) {
+    final normalized = normalizeKey(key);
+    final pk = _encodePendingKey(normalized);
+    _pendingHydration[pk] = (data: data, updatedAt: updatedAt);
+    _log('Hydration queued: $normalized');
+  }
+
+  /// Remove the pending hydration entry for [key] without injecting it.
+  ///
+  /// Called by [PersistQoraClient.removeQuery] and [PersistQoraClient.clear]
+  /// to keep the pending queue consistent with the in-memory cache.
+  @protected
+  void removeHydrationEntry(Object key) {
+    final normalized = normalizeKey(key);
+    _pendingHydration.remove(_encodePendingKey(normalized));
+  }
+
+  /// Remove all pending hydration entries.
+  ///
+  /// Called by [PersistQoraClient.clear] when the entire cache is wiped.
+  @protected
+  void clearHydrationQueue() => _pendingHydration.clear();
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
   /// Release all resources held by this client.
@@ -1123,6 +1244,7 @@ class QoraClient implements MutationTracker {
     }
     _infiniteCache.clear();
     _pendingRequests.clear();
+    _pendingHydration.clear();
     _pausedFetches.clear();
     _activeMutations.clear();
     _offlineMutationQueue.clear();
@@ -1192,6 +1314,30 @@ class QoraClient implements MutationTracker {
       }
     }
   }
+
+  // ── Pending hydration ─────────────────────────────────────────────────────
+
+  /// Consume the pending hydration entry for [key] (if any) and inject it
+  /// into the cache as a correctly-typed [CacheEntry<T>].
+  ///
+  /// Must be called before [super] in every method that creates or reads a
+  /// cache entry, so that the hydrated state is visible on the very first
+  /// access.
+  void _applyPendingHydration<T>(List<dynamic> normalized) {
+    final pk = _encodePendingKey(normalized);
+    final pending = _pendingHydration.remove(pk);
+    if (pending == null) return;
+
+    try {
+      hydrateQuery<T>(normalized, pending.data as T, updatedAt: pending.updatedAt);
+    } catch (e) {
+      _log('Hydration cast failed at "$pk": $e');
+    }
+  }
+
+  /// Encodes a normalised key to a stable JSON string used as the pending-
+  /// hydration map key (mirrors [PersistQoraClient._encodeStorageKey]).
+  String _encodePendingKey(List<dynamic> key) => jsonEncode(key);
 
   // ── FetchStatus helpers ───────────────────────────────────────────────────
 

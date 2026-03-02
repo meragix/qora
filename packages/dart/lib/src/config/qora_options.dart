@@ -279,6 +279,7 @@ class QoraOptions {
       initialData: other.initialData ?? initialData,
       initialDataUpdatedAt: other.initialDataUpdatedAt ?? initialDataUpdatedAt,
       placeholderData: other.placeholderData ?? placeholderData,
+      dependsOn: other.dependsOn ?? dependsOn,
     );
   }
 }

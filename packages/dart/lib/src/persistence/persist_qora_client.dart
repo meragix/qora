@@ -2,12 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:meta/meta.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/key/qora_key.dart';
 
-import '../cancellation/cancel_token.dart';
-import '../client/qora_client.dart';
-import '../config/qora_options.dart';
-import '../key/qora_key.dart';
-import '../state/qora_state.dart';
 import 'qora_serializer.dart';
 import 'storage_adapter.dart';
 
@@ -52,33 +49,6 @@ class _StorageEntry {
         persistedAtMs: map['persistedAtMs'] as int,
         ttlMs: map['ttlMs'] as int?,
       );
-}
-
-// ── Internal: pending hydration (lazy, typed) ─────────────────────────────
-
-/// Holds a deserialized value waiting to be injected into the typed cache.
-///
-/// [PersistQoraClient.hydrate] deserializes every valid entry and stores it
-/// here. The entry is consumed — and [QoraClient.hydrateQuery] is called with
-/// the correct `<T>` — the first time [fetchQuery], [watchQuery],
-/// [watchState], [prefetch], or a read method is invoked for that key.
-///
-/// **Why lazy?**
-/// [QueryCache.get<T>] casts the stored [CacheEntry<dynamic>] to
-/// [CacheEntry<T>] at runtime. In Dart's sound type system, this cast fails
-/// unless the entry was originally created as [CacheEntry<T>]. Deferring the
-/// injection to the first typed call lets us call [hydrateQuery<T>] with the
-/// correct type argument, producing a correctly-typed [CacheEntry<T>].
-class _HydrationEntry {
-  final String typeName;
-  final dynamic data;
-  final DateTime persistedAt;
-
-  const _HydrationEntry({
-    required this.typeName,
-    required this.data,
-    required this.persistedAt,
-  });
 }
 
 // ── PersistQoraClient ────────────────────────────────────────────────────────
@@ -128,10 +98,10 @@ class _HydrationEntry {
 /// ## Hydration
 ///
 /// [hydrate] reads all stored entries, evaluates TTL, deserializes valid
-/// entries using the registered serializers, and stores them in
-/// [_pendingHydration]. The actual injection into the typed cache happens
+/// entries using the registered serializers, and calls [queueHydration] on
+/// the base [QoraClient]. The actual injection into the typed cache happens
 /// lazily on the first typed API call ([fetchQuery], [watchQuery], etc.)
-/// to avoid Dart runtime cast failures (see [_HydrationEntry]).
+/// to avoid Dart runtime cast failures (see [QoraClient._applyPendingHydration]).
 ///
 /// The restored [Success] state carries the original `persistedAt` timestamp
 /// as `updatedAt`, so [QoraOptions.staleTime] works correctly: if the data is
@@ -165,10 +135,6 @@ class PersistQoraClient extends QoraClient {
 
   /// `Type → typeName`  (reverse lookup: from `T` in [onFetchSuccess] to name)
   final Map<Type, String> _typeNames = {};
-
-  /// Deserialized entries awaiting typed injection into the cache.
-  /// Populated by [hydrate], consumed by [_applyPendingHydration].
-  final Map<String, _HydrationEntry> _pendingHydration = {};
 
   /// Creates a [PersistQoraClient].
   ///
@@ -215,9 +181,9 @@ class PersistQoraClient extends QoraClient {
 
   // ── Hydration ─────────────────────────────────────────────────────────────
 
-  /// Load all valid persisted entries from [StorageAdapter] into a pending
-  /// hydration queue, ready to be injected into the typed cache on the first
-  /// access.
+  /// Load all valid persisted entries from [StorageAdapter] into the base
+  /// [QoraClient]'s pending hydration queue, ready to be injected into the
+  /// typed cache on the first access.
   ///
   /// ### Bootstrap order
   ///
@@ -347,118 +313,19 @@ class PersistQoraClient extends QoraClient {
         continue;
       }
 
-      _pendingHydration[storageKey] = _HydrationEntry(
-        typeName: envelope.typeName,
-        data: data,
-        persistedAt:
-            DateTime.fromMillisecondsSinceEpoch(envelope.persistedAtMs),
+      // storageKey is already a JSON-encoded normalised key — pass it directly
+      // as the raw key. queueHydration normalizes internally, producing the
+      // same encoding used by _encodeStorageKey.
+      final queueKey = jsonDecode(storageKey);
+      queueHydration(
+        queueKey as Object,
+        data,
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(envelope.persistedAtMs),
       );
       _persistLog(
         'Queued "${envelope.typeName}" for lazy hydration ($storageKey)',
       );
     }
-  }
-
-  // ── Lazy typed hydration ──────────────────────────────────────────────────
-
-  /// Consume the pending hydration entry for [key] (if any) and inject it
-  /// into the cache as a correctly-typed [CacheEntry<T>].
-  ///
-  /// Must be called before [super] in every method that creates or reads a
-  /// cache entry, so that the hydrated state is visible on the very first
-  /// access.
-  void _applyPendingHydration<T>(Object key) {
-    final storageKey = _encodeStorageKey(normalizeKey(key));
-    final pending = _pendingHydration.remove(storageKey);
-    if (pending == null) return;
-
-    // Optional type-name cross-check: warn if the caller's T doesn't match
-    // what was persisted (e.g. key reuse after a type refactor).
-    final expectedName = _typeNames[T];
-    if (expectedName != null && expectedName != pending.typeName) {
-      _persistLog(
-        'Type mismatch at "$storageKey": '
-        'stored "${pending.typeName}", expected "$expectedName" — skipping',
-      );
-      return;
-    }
-
-    try {
-      // `pending.data` has the correct runtime type because [hydrate] used the
-      // registered serializer for `pending.typeName`. The cast is safe as long
-      // as the user registered the serializer for the right T.
-      hydrateQuery<T>(key, pending.data as T, updatedAt: pending.persistedAt);
-    } catch (e) {
-      _persistLog('Hydration cast failed at "$storageKey": $e');
-    }
-  }
-
-  // ── Overrides: inject hydration before every typed cache access ───────────
-
-  @override
-  Future<T> fetchQuery<T>({
-    required Object key,
-    required Future<T> Function() fetcher,
-    QoraOptions? options,
-    CancelToken? cancelToken,
-  }) {
-    _applyPendingHydration<T>(key);
-    return super.fetchQuery<T>(
-      key: key,
-      fetcher: fetcher,
-      options: options,
-      cancelToken: cancelToken,
-    );
-  }
-
-  @override
-  Stream<QoraState<T>> watchQuery<T>({
-    required Object key,
-    required Future<T> Function() fetcher,
-    QoraOptions? options,
-    CancelToken? cancelToken,
-  }) {
-    _applyPendingHydration<T>(key);
-    return super.watchQuery<T>(
-      key: key,
-      fetcher: fetcher,
-      options: options,
-      cancelToken: cancelToken,
-    );
-  }
-
-  @override
-  Stream<QoraState<T>> watchState<T>(Object key) {
-    _applyPendingHydration<T>(key);
-    return super.watchState<T>(key);
-  }
-
-  @override
-  Future<void> prefetch<T>({
-    required Object key,
-    required Future<T> Function() fetcher,
-    QoraOptions? options,
-    CancelToken? cancelToken,
-  }) {
-    _applyPendingHydration<T>(key);
-    return super.prefetch<T>(
-      key: key,
-      fetcher: fetcher,
-      options: options,
-      cancelToken: cancelToken,
-    );
-  }
-
-  @override
-  T? getQueryData<T>(Object key) {
-    _applyPendingHydration<T>(key);
-    return super.getQueryData<T>(key);
-  }
-
-  @override
-  QoraState<T> getQueryState<T>(Object key) {
-    _applyPendingHydration<T>(key);
-    return super.getQueryState<T>(key);
   }
 
   // ── Auto-persist: hook called after every successful fetch ────────────────
@@ -475,15 +342,14 @@ class PersistQoraClient extends QoraClient {
   @override
   void removeQuery(Object key) {
     super.removeQuery(key);
-    final storageKey = _encodeStorageKey(normalizeKey(key));
-    _pendingHydration.remove(storageKey);
-    unawaited(_storage.delete(storageKey));
+    removeHydrationEntry(key);
+    unawaited(_storage.delete(_encodeStorageKey(normalizeKey(key))));
   }
 
   @override
   void clear() {
     super.clear();
-    _pendingHydration.clear();
+    clearHydrationQueue();
     unawaited(clearStorage());
   }
 
@@ -508,8 +374,7 @@ class PersistQoraClient extends QoraClient {
   /// Delete the persisted entry for [key] from [StorageAdapter] only.
   ///
   /// The in-memory cache is untouched. Use [removeQuery] to remove from both.
-  Future<void> evictFromStorage(Object key) =>
-      _storage.delete(_encodeStorageKey(normalizeKey(key)));
+  Future<void> evictFromStorage(Object key) => _storage.delete(_encodeStorageKey(normalizeKey(key)));
 
   // ── Internal ──────────────────────────────────────────────────────────────
 
@@ -537,8 +402,7 @@ class PersistQoraClient extends QoraClient {
       data: serialized,
       persistedAtMs: DateTime.now().millisecondsSinceEpoch,
       // Duration.zero → null so isExpired() returns false (indefinite).
-      ttlMs:
-          effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
+      ttlMs: effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
     );
 
     final storageKey = _encodeStorageKey(key);

@@ -69,6 +69,7 @@ export 'src/network/reconnect_strategy.dart';
 export 'src/persistence/persist_qora_client.dart';
 export 'src/persistence/qora_serializer.dart';
 export 'src/persistence/storage_adapter.dart';
+export 'src/ssr/ssr_hydrator.dart';
 export 'src/state/state.dart';
 export 'src/tracking/qora_tracker.dart';
 export 'src/utils/qora_exception.dart';
