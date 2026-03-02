@@ -36,14 +36,17 @@ QoraBuilder<User>(
 
 ## What you get out of the box
 
-| Feature                | Description                                                    |
-| ---------------------- | -------------------------------------------------------------- |
-| Automatic caching      | Data is stored and served instantly on repeat requests         |
-| Stale-while-revalidate | Show cached data immediately, refetch silently in background   |
-| Request deduplication  | 10 widgets, same key → 1 network call                          |
-| Automatic retry        | Failed requests retry with exponential backoff                 |
-| Optimistic updates     | Update the UI before the server responds, roll back on failure |
-| Reactive invalidation  | Invalidate a key → every subscriber rebuilds automatically     |
+| Feature                | Description                                                              |
+| ---------------------- | ------------------------------------------------------------------------ |
+| Automatic caching      | Data is stored and served instantly on repeat requests                   |
+| Stale-while-revalidate | Show cached data immediately, refetch silently in background             |
+| Request deduplication  | 10 widgets, same key → 1 network call                                    |
+| Automatic retry        | Failed requests retry with exponential backoff                           |
+| Optimistic updates     | Update the UI before the server responds, roll back on failure           |
+| Reactive invalidation  | Invalidate a key → every subscriber rebuilds automatically               |
+| Infinite queries       | Bi-directional pagination with `fetchNextPage` / `fetchPreviousPage`     |
+| Offline support        | Queue mutations offline, replay on reconnect; `NetworkMode` per-query    |
+| Persistence            | `PersistQoraClient` — hydrate the cache from storage on startup          |
 
 ---
 
@@ -83,10 +86,13 @@ Then wrap your app — that's it:
 
 ```dart
 void main() {
+  final tracker = OverlayTracker();
+  final client = QoraClient(tracker: kDebugMode ? tracker : null);
+
   runApp(
     QoraInspector(        // stripped automatically in release builds
-      client: queryClient,
-      child: MyApp(),
+      tracker: tracker,
+      child: MyApp(client: client),
     ),
   );
 }
@@ -98,7 +104,7 @@ void main() {
 
 Qora ships with first-class developer tooling across two surfaces.
 
-**IDE extension** — a native tab inside Flutter DevTools (VS Code / IntelliJ). Inspect the full cache, replay the event timeline, and send commands (`refetch`, `invalidate`) directly from your IDE. Enabled automatically when `qora_devtools_extension` is in your dependencies.
+**IDE extension** — a native tab inside Flutter DevTools (VS Code / IntelliJ) with six panels: live query inspector, mutation timeline, mutation inspector, network activity monitor, performance metrics, and a query dependency graph. Send commands (`refetch`, `invalidate`) directly from your IDE. Enabled automatically when `qora_devtools_extension` is in your dependencies.
 
 **In-app overlay** — a draggable panel that lives inside your running app, similar to TanStack Query's overlay. Add `qora_devtools_overlay` to `dev_dependencies` and wrap your app with `QoraInspector`. Zero overhead in release — the widget tree is never built outside of debug mode.
 
@@ -130,10 +136,10 @@ dart pub global activate melos
 melos bootstrap
 
 # Run all tests
-melos run test:all
+melos test
 
 # Analyze all packages
-melos run analyze
+melos analyze
 ```
 
 ---
