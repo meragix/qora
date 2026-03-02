@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`QoraTracker.onQueryFetching(String key)`** — new abstract hook called immediately after the cache entry transitions to `Loading`, before the async fetch begins; pairs with `onQueryFetched` to enable precise per-query fetch-duration tracking. All concrete implementations must add an override (`NoOpTracker` ships an empty body).
+- **`NoOpTracker.onQueryFetching()`** — empty override satisfying the new interface method.
+
 - **`InfiniteData<TData, TPageParam>`** — immutable container for all loaded pages and their page parameters; API: `pages`, `pageParams`, `pageCount`, `isEmpty`, `isNotEmpty`, `flatten<TItem>()`, `append()`, `prepend()`, `dropFirst()`, `dropLast()`
 - **`InfiniteQueryState<TData, TPageParam>`** — sealed class state machine with four variants:
   - `InfiniteInitial` — query not yet executed

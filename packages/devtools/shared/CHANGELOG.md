@@ -1,8 +1,13 @@
+<!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+### Added
+
+- **`QueryEvent.fetchDurationMs`** — nullable `int` field on `QueryEvent.fetched` events carrying the wall-clock duration (milliseconds) between fetch-started and fetch-completed; `null` when timing data is unavailable (e.g. legacy trackers or events replayed from the ring buffer without a recorded start time).
 
 ## [0.1.0] - 2026-02-28
 
