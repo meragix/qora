@@ -6,6 +6,10 @@ import 'package:qora/src/cache/cached_entry.dart';
 import 'package:qora/src/cache/query_cache.dart';
 import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/infinite/infinite_cache_entry.dart';
+import 'package:qora/src/infinite/infinite_data.dart';
+import 'package:qora/src/infinite/infinite_query_state.dart';
+import 'package:qora/src/key/key_cache_map.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/mutation/mutation.dart';
@@ -107,6 +111,13 @@ class QoraClient implements MutationTracker {
   /// Enables deduplication: concurrent [fetchQuery] or [watchQuery] calls
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
+
+  /// Dedicated cache for infinite (paginated) queries.
+  ///
+  /// Kept separate from [_cache] so that infinite and regular queries never
+  /// collide, even when sharing the same key string.
+  final KeyCacheMap<InfiniteCacheEntry<dynamic, dynamic>> _infiniteCache =
+      KeyCacheMap<InfiniteCacheEntry<dynamic, dynamic>>();
 
   // ── Network awareness ──────────────────────────────────────────────────────
 
@@ -627,6 +638,138 @@ class QoraClient implements MutationTracker {
     return _cache.get<T>(normalizeKey(key))?.state ?? Initial<T>();
   }
 
+  // ── Infinite queries ──────────────────────────────────────────────────────
+
+  /// Observe the [InfiniteQueryState] for an infinite query by [key].
+  ///
+  /// Immediately emits the current state to the subscriber (replay semantics),
+  /// then forwards every future [updateInfiniteQueryState] call.
+  ///
+  /// Subscribing keeps the underlying [InfiniteCacheEntry] alive — the GC
+  /// timer is suspended until the last subscriber cancels.
+  ///
+  /// Used by [InfiniteQueryObserver] and [InfiniteQueryBuilder]; you can also
+  /// call it directly when building a custom widget on top of an observer.
+  Stream<InfiniteQueryState<TData, TPageParam>>
+      watchInfiniteState<TData, TPageParam>(Object key) async* {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _getOrCreateInfiniteEntry<TData, TPageParam>(normalized);
+
+    entry.addSubscriber();
+    entry.gcTimer?.cancel();
+
+    try {
+      yield* entry.stream;
+    } finally {
+      entry.removeSubscriber();
+      if (!entry.isActive) {
+        _scheduleInfiniteGC(normalized, entry);
+      }
+    }
+  }
+
+  /// Push a new [InfiniteQueryState] for [key] to all active subscribers.
+  ///
+  /// Called by [InfiniteQueryObserver] after every page fetch, success, or
+  /// failure. Also useful for optimistic updates:
+  ///
+  /// ```dart
+  /// client.updateInfiniteQueryState<List<Post>, int>(
+  ///   ['posts'],
+  ///   InfiniteSuccess(
+  ///     data: optimisticData,
+  ///     hasNextPage: true,
+  ///     hasPreviousPage: false,
+  ///     updatedAt: DateTime.now(),
+  ///   ),
+  /// );
+  /// ```
+  void updateInfiniteQueryState<TData, TPageParam>(
+    Object key,
+    InfiniteQueryState<TData, TPageParam> state,
+  ) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _getOrCreateInfiniteEntry<TData, TPageParam>(normalized);
+    entry.updateState(state);
+    _tracker.onQueryFetched(
+      _stringKey(normalized),
+      state is InfiniteSuccess<TData, TPageParam> ? state.data : null,
+      state.runtimeType.toString(),
+    );
+  }
+
+  /// Returns the current [InfiniteQueryState] for [key], or [InfiniteInitial]
+  /// if no entry exists yet.
+  InfiniteQueryState<TData, TPageParam>
+      getInfiniteQueryState<TData, TPageParam>(Object key) {
+    _assertNotDisposed();
+    final entry = _infiniteCache.get(normalizeKey(key))
+        as InfiniteCacheEntry<TData, TPageParam>?;
+    return entry?.state ?? const InfiniteInitial();
+  }
+
+  /// Returns the loaded [InfiniteData] for [key], or `null` when no pages
+  /// have been fetched yet.
+  InfiniteData<TData, TPageParam>? getInfiniteQueryData<TData, TPageParam>(
+    Object key,
+  ) {
+    final state = getInfiniteQueryState<TData, TPageParam>(key);
+    return switch (state) {
+      InfiniteSuccess(:final data) => data,
+      InfiniteFailure(:final previousData) => previousData,
+      _ => null,
+    };
+  }
+
+  /// Directly replace the loaded data for an infinite query.
+  ///
+  /// Preserves [InfiniteSuccess.hasNextPage] and [InfiniteSuccess.hasPreviousPage]
+  /// from the current state unless explicit overrides are supplied. Useful for
+  /// optimistic updates before a mutation is confirmed.
+  void setInfiniteQueryData<TData, TPageParam>(
+    Object key,
+    InfiniteData<TData, TPageParam> data, {
+    bool? hasNextPage,
+    bool? hasPreviousPage,
+  }) {
+    _assertNotDisposed();
+    final currentState = getInfiniteQueryState<TData, TPageParam>(key);
+    final effectiveHasNext = hasNextPage ??
+        (currentState is InfiniteSuccess<TData, TPageParam> &&
+            currentState.hasNextPage);
+    final effectiveHasPrev = hasPreviousPage ??
+        (currentState is InfiniteSuccess<TData, TPageParam> &&
+            currentState.hasPreviousPage);
+
+    updateInfiniteQueryState<TData, TPageParam>(
+      key,
+      InfiniteSuccess(
+        data: data,
+        hasNextPage: effectiveHasNext,
+        hasPreviousPage: effectiveHasPrev,
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Reset an infinite query to [InfiniteInitial], signalling observers to
+  /// re-fetch from the first page.
+  ///
+  /// Equivalent to [invalidate] for regular queries — the cache entry is kept
+  /// alive (observers receive [InfiniteInitial] and can call `fetch()` again)
+  /// rather than being removed entirely.
+  void invalidateInfiniteQuery(Object key) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _infiniteCache.get(normalized);
+    if (entry == null) return;
+    entry.updateState(const InfiniteInitial());
+    _tracker.onQueryInvalidated(_stringKey(normalized));
+    _log('Infinite query invalidated: $normalized');
+  }
+
   // ── Removal ──────────────────────────────────────────────────────────────
 
   /// Remove a single query from cache and cancel any pending requests for it.
@@ -655,6 +798,10 @@ class QoraClient implements MutationTracker {
   void clear() {
     _assertNotDisposed();
     _cache.clear();
+    for (final entry in _infiniteCache.values) {
+      entry.dispose();
+    }
+    _infiniteCache.clear();
     _pendingRequests.clear();
     _emitFetchingCount();
     _pausedFetches.clear();
@@ -895,6 +1042,10 @@ class QoraClient implements MutationTracker {
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
     _cache.clear();
+    for (final entry in _infiniteCache.values) {
+      entry.dispose();
+    }
+    _infiniteCache.clear();
     _pendingRequests.clear();
     _pausedFetches.clear();
     _activeMutations.clear();
@@ -1172,6 +1323,37 @@ class QoraClient implements MutationTracker {
     final entry = CacheEntry<T>(state: Initial<T>());
     _cache.set(key, entry);
     return entry;
+  }
+
+  /// Return an existing [InfiniteCacheEntry] or create a fresh [InfiniteInitial] one.
+  InfiniteCacheEntry<TData, TPageParam>
+      _getOrCreateInfiniteEntry<TData, TPageParam>(List<dynamic> key) {
+    final existing =
+        _infiniteCache.get(key) as InfiniteCacheEntry<TData, TPageParam>?;
+    if (existing != null) {
+      existing.touch();
+      return existing;
+    }
+    final entry = InfiniteCacheEntry<TData, TPageParam>(
+      state: const InfiniteInitial(),
+    );
+    _infiniteCache.set(key, entry);
+    return entry;
+  }
+
+  /// Schedule garbage collection for an [InfiniteCacheEntry] after
+  /// [QoraOptions.cacheTime].
+  void _scheduleInfiniteGC(
+    List<dynamic> key,
+    InfiniteCacheEntry<dynamic, dynamic> entry,
+  ) {
+    entry.gcTimer?.cancel();
+    entry.gcTimer = Timer(config.defaultOptions.cacheTime, () {
+      if (!entry.isActive) {
+        _infiniteCache.remove(key);
+        _log('GC removed infinite: $key');
+      }
+    });
   }
 
   /// Schedule garbage collection for [key] after [QoraOptions.cacheTime].

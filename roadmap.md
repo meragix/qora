@@ -61,15 +61,8 @@ dartInfiniteQueryBuilder<List<Post>, int>(
 - ✅ Twitter-like feed
 - ✅ Bi-directional chat
 
-### Tests
-- ✅ Test pagination logic
-- ✅ Test page params
-- ✅ Test bi-directional scroll
-
-**Durée estimée** : 2-3 semaines
-
-maintenant on ve son concentrer sur la v0.7.0 dans @roadmap.md ligne 14 pour qora et flutter_qora
+<!-- maintenant on ve son concentrer sur la v0.7.0 dans @roadmap.md ligne 14 pour qora et flutter_qora
 
 tu me propose quel implementation bestpratice et pour scale ?
 
-base in docs/README.md update docs/content with the new feature
+base in docs/README.md update docs/content with the new feature -->

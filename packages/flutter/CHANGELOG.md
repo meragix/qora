@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`InfiniteQueryBuilder<TData, TPageParam>`** — `StatefulWidget` that manages the full infinite-query lifecycle: creates an `InfiniteQueryObserver` on mount, fetches the first page, subscribes to all state transitions, and disposes cleanly; auto-refetches on `InfiniteInitial` (external invalidation); accepts `queryKey`, `fetcher`, `options`, `builder`, `client`, and `enabled`
+- **`InfiniteQueryController<TData, TPageParam>`** — stable handle passed to the builder with `fetchNextPage()`, `fetchPreviousPage()`, and `refetch()`; safe to capture in scroll listeners and `RefreshIndicator.onRefresh`
+
 ## [0.6.0] - 2026-03-02
 
 ### Added

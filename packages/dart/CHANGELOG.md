@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`InfiniteData<TData, TPageParam>`** — immutable container for all loaded pages and their page parameters; API: `pages`, `pageParams`, `pageCount`, `isEmpty`, `isNotEmpty`, `flatten<TItem>()`, `append()`, `prepend()`, `dropFirst()`, `dropLast()`
+- **`InfiniteQueryState<TData, TPageParam>`** — sealed class state machine with four variants:
+  - `InfiniteInitial` — query not yet executed
+  - `InfiniteLoading` — initial page fetch in progress (no data yet)
+  - `InfiniteSuccess` — all loaded pages with `data`, `hasNextPage`, `hasPreviousPage`, `updatedAt`, `isFetchingNextPage`, `isFetchingPreviousPage`, and `copyWith()`
+  - `InfiniteFailure` — fetch failure with `error`, `stackTrace`, and `previousData` for graceful degradation
+- **`InfiniteQueryOptions<TData, TPageParam>`** — pagination configuration: `initialPageParam`, `getNextPageParam`, `getPreviousPageParam` (bi-directional), `maxPages` (windowed paging), `baseOptions`
+- **`InfiniteQueryObserver<TData, TPageParam>`** — central pagination engine; `fetch()`, `fetchNextPage()`, `fetchPreviousPage()`, `refetch()`; all concurrency guards set synchronously before the first `await` to prevent race conditions from rapid scroll events
+- **`InfiniteQueryFunction<TData, TPageParam>`** typedef — `Future<TData> Function(TPageParam pageParam)`; added to `query_function.dart` for consistency with `QueryFunction` and `MutatorFunction`
+- **`QoraClient.watchInfiniteState<TData, TPageParam>(key)`** — broadcast stream of `InfiniteQueryState` transitions; subscribing prevents GC of the cache entry
+- **`QoraClient.getInfiniteQueryState<TData, TPageParam>(key)`** — synchronous state snapshot; returns `InfiniteInitial()` when not cached
+- **`QoraClient.getInfiniteQueryData<TData, TPageParam>(key)`** — returns `InfiniteData` from the current `InfiniteSuccess`, or `null`
+- **`QoraClient.setInfiniteQueryData<TData, TPageParam>(key, data)`** — inject `InfiniteData` directly into cache for optimistic updates; pushes `InfiniteSuccess` to all active subscribers
+- **`QoraClient.updateInfiniteQueryState<TData, TPageParam>(key, state)`** — raw write path used by `InfiniteQueryObserver`
+- **`QoraClient.invalidateInfiniteQuery(key)`** — resets the cache entry to `InfiniteInitial`; active observers auto-refetch
+
 ## [0.6.0] - 2026-03-02
 
 ### Added
