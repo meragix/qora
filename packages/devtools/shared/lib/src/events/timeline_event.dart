@@ -25,7 +25,10 @@ enum TimelineEventType {
   queryCreated,
 
   /// The entire cache was cleared.
-  cacheCleared;
+  cacheCleared,
+
+  /// A fetch was cancelled via [CancelToken] before or during the request.
+  queryCancelled;
 
   /// Human-readable label shown in the DevTools timeline panel.
   String get displayName => switch (this) {
@@ -37,6 +40,7 @@ enum TimelineEventType {
         TimelineEventType.fetchError => 'Fetch Error',
         TimelineEventType.queryCreated => 'Query Created',
         TimelineEventType.cacheCleared => 'Cache Cleared',
+        TimelineEventType.queryCancelled => 'Query Cancelled',
       };
 }
 

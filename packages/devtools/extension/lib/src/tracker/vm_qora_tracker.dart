@@ -126,6 +126,20 @@ class VmTracker implements QoraTracker {
   }
 
   @override
+  void onQueryCancelled(String key) {
+    if (_disposed) return;
+    _fetchStartTimes.remove(key); // discard timing — no duration to report
+    _emit(
+      GenericQoraEvent(
+        eventId: QoraEvent.generateId(),
+        kind: 'query.cancelled',
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        payload: <String, Object?>{'queryKey': key},
+      ),
+    );
+  }
+
+  @override
   void onQueryInvalidated(String key) {
     _emit(QueryEvent.invalidated(key: key));
   }
