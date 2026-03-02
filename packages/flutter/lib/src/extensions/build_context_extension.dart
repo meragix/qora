@@ -31,4 +31,25 @@ extension QoraBuildContextExtension on BuildContext {
   /// Returns the [QoraClient] from the nearest [QoraScope], or `null` if
   /// no [QoraScope] is found.
   QoraClient? get qoraOrNull => QoraScope.maybeOf(this);
+
+  /// Pre-warms the cache for the given [key] without blocking the caller.
+  ///
+  /// A no-op when fresh data is already cached. Useful for imperative
+  /// prefetch triggered by gesture events:
+  ///
+  /// ```dart
+  /// GestureDetector(
+  ///   onLongPress: () => context.prefetch<User>(
+  ///     key: ['user', userId],
+  ///     fetcher: () => api.getUser(userId),
+  ///   ),
+  ///   child: UserTile(userId),
+  /// )
+  /// ```
+  Future<void> prefetch<T>({
+    required Object key,
+    required Future<T> Function() fetcher,
+    QoraOptions? options,
+  }) =>
+      qora.prefetch<T>(key: key, fetcher: fetcher, options: options);
 }

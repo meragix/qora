@@ -92,6 +92,7 @@ export 'src/widgets/network_status_builder.dart';
 export 'src/widgets/network_status_indicator.dart';
 export 'src/widgets/qora_builder.dart';
 export 'src/widgets/qora_mutation_builder.dart';
+export 'src/widgets/qora_prefetch.dart';
 export 'src/widgets/qora_scope.dart';
 
 // Extensions
