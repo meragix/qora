@@ -214,6 +214,7 @@ final class MutationSuccess<TData, TVariables>
   /// Exposed on [MutationController.state] so that any widget or business
   /// logic layer can react to the unconfirmed state. Transitions to `false`
   /// once the queued mutation successfully replays on reconnect.
+  @override
   final bool isOptimistic;
 
   const MutationSuccess({

@@ -2,24 +2,20 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
-
-import '../cache/cached_entry.dart';
-import '../cache/query_cache.dart';
-import '../config/qora_client_config.dart';
-import '../config/qora_options.dart';
-import '../key/qora_key.dart';
-import '../managers/connectivity_manager.dart';
-import '../mutation/mutation_event.dart';
-import '../mutation/mutation_state.dart';
-import '../mutation/mutation_state_extensions.dart';
-import '../mutation/mutation_tracker.dart';
-import '../network/fetch_status.dart';
-import '../network/network_mode.dart';
-import '../network/offline_mutation_queue.dart';
-import '../state/qora_state.dart';
-import '../tracking/no_op_tracker.dart';
-import '../tracking/qora_tracker.dart';
-import '../utils/qora_exception.dart';
+import 'package:qora/src/cache/cached_entry.dart';
+import 'package:qora/src/cache/query_cache.dart';
+import 'package:qora/src/config/qora_client_config.dart';
+import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/managers/connectivity_manager.dart';
+import 'package:qora/src/mutation/mutation.dart';
+import 'package:qora/src/network/fetch_status.dart';
+import 'package:qora/src/network/network_mode.dart';
+import 'package:qora/src/network/offline_mutation_queue.dart';
+import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/tracking/no_op_tracker.dart';
+import 'package:qora/src/tracking/qora_tracker.dart';
+import 'package:qora/src/utils/qora_exception.dart';
 
 /// The central engine of Qora — manages queries, cache, deduplication,
 /// retries, reactive state, and network-aware pausing / reconnect replay.
@@ -114,7 +110,6 @@ class QoraClient implements MutationTracker {
 
   // ── Network awareness ──────────────────────────────────────────────────────
 
-  ConnectivityManager? _connectivityManager;
   StreamSubscription<NetworkStatus>? _connectivitySubscription;
   NetworkStatus _networkStatus = NetworkStatus.unknown;
 
@@ -152,7 +147,8 @@ class QoraClient implements MutationTracker {
   /// updates (including completed events that have already left the snapshot).
   final Map<String, MutationEvent> _activeMutations = {};
 
-  final StreamController<MutationEvent> _mutationBus = StreamController<MutationEvent>.broadcast();
+  final StreamController<MutationEvent> _mutationBus =
+      StreamController<MutationEvent>.broadcast();
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -192,7 +188,9 @@ class QoraClient implements MutationTracker {
 
   /// `true` when a [ConnectivityManager] is attached and reports online status,
   /// or when no manager is configured (assumed online by default).
-  bool get isOnline => _networkStatus == NetworkStatus.online || _networkStatus == NetworkStatus.unknown;
+  bool get isOnline =>
+      _networkStatus == NetworkStatus.online ||
+      _networkStatus == NetworkStatus.unknown;
 
   /// The current network status as reported by the attached
   /// [ConnectivityManager].
@@ -227,7 +225,6 @@ class QoraClient implements MutationTracker {
   /// ```
   void attachConnectivityManager(ConnectivityManager manager) {
     _connectivitySubscription?.cancel();
-    _connectivityManager = manager;
     _networkStatus = manager.currentStatus;
     _connectivitySubscription = manager.statusStream.listen(
       _onNetworkStatusChanged,
@@ -400,7 +397,8 @@ class QoraClient implements MutationTracker {
     try {
       if (opts.enabled) {
         // Decide whether to fetch on mount.
-        final shouldRefetchOnMount = opts.refetchOnMount ?? config.refetchOnMount;
+        final shouldRefetchOnMount =
+            opts.refetchOnMount ?? config.refetchOnMount;
         final isFirstFetch = entry.state is Initial<T>;
         final isStale = entry.isStale(opts.staleTime);
 
@@ -566,7 +564,9 @@ class QoraClient implements MutationTracker {
       _log('Invalidating: $normalized');
       final previous = entry.state.dataOrNull;
       entry.updateState(
-        previous != null ? Loading<dynamic>(previousData: previous) : Initial<dynamic>(),
+        previous != null
+            ? Loading<dynamic>(previousData: previous)
+            : Initial<dynamic>(),
       );
       _pendingRequests.remove(_stringKey(normalized));
       _tracker.onQueryInvalidated(_stringKey(normalized));
@@ -689,7 +689,8 @@ class QoraClient implements MutationTracker {
   /// final pending = client.activeMutations;
   /// client.mutationEvents.listen((event) { ... });
   /// ```
-  Map<String, MutationEvent> get activeMutations => Map.unmodifiable(_activeMutations);
+  Map<String, MutationEvent> get activeMutations =>
+      Map.unmodifiable(_activeMutations);
 
   /// A snapshot of all mutations currently waiting in the offline queue.
   ///
@@ -711,7 +712,8 @@ class QoraClient implements MutationTracker {
   }) {
     if (_isDisposed || _mutationBus.isClosed) return;
 
-    final isOptimistic = state is MutationSuccess<TData, TVariables> && state.isOptimistic;
+    final isOptimistic =
+        state is MutationSuccess<TData, TVariables> && state.isOptimistic;
 
     final event = MutationEvent(
       mutatorId: id,
@@ -751,7 +753,9 @@ class QoraClient implements MutationTracker {
     }
 
     _mutationBus.add(event);
-    _log('Mutation [$id]: ${state.runtimeType}${isOptimistic ? ' (optimistic)' : ''}');
+    _log(
+      'Mutation [$id]: ${state.runtimeType}${isOptimistic ? ' (optimistic)' : ''}',
+    );
   }
 
   @override
@@ -921,7 +925,8 @@ class QoraClient implements MutationTracker {
       await Future.wait(batch.map((fn) => fn()));
 
       // Jitter between batches to spread the server load spike.
-      if (strategy.jitter > Duration.zero && i + strategy.maxConcurrent < keys.length) {
+      if (strategy.jitter > Duration.zero &&
+          i + strategy.maxConcurrent < keys.length) {
         final jitterMs = random.nextInt(strategy.jitter.inMilliseconds + 1);
         await Future<void>.delayed(Duration(milliseconds: jitterMs));
       }
@@ -1003,7 +1008,8 @@ class QoraClient implements MutationTracker {
     entry.updateState(Loading<T>(previousData: previousData));
     _emitFetchStatus(sk, FetchStatus.fetching);
 
-    final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
+    final future =
+        _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (data) {
         entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
         _tracker.onQueryFetched(_stringKey(key), data, 'success');
@@ -1111,7 +1117,8 @@ class QoraClient implements MutationTracker {
     final existing = _cache.get<T>(key);
 
     if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.cacheTime) && !existing.isActive) {
+      if (existing.shouldEvict(config.defaultOptions.cacheTime) &&
+          !existing.isActive) {
         _log('Lazy evict: $key');
         _cache.remove(key);
       } else {
@@ -1153,8 +1160,10 @@ class QoraClient implements MutationTracker {
   /// Remove all inactive entries that have exceeded their cache time.
   void _evictExpiredEntries() {
     final cacheTime = config.defaultOptions.cacheTime;
-    final expired =
-        _cache.entries.where((e) => !e.value.isActive && e.value.shouldEvict(cacheTime)).map((e) => e.key).toList();
+    final expired = _cache.entries
+        .where((e) => !e.value.isActive && e.value.shouldEvict(cacheTime))
+        .map((e) => e.key)
+        .toList();
 
     for (final key in expired) {
       _cache.remove(key);

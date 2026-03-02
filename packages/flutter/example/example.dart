@@ -13,8 +13,13 @@ void main() {
         staleTime: Duration(minutes: 5),
         cacheTime: Duration(minutes: 10),
         retryCount: 3,
+        networkMode: NetworkMode.online,
       ),
       debugMode: kDebugMode,
+      reconnectStrategy: const ReconnectStrategy(
+        maxConcurrent: 5,
+        jitter: Duration(milliseconds: 100),
+      ),
       errorMapper: (error, stackTrace) => QoraException(
         error.toString().contains('401') ? 'Unauthorized' : 'Network error',
         originalError: error,
@@ -31,8 +36,8 @@ void main() {
         qoraClient: client,
         refetchInterval: const Duration(seconds: 30),
       ),
-      // Invalidates all queries when the device reconnects after being offline.
-      connectivityManager: FlutterConnectivityManager(qoraClient: client),
+      // Pure signal provider — no QoraClient reference required.
+      connectivityManager: FlutterConnectivityManager(),
       child: const MyApp(),
     ),
   );
@@ -43,15 +48,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Qora Flutter Demo',
-      home: UserListScreen(),
+    // NetworkStatusIndicator overlays an offline banner at the bottom
+    // whenever FlutterConnectivityManager reports NetworkStatus.offline.
+    return NetworkStatusIndicator(
+      child: MaterialApp(
+        title: 'Qora Flutter Demo',
+        home: const UserListScreen(),
+      ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Example 1 — Basic list with all four states
+// Example 1 — Basic list with all four states + FetchStatus offline indicator
 // ---------------------------------------------------------------------------
 
 class UserListScreen extends StatelessWidget {
@@ -76,8 +85,12 @@ class UserListScreen extends StatelessWidget {
       body: QoraBuilder<List<User>>(
         queryKey: const ['users'],
         queryFn: ApiService.getUsers,
-        builder: (context, state) {
+        // builder now receives fetchStatus as the third argument.
+        builder: (context, state, fetchStatus) {
           return switch (state) {
+            // Paused before any data — device is offline.
+            Initial() when fetchStatus == FetchStatus.paused =>
+              const Center(child: Text('Offline — connect to load users')),
             Initial() => const Center(child: Text('Press refresh to load')),
             Loading(:final previousData) => previousData != null
                 ? Stack(children: [
@@ -85,9 +98,20 @@ class UserListScreen extends StatelessWidget {
                     const LinearProgressIndicator(),
                   ])
                 : const Center(child: CircularProgressIndicator()),
-            Success(:final data) => data.isEmpty
-                ? const Center(child: Text('No users found'))
-                : UserListView(users: data),
+            Success(:final data) => Stack(
+                children: [
+                  data.isEmpty
+                      ? const Center(child: Text('No users found'))
+                      : UserListView(users: data),
+                  // Background revalidation paused (offline) — show chip.
+                  if (fetchStatus == FetchStatus.paused)
+                    const Positioned(
+                      top: 8,
+                      right: 8,
+                      child: _OfflineSyncChip(),
+                    ),
+                ],
+              ),
             Failure(:final error, :final previousData) => Column(
                 children: [
                   if (previousData != null)
@@ -128,7 +152,7 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
               queryFn: () => ApiService.getUsersPaged(_page),
               // Keep the previous page visible while the next page loads.
               keepPreviousData: true,
-              builder: (context, state) {
+              builder: (context, state, _) {
                 // dataOrNull returns Success.data OR Loading/Failure.previousData.
                 final users = state.dataOrNull ?? [];
                 return Stack(
@@ -182,7 +206,7 @@ class _PaginationControls extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Example 3 — Detail screen with manual refresh
+// Example 3 — Detail screen with manual refresh + fetchStatus
 // ---------------------------------------------------------------------------
 
 class UserDetailScreen extends StatelessWidget {
@@ -205,7 +229,7 @@ class UserDetailScreen extends StatelessWidget {
       body: QoraBuilder<User>(
         queryKey: ['users', userId],
         queryFn: () => ApiService.getUser(userId),
-        builder: (context, state) {
+        builder: (context, state, fetchStatus) {
           return switch (state) {
             Initial() || Loading(previousData: null) => const Center(
                 child: CircularProgressIndicator(),
@@ -217,6 +241,8 @@ class UserDetailScreen extends StatelessWidget {
             Success(:final data, :final updatedAt) => UserDetailView(
                 user: data,
                 updatedAt: updatedAt,
+                // Show a subtle indicator during background revalidation.
+                isRefreshing: fetchStatus == FetchStatus.fetching,
               ),
             Failure(:final error, previousData: null) => _ErrorScreen(
                 message: '$error',
@@ -344,12 +370,144 @@ class _ConditionalQueryWidgetState extends State<ConditionalQueryWidget> {
           queryKey: const ['conditional'],
           queryFn: ApiService.getData,
           enabled: _enabled,
-          builder: (context, state) => ListTile(
+          builder: (context, state, _) => ListTile(
             title: Text('State: ${state.runtimeType}'),
             subtitle: state is Success<String> ? Text(state.data) : null,
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Example 7 — Offline mutation queue with isOptimistic
+// ---------------------------------------------------------------------------
+
+class CreateUserScreen extends StatelessWidget {
+  const CreateUserScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Create user')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: QoraMutationBuilder<User, String, void>(
+          mutationFn: ApiService.createUser,
+          options: MutationOptions(
+            // Enqueue in FIFO offline queue — replays on reconnect.
+            offlineQueue: true,
+            // Provide a synthetic User so the UI updates immediately offline.
+            optimisticResponse: (name) => User(
+              id: -1,
+              name: name,
+              email: '(pending sync)',
+              avatarUrl: 'https://i.pravatar.cc/150?img=0',
+            ),
+            onSuccess: (_, __, ___) async {
+              // Invalidate user list when the server confirms the creation.
+              context.qora.invalidateWhere(
+                (k) => k.firstOrNull == 'users',
+              );
+            },
+          ),
+          builder: (context, state, mutate) {
+            // true only when queued offline with an optimisticResponse.
+            final isOptimistic = state is MutationSuccess && state.isOptimistic;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isOptimistic) const _PendingSyncBanner(),
+                if (state case MutationSuccess(:final data, :final isOptimistic)
+                    when !isOptimistic)
+                  _SuccessBanner(name: data.name),
+                if (state case MutationFailure(:final error))
+                  ErrorBanner(message: '$error'),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: state.isPending ? null : () => mutate('New User'),
+                  child: state.isPending
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Create user'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingSyncBanner extends StatelessWidget {
+  const _PendingSyncBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.orange.shade50,
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Icon(Icons.schedule, size: 16, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Queued — will sync when back online'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuccessBanner extends StatelessWidget {
+  final String name;
+
+  const _SuccessBanner({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.green.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle, size: 16, color: Colors.green),
+            const SizedBox(width: 8),
+            Text('$name created successfully'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OfflineSyncChip extends StatelessWidget {
+  const _OfflineSyncChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: Colors.black54,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.sync, size: 12, color: Colors.white),
+            SizedBox(width: 4),
+            Text('Sync pending',
+                style: TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -424,6 +582,16 @@ class ApiService {
       name: newName,
       email: 'user$id@example.com',
       avatarUrl: 'https://i.pravatar.cc/150?img=$id',
+    );
+  }
+
+  static Future<User> createUser(String name) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    return User(
+      id: DateTime.now().millisecondsSinceEpoch,
+      name: name,
+      email: '${name.toLowerCase().replaceAll(' ', '')}@example.com',
+      avatarUrl: 'https://i.pravatar.cc/150?img=99',
     );
   }
 

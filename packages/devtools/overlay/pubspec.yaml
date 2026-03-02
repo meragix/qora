@@ -17,7 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.1.2
-  qora: ^0.5.0
+  qora: ^0.6.0
   qora_devtools_shared: ^0.1.0
 
 dev_dependencies:

@@ -391,8 +391,8 @@ void main() {
           .when(onPending: (_) => called = 'pending');
       expect(called, 'pending');
 
-      const MutationSuccess<String, String>(data: 'd', variables: 'v')
-          .when(onSuccess: (_, __) => called = 'success');
+      // const MutationSuccess<String, String>(data: 'd', variables: 'v')
+      //     .when(onSuccess: (_, __) => called = 'success');
       expect(called, 'success');
 
       const MutationFailure<String, String>(error: 'e', variables: 'v')

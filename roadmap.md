@@ -2,7 +2,7 @@
 <!-- v0.2.0 - Flutter Basic    🎨 Basic Flutter widgets -->
 <!-- v0.3.0 - Mutations        🔄 Optimistic updates -->
 <!-- v0.4.0 - Persistence      💾 Offline-first -->
-v0.5.0 - Network Aware    📡 Connectivity management
+<!-- v0.5.0 - Network Aware    📡 Connectivity management -->
 v0.6.0 - Infinite         ∞  Pagination support
 <!-- v0.7.0 - Hooks            🪝 flutter_hooks integration -->
 v0.8.0 - DevTools         🛠️ Developer experience
@@ -11,9 +11,9 @@ v1.0.0 - Production Ready 🎉 Stable release
 
 
 
-## v0.6.0 - Network Aware 📡
+## v0.7.0 - Infinite Queries ∞
 
-**Objectif** : Gestion automatique de la connectivité réseau
+**Objectif** : Support de la pagination infinie
 
 ### Packages
 ```
@@ -21,55 +21,55 @@ packages/reqry/          (extension)
 packages/reqry_flutter/  (extension)
 Features
 
-✅ ConnectivityManager interface (pure Dart)
-✅ FlutterConnectivityManager (connectivity_plus)
-✅ NetworkStatus enum
-✅ Automatic refetch on reconnect
-✅ Offline queue pour mutations
-✅ NetworkStatusIndicator widget
-✅ Pause queries pendant offline
-✅ Replay mutations queue au retour du réseau
+✅ InfiniteQueryObserver
+✅ InfiniteQueryBuilder widget
+✅ fetchNextPage() / fetchPreviousPage()
+✅ hasNextPage / hasPreviousPage
+✅ Page params management
+✅ Bi-directional infinite scroll
 
 API
-dartvoid main() async {
-  final client = ReqryClient();
-  
-  final connectivityManager = FlutterConnectivityManager(
-    queryClient: client,
-  );
-  await connectivityManager.start();
-  
-  runApp(
-    ReqryProvider(
-      client: client,
-      connectivityManager: connectivityManager,
-      child: NetworkStatusIndicator(child: MyApp()),
-    ),
-  );
-}
-Widget
-dartNetworkStatusIndicator(
-  builder: (context, status) {
-    return Stack(
-      children: [
-        child,
-        if (status == NetworkStatus.offline)
-          Banner(text: 'Offline mode'),
-      ],
+dartInfiniteQueryBuilder<List<Post>, int>(
+  queryKey: ReqryKey(['posts']),
+  queryFn: (pageParam) => api.getPosts(page: pageParam),
+  getNextPageParam: (lastPage, allPages) {
+    return lastPage.hasMore ? allPages.length + 1 : null;
+  },
+  builder: (context, state) {
+    final allPosts = state.data?.expand((page) => page).toList() ?? [];
+    
+    return ListView.builder(
+      itemCount: allPosts.length + (state.hasNextPage ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == allPosts.length) {
+          // Load more trigger
+          if (state.hasNextPage && !state.isFetchingNextPage) {
+            state.fetchNextPage();
+          }
+          return CircularProgressIndicator();
+        }
+        
+        return PostCard(allPosts[index]);
+      },
     );
   },
-  child: MyApp(),
 )
 ```
 
 ### Examples
-- ✅ `examples/network_aware_app/`
-- ✅ App qui détecte offline/online
-- ✅ Queue de mutations rejoué au retour réseau
+- ✅ `examples/infinite_scroll_app/`
+- ✅ Twitter-like feed
+- ✅ Bi-directional chat
 
 ### Tests
-- ✅ Mock connectivity tests
-- ✅ Test offline queue
-- ✅ Test refetch on reconnect
+- ✅ Test pagination logic
+- ✅ Test page params
+- ✅ Test bi-directional scroll
 
-**Durée estimée** : 2 semaines
+**Durée estimée** : 2-3 semaines
+
+maintenant on ve son concentrer sur la v0.7.0 dans @roadmap.md ligne 14 pour qora et flutter_qora
+
+tu me propose quel implementation bestpratice et pour scale ?
+
+base in docs/README.md update docs/content with the new feature

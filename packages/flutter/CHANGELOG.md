@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-02
+
 ### Added
 
 - **`NetworkStatusBuilder`** — low-level widget that subscribes to the `ConnectivityManager` stream and rebuilds on every `NetworkStatus` transition; accepts optional `child` to avoid rebuilding expensive sub-trees
