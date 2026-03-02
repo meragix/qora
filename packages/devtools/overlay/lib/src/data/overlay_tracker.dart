@@ -80,6 +80,11 @@ class OverlayTracker implements QoraTracker {
   // ── QoraTracker ─────────────────────────────────────────────────────────────
 
   @override
+  void onQueryFetching(String key) {
+    // Overlay tracks fetch completion only; no-op for the started hook.
+  }
+
+  @override
   void onQueryFetched(String key, Object? data, dynamic status) {
     if (_disposed) return;
     final event = QueryEvent.fetched(key: key, status: status, data: null);
