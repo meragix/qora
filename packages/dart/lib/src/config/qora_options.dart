@@ -197,6 +197,37 @@ class QoraOptions {
   /// query. A type mismatch is silently ignored.
   final Object? Function()? placeholderData;
 
+  /// Key of another query that must have [Success] data before this query
+  /// fires.
+  ///
+  /// [QoraClient.watchQuery] subscribes to the dependency reactively: when the
+  /// dependency first reaches [Success], the fetch for this query is triggered
+  /// automatically — no re-mount required.
+  ///
+  /// [QoraClient.fetchQuery] throws [StateError] if the dependency is not
+  /// resolved; prefer [watchQuery] for reactive dependent queries.
+  ///
+  /// [QoraClient.prefetch] is a silent no-op when the dependency is not ready.
+  ///
+  /// ```dart
+  /// // Step 1 — fetch the authenticated user's id.
+  /// client.watchQuery<Auth>(
+  ///   key: ['auth'],
+  ///   fetcher: api.getAuth,
+  /// );
+  ///
+  /// // Step 2 — dependent query: fires only after ['auth'] has data.
+  /// client.watchQuery<Profile>(
+  ///   key: ['profile'],
+  ///   fetcher: () {
+  ///     final auth = client.getQueryData<Auth>(['auth'])!;
+  ///     return api.getProfile(auth.userId);
+  ///   },
+  ///   options: const QoraOptions(dependsOn: ['auth']),
+  /// );
+  /// ```
+  final Object? dependsOn;
+
   const QoraOptions({
     this.staleTime = Duration.zero,
     this.cacheTime = const Duration(minutes: 5),
@@ -212,6 +243,7 @@ class QoraOptions {
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
+    this.dependsOn,
   });
 
   /// Returns the retry delay for the given zero-based [attemptIndex].

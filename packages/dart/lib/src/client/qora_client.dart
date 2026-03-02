@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:meta/meta.dart';
 import 'package:qora/src/cache/cached_entry.dart';
 import 'package:qora/src/cache/query_cache.dart';
+import 'package:qora/src/cancellation/cancel_token.dart';
 import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/infinite/infinite_cache_entry.dart';
@@ -94,6 +95,34 @@ import 'package:qora/src/utils/qora_exception.dart';
 /// final isOnline = client.isOnline;
 /// final queue = client.offlineMutationQueue;
 /// ```
+/// Predicate used by [QoraClient.invalidateQueries] to select cache entries.
+///
+/// Receives the string-serialised normalised [key], the current [state], and
+/// the [lastOptions] recorded from the most recent fetch (or `null` for entries
+/// that were pre-populated via `initialData` and never fetched).
+///
+/// ```dart
+/// // Invalidate every query whose key starts with 'users'.
+/// client.invalidateQueries(
+///   filter: (key, state, opts) => key.startsWith('["users"'),
+/// );
+///
+/// // Invalidate all stale queries that use a refetchInterval.
+/// client.invalidateQueries(
+///   filter: (key, state, opts) => opts?.refetchInterval != null,
+/// );
+///
+/// // Invalidate only currently-failing queries.
+/// client.invalidateQueries(
+///   filter: (key, state, opts) => state is Failure,
+/// );
+/// ```
+typedef QueryFilter = bool Function(
+  String key,
+  QoraState<dynamic> state,
+  QoraOptions? lastOptions,
+);
+
 class QoraClient implements MutationTracker {
   /// Global configuration for this client instance.
   final QoraClientConfig config;
@@ -333,6 +362,7 @@ class QoraClient implements MutationTracker {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) async {
     _assertNotDisposed();
 
@@ -362,12 +392,12 @@ class QoraClient implements MutationTracker {
       // a Loading<T> as Success<T> and throw.
       final staleData = (entry.state as Success<T>).data;
       _log('Cache HIT (stale): $normalized — revalidating in background');
-      unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
+      unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
       return staleData;
     }
 
     // ③ Cache miss — fetch and await.
-    return _doFetch<T>(normalized, entry, fetcher, opts);
+    return _doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken);
   }
 
   /// Create a reactive [Stream] of [QoraState] for a query.
@@ -406,6 +436,7 @@ class QoraClient implements MutationTracker {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) async* {
     _assertNotDisposed();
 
@@ -430,7 +461,7 @@ class QoraClient implements MutationTracker {
         final isStale = entry.isStale(opts.staleTime);
 
         if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
-          unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
+          unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
         }
 
         // Setup polling interval.
@@ -509,6 +540,7 @@ class QoraClient implements MutationTracker {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) async {
     _assertNotDisposed();
 
@@ -524,7 +556,7 @@ class QoraClient implements MutationTracker {
     }
 
     _log('Prefetching: $normalized');
-    await _doFetch<T>(normalized, entry, fetcher, opts);
+    await _doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken);
   }
 
   // ── Cache mutation ───────────────────────────────────────────────────────
@@ -618,6 +650,37 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     // Collect first to avoid concurrent modification.
     final matched = _cache.findKeys(predicate);
+    for (final key in matched) {
+      invalidate(key);
+    }
+  }
+
+  /// Invalidate all queries matching [filter].
+  ///
+  /// [filter] receives the string key, current state, and the
+  /// [QoraOptions] from the last fetch for richer selection than
+  /// [invalidateWhere].
+  ///
+  /// ```dart
+  /// // Invalidate every failing query.
+  /// client.invalidateQueries(
+  ///   filter: (key, state, opts) => state is Failure,
+  /// );
+  ///
+  /// // Invalidate all 'users' queries that have a short staleTime.
+  /// client.invalidateQueries(
+  ///   filter: (key, state, opts) =>
+  ///       key.startsWith('["users"') &&
+  ///       (opts?.staleTime ?? Duration.zero) < const Duration(minutes: 1),
+  /// );
+  /// ```
+  void invalidateQueries({required QueryFilter filter}) {
+    _assertNotDisposed();
+    final matched = _cache.findKeys((key) {
+      final entry = _cache.get<dynamic>(key);
+      if (entry == null) return false;
+      return filter(_stringKey(key), entry.state, entry.lastOptions);
+    });
     for (final key in matched) {
       invalidate(key);
     }
@@ -1160,9 +1223,16 @@ class QoraClient implements MutationTracker {
     List<dynamic> key,
     CacheEntry<T> entry,
     Future<T> Function() fetcher,
-    QoraOptions opts,
-  ) {
+    QoraOptions opts, {
+    CancelToken? cancelToken,
+  }) {
     final sk = _stringKey(key);
+
+    // Pre-flight cancellation check — before dedup and offline checks.
+    if (cancelToken?.isCancelled == true) {
+      _tracker.onQueryCancelled(sk);
+      return Future.error(QoraCancelException(sk));
+    }
 
     // Deduplication: reuse the existing in-flight future.
     if (_pendingRequests.containsKey(sk)) {
@@ -1207,6 +1277,7 @@ class QoraClient implements MutationTracker {
 
     // ── Normal online fetch ─────────────────────────────────────────────────
 
+    final previousState = entry.state;
     final previousData = entry.state.dataOrNull;
     entry.updateState(Loading<T>(previousData: previousData));
     _emitFetchStatus(sk, FetchStatus.fetching);
@@ -1215,6 +1286,17 @@ class QoraClient implements MutationTracker {
     final future =
         _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (data) {
+        // Mid-flight cancellation — discard result, restore pre-fetch state.
+        if (cancelToken?.isCancelled == true) {
+          entry.updateState(previousState);
+          _pendingRequests.remove(sk);
+          _emitFetchingCount();
+          _emitFetchStatus(sk, FetchStatus.idle);
+          _tracker.onQueryCancelled(sk);
+          throw QoraCancelException(sk); // ignore: only_throw_errors
+        }
+
+        entry.lastOptions = opts;
         entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
         _tracker.onQueryFetched(_stringKey(key), data, 'success');
         onFetchSuccess<T>(key, data);
@@ -1224,6 +1306,20 @@ class QoraClient implements MutationTracker {
         return data;
       },
     ).catchError((Object error, StackTrace stackTrace) {
+      // If the token was cancelled and the underlying HTTP client threw its own
+      // cancellation error, normalise it into QoraCancelException.
+      if (cancelToken?.isCancelled == true && error is! QoraCancelException) {
+        entry.updateState(previousState);
+        _pendingRequests.remove(sk);
+        _emitFetchingCount();
+        _emitFetchStatus(sk, FetchStatus.idle);
+        _tracker.onQueryCancelled(sk);
+        throw QoraCancelException(sk); // ignore: only_throw_errors
+      }
+      // QoraCancelException thrown from the .then() callback — re-throw as-is.
+      if (error is QoraCancelException) {
+        throw error; // ignore: only_throw_errors
+      }
       final mapped = _mapError(error, stackTrace);
       entry.updateState(
         Failure<T>(

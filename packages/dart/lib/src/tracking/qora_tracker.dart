@@ -59,6 +59,14 @@ abstract interface class QoraTracker {
   /// other string values for future SWR sub-states.
   void onQueryFetched(String key, Object? data, dynamic status);
 
+  /// Called when a fetch was cancelled via [CancelToken] — either before the
+  /// request started or while it was in-flight.
+  ///
+  /// [key] is the string-serialised normalised key. Use this event in DevTools
+  /// to mark the query on the timeline as "cancelled" instead of "failed", so
+  /// developers understand the request was intentionally aborted.
+  void onQueryCancelled(String key);
+
   /// Called when [QoraClient.invalidate] marks a cache entry as stale.
   ///
   /// [key] is the string-serialised normalised key.

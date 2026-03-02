@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/state/qora_state.dart';
 
 /// An entry in the query cache.
@@ -24,6 +25,14 @@ class CacheEntry<T> {
   DateTime lastAccessedAt;
 
   int _subscriberCount = 0;
+
+  /// The [QoraOptions] used on the most recent fetch.
+  ///
+  /// Set by [QoraClient] after each fetch completes. `null` for entries
+  /// pre-populated via `initialData` that have not yet been fetched.
+  /// Used by [QoraClient.invalidateQueries] to filter by options metadata
+  /// (e.g. `staleTime`, custom tags).
+  QoraOptions? lastOptions;
 
   /// Periodic refetch timer, set by [QoraClient.watchQuery] when
   /// [QoraOptions.refetchInterval] is configured.

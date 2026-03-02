@@ -13,6 +13,30 @@ class QoraException implements Exception {
   String toString() => 'QoraException: $message';
 }
 
+/// Thrown by [QoraClient.fetchQuery] or [QoraClient.watchQuery] when the
+/// associated [CancelToken] is cancelled before or during the fetch.
+///
+/// ```dart
+/// try {
+///   final result = await client.fetchQuery<User>(
+///     key: ['users', id],
+///     fetcher: () => api.getUser(id, cancelToken: token),
+///     cancelToken: token,
+///   );
+/// } on QoraCancelException {
+///   // Request cancelled — ignore or update UI.
+/// }
+/// ```
+class QoraCancelException implements Exception {
+  /// String-serialised normalised query key whose fetch was cancelled.
+  final String key;
+
+  const QoraCancelException(this.key);
+
+  @override
+  String toString() => 'QoraCancelException: fetch cancelled for key $key';
+}
+
 /// Thrown by [QoraClient.fetchQuery] when the device is offline, the query's
 /// [NetworkMode] is [NetworkMode.online], and there is no cached data to
 /// return.

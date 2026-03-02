@@ -49,6 +49,7 @@ library;
 
 export 'src/cache/cached_entry.dart';
 export 'src/cache/query_cache.dart';
+export 'src/cancellation/cancel_token.dart';
 export 'src/client/qora_client.dart';
 export 'src/config/qora_client_config.dart';
 export 'src/config/qora_options.dart';

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 
+import '../cancellation/cancel_token.dart';
 import '../client/qora_client.dart';
 import '../config/qora_options.dart';
 import '../key/qora_key.dart';
@@ -399,9 +400,15 @@ class PersistQoraClient extends QoraClient {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) {
     _applyPendingHydration<T>(key);
-    return super.fetchQuery<T>(key: key, fetcher: fetcher, options: options);
+    return super.fetchQuery<T>(
+      key: key,
+      fetcher: fetcher,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
   @override
@@ -409,9 +416,15 @@ class PersistQoraClient extends QoraClient {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) {
     _applyPendingHydration<T>(key);
-    return super.watchQuery<T>(key: key, fetcher: fetcher, options: options);
+    return super.watchQuery<T>(
+      key: key,
+      fetcher: fetcher,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
   @override
@@ -425,9 +438,15 @@ class PersistQoraClient extends QoraClient {
     required Object key,
     required Future<T> Function() fetcher,
     QoraOptions? options,
+    CancelToken? cancelToken,
   }) {
     _applyPendingHydration<T>(key);
-    return super.prefetch<T>(key: key, fetcher: fetcher, options: options);
+    return super.prefetch<T>(
+      key: key,
+      fetcher: fetcher,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
   @override
