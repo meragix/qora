@@ -74,6 +74,7 @@ class VmTracker implements QoraTracker {
   final int _maxBuffer;
 
   final ListQueue<QoraEvent> _buffer = ListQueue<QoraEvent>();
+  final Map<String, int> _fetchStartTimes = <String, int>{};
   bool _disposed = false;
 
   /// A read-only copy of the ring buffer contents, oldest to newest.
@@ -96,9 +97,19 @@ class VmTracker implements QoraTracker {
   }
 
   @override
+  void onQueryFetching(String key) {
+    if (_disposed) return;
+    _fetchStartTimes[key] = DateTime.now().millisecondsSinceEpoch;
+  }
+
+  @override
   void onQueryFetched(String key, Object? data, dynamic status) {
     final lazy = _lazy.store(data);
     final summary = _summarizeData(data);
+    final startedAt = _fetchStartTimes.remove(key);
+    final fetchDurationMs = startedAt != null
+        ? DateTime.now().millisecondsSinceEpoch - startedAt
+        : null;
 
     _emit(
       QueryEvent.fetched(
@@ -109,6 +120,7 @@ class VmTracker implements QoraTracker {
         payloadId: lazy.hasLargePayload ? lazy.payloadId : null,
         totalChunks: lazy.hasLargePayload ? lazy.totalChunks : null,
         summary: summary,
+        fetchDurationMs: fetchDurationMs,
       ),
     );
   }
@@ -168,6 +180,7 @@ class VmTracker implements QoraTracker {
     }
     _disposed = true;
     _buffer.clear();
+    _fetchStartTimes.clear();
     _lazy.clear();
   }
 
