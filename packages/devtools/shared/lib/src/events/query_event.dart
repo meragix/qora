@@ -92,6 +92,14 @@ final class QueryEvent extends QoraEvent {
   /// May be `null` for non-data events such as `invalidated`.
   final Map<String, Object?>? summary;
 
+  /// Wall-clock duration of the fetch in milliseconds, or `null` when not
+  /// available (e.g. for `invalidated` events or infinite queries).
+  ///
+  /// Computed by [VmTracker] as the elapsed time between [onQueryFetching] and
+  /// [onQueryFetched]. Use this to populate the Network Activity Monitor and
+  /// Performance Metrics screens.
+  final int? fetchDurationMs;
+
   /// Creates a query event.
   ///
   /// Prefer the named factories ([QueryEvent.fetched], [QueryEvent.invalidated])
@@ -107,6 +115,7 @@ final class QueryEvent extends QoraEvent {
     this.payloadId,
     this.totalChunks,
     this.summary,
+    this.fetchDurationMs,
   }) : super(kind: 'query.${type.name}');
 
   /// Helper constructor for `query.fetched`.
@@ -120,6 +129,7 @@ final class QueryEvent extends QoraEvent {
     String? payloadId,
     int? totalChunks,
     Map<String, Object?>? summary,
+    int? fetchDurationMs,
   }) {
     return QueryEvent(
       eventId: QoraEvent.generateId(),
@@ -132,6 +142,7 @@ final class QueryEvent extends QoraEvent {
       payloadId: payloadId,
       totalChunks: totalChunks,
       summary: summary,
+      fetchDurationMs: fetchDurationMs,
     );
   }
 
@@ -176,6 +187,7 @@ final class QueryEvent extends QoraEvent {
       summary: (json['summary'] as Map<String, Object?>?) != null
           ? Map<String, Object?>.from(json['summary']! as Map)
           : null,
+      fetchDurationMs: json['fetchDurationMs'] as int?,
     );
   }
 
@@ -191,5 +203,6 @@ final class QueryEvent extends QoraEvent {
         'payloadId': payloadId,
         'totalChunks': totalChunks,
         'summary': summary,
+        'fetchDurationMs': fetchDurationMs,
       };
 }
