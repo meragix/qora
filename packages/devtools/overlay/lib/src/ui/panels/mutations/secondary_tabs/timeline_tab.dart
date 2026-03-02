@@ -201,6 +201,10 @@ class TimelineEventRow extends StatelessWidget {
             Icons.delete_sweep_rounded,
             const Color(0xFF94A3B8)
           ),
+        TimelineEventType.queryCancelled => (
+            Icons.cancel_outlined,
+            const Color(0xFFF97316)
+          ),
       };
 
   String _fmtTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'

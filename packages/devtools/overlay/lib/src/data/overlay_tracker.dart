@@ -98,6 +98,13 @@ class OverlayTracker implements QoraTracker {
   }
 
   @override
+  void onQueryCancelled(String key) {
+    if (_disposed) return;
+    _cacheState.remove(key);
+    _emitTimeline(TimelineEventType.queryCancelled, key);
+  }
+
+  @override
   void onQueryInvalidated(String key) {
     if (_disposed) return;
     _emitTimeline(TimelineEventType.fetchStarted, key);
