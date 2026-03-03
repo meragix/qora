@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 // ---------------------------------------------------------------------------
 // App entry point
@@ -100,9 +100,7 @@ class UserListScreen extends StatelessWidget {
                 : const Center(child: CircularProgressIndicator()),
             Success(:final data) => Stack(
                 children: [
-                  data.isEmpty
-                      ? const Center(child: Text('No users found'))
-                      : UserListView(users: data),
+                  data.isEmpty ? const Center(child: Text('No users found')) : UserListView(users: data),
                   // Background revalidation paused (offline) — show chip.
                   if (fetchStatus == FetchStatus.paused)
                     const Positioned(
@@ -114,8 +112,7 @@ class UserListScreen extends StatelessWidget {
               ),
             Failure(:final error, :final previousData) => Column(
                 children: [
-                  if (previousData != null)
-                    Expanded(child: UserListView(users: previousData)),
+                  if (previousData != null) Expanded(child: UserListView(users: previousData)),
                   ErrorBanner(message: '$error'),
                 ],
               ),
@@ -421,11 +418,9 @@ class CreateUserScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (isOptimistic) const _PendingSyncBanner(),
-                if (state case MutationSuccess(:final data, :final isOptimistic)
-                    when !isOptimistic)
+                if (state case MutationSuccess(:final data, :final isOptimistic) when !isOptimistic)
                   _SuccessBanner(name: data.name),
-                if (state case MutationFailure(:final error))
-                  ErrorBanner(message: '$error'),
+                if (state case MutationFailure(:final error)) ErrorBanner(message: '$error'),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: state.isPending ? null : () => mutate('New User'),
@@ -503,8 +498,7 @@ class _OfflineSyncChip extends StatelessWidget {
           children: [
             Icon(Icons.sync, size: 12, color: Colors.white),
             SizedBox(width: 4),
-            Text('Sync pending',
-                style: TextStyle(color: Colors.white, fontSize: 12)),
+            Text('Sync pending', style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
         ),
       ),

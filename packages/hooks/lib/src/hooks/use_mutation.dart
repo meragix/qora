@@ -1,5 +1,5 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 /// Groups the current [MutationState] and the action callbacks returned by
 /// [useMutation].

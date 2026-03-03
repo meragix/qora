@@ -22,21 +22,21 @@ if [ -z "$1" ]; then
 Examples:
   ./scripts/release.sh qora-0.1.0
   ./scripts/release.sh qora-0.2.0-dev.1
-  ./scripts/release.sh flutter_qora-0.1.0
-  ./scripts/release.sh flutter_qora-0.1.0-beta.2"
+  ./scripts/release.sh qora_flutter-0.1.0
+  ./scripts/release.sh qora_flutter-0.1.0-beta.2"
 fi
 
 TAG=$1
 
 # Extract package name and version
-# Supports: qora-0.1.0, qora-0.1.0-dev.1, flutter_qora-0.1.0
+# Supports: qora-0.1.0, qora-0.1.0-dev.1, qora_flutter-0.1.0
 if [[ ! "$TAG" =~ ^([a-z_]+)-([0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?)$ ]]; then
   error "Invalid tag format. Use: <package>-<version>
   
 Examples:
   qora-0.1.0
   qora-0.2.0-dev.1
-  flutter_qora-0.1.0-beta.2"
+  qora_flutter-0.1.0-beta.2"
 fi
 
 PACKAGE=${BASH_REMATCH[1]}

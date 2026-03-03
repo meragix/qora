@@ -32,7 +32,7 @@
 ///
 /// ## Flutter
 ///
-/// The `flutter_qora` package ships `FlutterConnectivityManager`, powered by
+/// The `qora_flutter` package ships `FlutterConnectivityManager`, powered by
 /// `connectivity_plus`, as a ready-to-use implementation. Pass it to
 /// `QoraScope.connectivityManager` — `QoraScope` calls [start] and wires the
 /// manager to the client automatically.

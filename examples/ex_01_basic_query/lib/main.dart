@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 import 'screens/user_detail_screen.dart';
 import 'screens/user_list_screen.dart';
 

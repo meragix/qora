@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 /// Returns the nearest [QoraClient] from the widget tree.
 ///

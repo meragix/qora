@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated dependencies to `qora: ^0.4.0` in `flutter_qora` package
+- Updated dependencies to `qora: ^0.4.0` in `qora_flutter` package
 - Updated README and documentation to reflect new version and features
 
 ## [0.3.0] - 2026-02-25
@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `FlutterConnectivityManager` — invalidates all queries when the device reconnects after being offline; powered by `connectivity_plus` (bundled as a direct dependency)
-- `FlutterConnectivityManager` and `FlutterLifecycleManager` exported from the main `flutter_qora` library barrel
+- `FlutterConnectivityManager` and `FlutterLifecycleManager` exported from the main `qora_flutter` library barrel
 - `QoraScope` now accepts an optional `connectivityManager` parameter alongside `lifecycleManager`
 
 ### Changed

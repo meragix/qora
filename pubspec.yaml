@@ -91,7 +91,7 @@ melos:
         melos exec --scope="qora" -- dart pub publish --force
         melos exec --scope="qora_devtools_shared" -- dart pub publish --force
         melos exec --scope="qora_devtools_extension" -- dart pub publish --force
-        melos exec --scope="flutter_qora" -- dart pub publish --force
+        melos exec --scope="qora_flutter" -- dart pub publish --force
         melos exec --scope="qora_hooks" -- dart pub publish --force
         melos exec --scope="qora_devtools_overlay" -- dart pub publish --force
 

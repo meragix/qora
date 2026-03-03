@@ -19,7 +19,7 @@
 
 ### Changed
 
-- Updated dependency to `flutter_qora: ^0.5.0` for suite alignment with core 0.5.0 persistence release
+- Updated dependency to `qora_flutter: ^0.5.0` for suite alignment with core 0.5.0 persistence release
 
 ## [0.1.0] - 2026-02-28
 
@@ -40,6 +40,6 @@
   and action callbacks.
 - `InfiniteQueryHandle<TData, TPageParam>` — value object grouping infinite
   query state and the `fetchNextPage` callback.
-- Added `flutter_qora` path dependency to support `QoraScope.of` in
+- Added `qora_flutter` path dependency to support `QoraScope.of` in
   `useQueryClient`.
 - Widget tests covering all four hooks.

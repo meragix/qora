@@ -29,7 +29,7 @@ jobs:
     secrets: inherit
 
   # ── Flutter packages ─────────────────────────────────────────────
-  flutter_qora:
+  qora_flutter:
     uses: ./.github/workflows/_flutter_package.yml
     with:
       package: packages/flutter
@@ -40,7 +40,7 @@ jobs:
     uses: ./.github/workflows/_flutter_package.yml
     with:
       package: packages/hooks
-    needs: flutter_qora
+    needs: qora_flutter
     secrets: inherit
 
   qora_devtools_overlay:
@@ -68,7 +68,7 @@ jobs:
       - qora
       - qora_devtools_shared
       - qora_devtools_extension
-      - flutter_qora
+      - qora_flutter
       - qora_hooks
       - qora_devtools_overlay
       - qora_devtools_ui

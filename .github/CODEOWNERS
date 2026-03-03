@@ -5,7 +5,7 @@
 # Package-specific
 
 /packages/qora/ @donfreddy
-/packages/flutter_qora/ @donfreddy
+/packages/qora_flutter/ @donfreddy
 
 # Docs
 

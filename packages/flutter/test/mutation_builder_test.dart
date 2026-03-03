@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,8 +91,7 @@ void main() {
       expect(find.textContaining('error:'), findsOneWidget);
     });
 
-    testWidgets('success state is visible after mutate completes',
-        (tester) async {
+    testWidgets('success state is visible after mutate completes', (tester) async {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
@@ -119,8 +118,7 @@ void main() {
       expect(find.text('done'), findsOneWidget);
     });
 
-    testWidgets('mutate is disabled while pending (guard pattern)',
-        (tester) async {
+    testWidgets('mutate is disabled while pending (guard pattern)', (tester) async {
       var mutateCallCount = 0;
 
       await tester.pumpWidget(
@@ -153,8 +151,7 @@ void main() {
       expect(mutateCallCount, 1);
     });
 
-    testWidgets('optimistic update: onMutate applies and onError rolls back',
-        (tester) async {
+    testWidgets('optimistic update: onMutate applies and onError rolls back', (tester) async {
       final client = QoraClient();
       client.setQueryData<List<String>>(['items'], ['a', 'b']);
 
@@ -175,18 +172,14 @@ void main() {
                       [...?prev, item],
                     );
                     log.add(
-                      'optimistic:${client.getQueryData<List<String>>([
-                            'items'
-                          ])?.join(',')}',
+                      'optimistic:${client.getQueryData<List<String>>(['items'])?.join(',')}',
                     );
                     return prev;
                   },
                   onError: (error, variables, previous) async {
                     client.restoreQueryData(['items'], previous);
                     log.add(
-                      'rollback:${client.getQueryData<List<String>>([
-                            'items'
-                          ])?.join(',')}',
+                      'rollback:${client.getQueryData<List<String>>(['items'])?.join(',')}',
                     );
                   },
                 ),

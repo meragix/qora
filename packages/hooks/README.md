@@ -6,14 +6,14 @@
 ## Why a separate package?
 
 `flutter_hooks` is an optional dependency. Bundling hooks inside `qora` or
-`flutter_qora` would impose it on every user, even those who prefer
+`qora_flutter` would impose it on every user, even those who prefer
 `QoraBuilder` / `QoraMutationBuilder`. A separate package keeps things opt-in.
 
 ## Getting started
 
 ```yaml
 dependencies:
-  flutter_qora: ^0.1.0   # QoraScope + QoraClient
+  qora_flutter: ^0.1.0   # QoraScope + QoraClient
   flutter_hooks: ^0.21.0 # HookWidget
   qora_hooks: ^0.1.0     # useQuery, useMutation, …
 ```

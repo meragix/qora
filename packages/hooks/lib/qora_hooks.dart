@@ -6,7 +6,7 @@
 /// ## Quick start
 ///
 /// ```dart
-/// // Wrap your app with QoraScope (from flutter_qora):
+/// // Wrap your app with QoraScope (from qora_flutter):
 /// runApp(
 ///   QoraScope(
 ///     client: QoraClient(),
@@ -36,7 +36,6 @@ library;
 export 'src/hooks/use_query_client.dart';
 export 'src/hooks/use_query.dart';
 export 'src/hooks/use_mutation.dart' show MutationHandle, useMutation;
-export 'src/hooks/use_infinite_query.dart'
-    show InfiniteQueryHandle, useInfiniteQuery;
+export 'src/hooks/use_infinite_query.dart' show InfiniteQueryHandle, useInfiniteQuery;
 export 'src/hooks/use_is_fetching.dart';
 export 'src/hooks/use_is_mutating.dart';

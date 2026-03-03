@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 import 'package:qora_hooks/qora_hooks.dart';
 
 // ---------------------------------------------------------------------------
@@ -122,9 +122,7 @@ class UserListScreen extends HookWidget {
             ],
           ),
         Loading() => const Center(child: CircularProgressIndicator()),
-        Success(:final data) => data.isEmpty
-            ? const Center(child: Text('No users'))
-            : _UserListView(users: data),
+        Success(:final data) => data.isEmpty ? const Center(child: Text('No users')) : _UserListView(users: data),
         Failure(:final error) => _ErrorView(
             message: '$error',
             onRetry: () => client.invalidate(const ['users']),
@@ -184,9 +182,7 @@ class EditProfileScreen extends HookWidget {
               ),
 
             FilledButton(
-              onPressed: mutation.isPending
-                  ? null
-                  : () => mutation.mutate(nameController.text),
+              onPressed: mutation.isPending ? null : () => mutation.mutate(nameController.text),
               child: mutation.isPending
                   ? const SizedBox.square(
                       dimension: 20,
@@ -282,13 +278,9 @@ class ProfileScreen extends HookWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: switch (userState) {
-        Initial() ||
-        Loading(previousData: null) =>
-          const Center(child: CircularProgressIndicator()),
-        Loading(:final previousData?) =>
-          _ProfileBody(user: previousData, mutation: updateMutation),
-        Success(:final data) =>
-          _ProfileBody(user: data, mutation: updateMutation),
+        Initial() || Loading(previousData: null) => const Center(child: CircularProgressIndicator()),
+        Loading(:final previousData?) => _ProfileBody(user: previousData, mutation: updateMutation),
+        Success(:final data) => _ProfileBody(user: data, mutation: updateMutation),
         Failure(:final error) => _ErrorView(
             message: '$error',
             onRetry: () => client.invalidate(['users', userId]),
@@ -325,9 +317,7 @@ class _ProfileBody extends HookWidget {
           const SizedBox(height: 12),
           if (mutation.isError) _ErrorBanner(message: '${mutation.error}'),
           FilledButton(
-            onPressed: mutation.isPending
-                ? null
-                : () => mutation.mutate(controller.text),
+            onPressed: mutation.isPending ? null : () => mutation.mutate(controller.text),
             child: mutation.isPending
                 ? const SizedBox.square(
                     dimension: 18,

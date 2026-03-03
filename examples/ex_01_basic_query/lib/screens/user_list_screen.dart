@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 import '../models/user.dart';
 import '../services/fake_api.dart';

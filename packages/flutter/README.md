@@ -1,4 +1,4 @@
-# flutter_qora
+# qora_flutter
 
 Flutter widgets for [Qora](https://pub.dev/packages/qora) — bind server state to your UI with a single widget. No `setState`, no `StreamBuilder`, no loading flag spaghetti.
 
@@ -6,17 +6,17 @@ Flutter widgets for [Qora](https://pub.dev/packages/qora) — bind server state 
 
 ```yaml
 dependencies:
-  flutter_qora: ^1.0.0
+  qora_flutter: ^1.0.0
 ```
 
-> `flutter_qora` automatically includes `qora` and `connectivity_plus` as dependencies — no extra packages needed.
+> `qora_flutter` automatically includes `qora` and `connectivity_plus` as dependencies — no extra packages needed.
 
 ## Setup
 
 Wrap your app with `QoraScope` once:
 
 ```dart
-import 'package:flutter_qora/flutter_qora.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 void main() {
   final client = QoraClient(
