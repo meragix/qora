@@ -1,6 +1,15 @@
 # qora_flutter
 
-Flutter widgets for [Qora](https://pub.dev/packages/qora) — bind server state to your UI with a single widget. No `setState`, no `StreamBuilder`, no loading flag spaghetti.
+Flutter integration for [Qora](https://pub.dev/packages/qora). Bind server state to your UI with a single widget: no `setState`, no `StreamBuilder`, and no loading flag spaghetti.
+
+Qora handles the complex plumbing of asynchronous data: caching, background refetching, and offline persistence. Your UI simply reacts to the state.
+
+## Features
+
+* **Declarative UI**: Access your data directly via `QoraBuilder`.
+* **Lifecycle Aware**: Queries are automatically paused when the app is in the background.
+* **Network Aware**: Triggers refetches automatically when the connection is restored.
+* **Zero Boilerplate**: Manage loading, error, and data states in one place.
 
 ## Install
 
@@ -28,7 +37,7 @@ void main() {
       client: client,
       // Optional: refetch when app resumes or network reconnects
       lifecycleManager: FlutterLifecycleManager(qoraClient: client),
-      connectivityManager: FlutterConnectivityManager(qoraClient: client),
+      connectivityManager: FlutterConnectivityManager(),
       child: const MyApp(),
     ),
   );
@@ -43,14 +52,14 @@ void main() {
 QoraBuilder<User>(
   queryKey: ['users', userId],
   queryFn: () => api.getUser(userId),
-  builder: (context, state) {
+  builder: (context, state, fetchStatus) {
     return state.when(
       onInitial: () => const SizedBox.shrink(),
       onLoading: (previousData) => previousData != null
           ? UserCard(user: previousData, isRefreshing: true)
           : const CircularProgressIndicator(),
       onSuccess: (user, updatedAt) => UserCard(user: user),
-      onError: (error, _, previousData) => ErrorScreen(
+      onFailure: (error, _, previousData) => ErrorScreen(
         message: error.toString(),
         onRetry: () => context.qora.invalidate(['users', userId]),
       ),
@@ -110,7 +119,7 @@ QoraStateBuilder<List<Notification>>(
 
 Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 
-- [Setup](https://qora.meragix.dev/flutter-integration/setup)
-- [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
-- [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
-- [Optimistic Updates](https://qora.meragix.dev/guides/optimistic-updates)
+* [Setup](https://qora.meragix.dev/flutter-integration/setup)
+* [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
+* [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
+* [Optimistic Updates](https://qora.meragix.dev/guides/optimistic-updates)

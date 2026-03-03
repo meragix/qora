@@ -14,7 +14,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  qora_flutter: ^0.6.0
+  qora_flutter: ^0.7.0
   flutter_hooks: ^0.21.2
 
 dev_dependencies:

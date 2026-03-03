@@ -108,7 +108,8 @@ class InfiniteData<TData, TPageParam> {
   }
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(pages), Object.hashAll(pageParams));
+  int get hashCode =>
+      Object.hash(Object.hashAll(pages), Object.hashAll(pageParams));
 
   @override
   String toString() =>

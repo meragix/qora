@@ -423,12 +423,26 @@ class QoraClient implements MutationTracker {
       // a Loading<T> as Success<T> and throw.
       final staleData = (entry.state as Success<T>).data;
       _log('Cache HIT (stale): $normalized — revalidating in background');
-      unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+      unawaited(
+        _doFetch<T>(
+          normalized,
+          entry,
+          fetcher,
+          opts,
+          cancelToken: cancelToken,
+        ),
+      );
       return staleData;
     }
 
     // ③ Cache miss — fetch and await.
-    return _doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken);
+    return _doFetch<T>(
+      normalized,
+      entry,
+      fetcher,
+      opts,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Create a reactive [Stream] of [QoraState] for a query.
@@ -505,12 +519,22 @@ class QoraClient implements MutationTracker {
           if (depEntry.state.dataOrNull != null) {
             // Dependency already resolved — proceed with normal fetch logic.
             if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
-              unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+              unawaited(
+                _doFetch<T>(
+                  normalized,
+                  entry,
+                  fetcher,
+                  opts,
+                  cancelToken: cancelToken,
+                ),
+              );
             }
           } else {
             // Dependency not yet ready — subscribe and fire when it resolves.
             depSub = depEntry.stream.listen((depState) {
-              if (depState.dataOrNull != null && !_isDisposed && entry.isActive) {
+              if (depState.dataOrNull != null &&
+                  !_isDisposed &&
+                  entry.isActive) {
                 depSub?.cancel();
                 depSub = null;
                 unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
@@ -519,7 +543,15 @@ class QoraClient implements MutationTracker {
           }
         } else {
           if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
-            unawaited(_doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken));
+            unawaited(
+              _doFetch<T>(
+                normalized,
+                entry,
+                fetcher,
+                opts,
+                cancelToken: cancelToken,
+              ),
+            );
           }
         }
 
@@ -630,7 +662,13 @@ class QoraClient implements MutationTracker {
     }
 
     _log('Prefetching: $normalized');
-    await _doFetch<T>(normalized, entry, fetcher, opts, cancelToken: cancelToken);
+    await _doFetch<T>(
+      normalized,
+      entry,
+      fetcher,
+      opts,
+      cancelToken: cancelToken,
+    );
   }
 
   // ── Cache mutation ───────────────────────────────────────────────────────
@@ -1329,7 +1367,11 @@ class QoraClient implements MutationTracker {
     if (pending == null) return;
 
     try {
-      hydrateQuery<T>(normalized, pending.data as T, updatedAt: pending.updatedAt);
+      hydrateQuery<T>(
+        normalized,
+        pending.data as T,
+        updatedAt: pending.updatedAt,
+      );
     } catch (e) {
       _log('Hydration cast failed at "$pk": $e');
     }
@@ -1577,8 +1619,8 @@ class QoraClient implements MutationTracker {
     entry.updateState(
       Success<T>(
         data: raw as T, // safe: guarded by `raw is! T` check above
-        updatedAt: opts.initialDataUpdatedAt ??
-            DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt:
+            opts.initialDataUpdatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
       ),
     );
     _log('initialData applied: ${entry.state}');

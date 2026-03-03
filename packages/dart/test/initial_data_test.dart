@@ -157,19 +157,17 @@ void main() {
         'Loading.previousData before replacing with network data', () async {
       final states = <QoraState<String>>[];
 
-      final sub = client
-          .watchQuery<String>(
-            key: ['watch-initial'],
-            fetcher: () async {
-              await Future<void>.delayed(const Duration(milliseconds: 10));
-              return 'network';
-            },
-            options: const QoraOptions(
-              initialData: 'placeholder',
-              // epoch timestamp → stale → SWR triggers background refetch
-            ),
-          )
-          .listen(states.add);
+      final sub = client.watchQuery<String>(
+        key: ['watch-initial'],
+        fetcher: () async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return 'network';
+        },
+        options: const QoraOptions(
+          initialData: 'placeholder',
+          // epoch timestamp → stale → SWR triggers background refetch
+        ),
+      ).listen(states.add);
 
       await Future<void>.delayed(const Duration(milliseconds: 30));
       await sub.cancel();
@@ -194,17 +192,15 @@ void main() {
         'no Loading flash', () async {
       final states = <QoraState<String>>[];
 
-      final sub = client
-          .watchQuery<String>(
-            key: ['watch-fresh'],
-            fetcher: () async => 'network',
-            options: QoraOptions(
-              initialData: 'placeholder',
-              initialDataUpdatedAt: DateTime.now(),
-              staleTime: const Duration(minutes: 5),
-            ),
-          )
-          .listen(states.add);
+      final sub = client.watchQuery<String>(
+        key: ['watch-fresh'],
+        fetcher: () async => 'network',
+        options: QoraOptions(
+          initialData: 'placeholder',
+          initialDataUpdatedAt: DateTime.now(),
+          staleTime: const Duration(minutes: 5),
+        ),
+      ).listen(states.add);
 
       await Future<void>.delayed(Duration.zero);
       await sub.cancel();
@@ -212,8 +208,11 @@ void main() {
       // Fresh initialData → no fetch triggered → only Success emitted.
       expect(states.first, isA<Success<String>>());
       expect((states.first as Success<String>).data, 'placeholder');
-      expect(states.any((s) => s is Loading), isFalse,
-          reason: 'no Loading flash with fresh initialData',);
+      expect(
+        states.any((s) => s is Loading),
+        isFalse,
+        reason: 'no Loading flash with fresh initialData',
+      );
     });
 
     // ── QoraOptions.merge ─────────────────────────────────────────────────

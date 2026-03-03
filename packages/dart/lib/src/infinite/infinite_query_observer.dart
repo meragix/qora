@@ -171,10 +171,9 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData:
-              currentState is InfiniteSuccess<TData, TPageParam>
-                  ? currentState.data
-                  : null,
+          previousData: currentState is InfiniteSuccess<TData, TPageParam>
+              ? currentState.data
+              : null,
         ),
       );
     } finally {
@@ -226,10 +225,9 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData:
-              currentState is InfiniteSuccess<TData, TPageParam>
-                  ? currentState.data
-                  : null,
+          previousData: currentState is InfiniteSuccess<TData, TPageParam>
+              ? currentState.data
+              : null,
         ),
       );
     } finally {
@@ -289,10 +287,9 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData:
-              latestState is InfiniteSuccess<TData, TPageParam>
-                  ? latestState.data
-                  : currentState.data,
+          previousData: latestState is InfiniteSuccess<TData, TPageParam>
+              ? latestState.data
+              : currentState.data,
         ),
       );
     } finally {

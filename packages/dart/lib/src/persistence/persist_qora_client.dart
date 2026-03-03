@@ -374,7 +374,8 @@ class PersistQoraClient extends QoraClient {
   /// Delete the persisted entry for [key] from [StorageAdapter] only.
   ///
   /// The in-memory cache is untouched. Use [removeQuery] to remove from both.
-  Future<void> evictFromStorage(Object key) => _storage.delete(_encodeStorageKey(normalizeKey(key)));
+  Future<void> evictFromStorage(Object key) =>
+      _storage.delete(_encodeStorageKey(normalizeKey(key)));
 
   // ── Internal ──────────────────────────────────────────────────────────────
 
@@ -402,7 +403,8 @@ class PersistQoraClient extends QoraClient {
       data: serialized,
       persistedAtMs: DateTime.now().millisecondsSinceEpoch,
       // Duration.zero → null so isExpired() returns false (indefinite).
-      ttlMs: effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
+      ttlMs:
+          effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
     );
 
     final storageKey = _encodeStorageKey(key);

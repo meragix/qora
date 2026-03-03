@@ -112,7 +112,9 @@ class SsrHydrator {
 
       // updatedAtMs is optional; absent → epoch (always stale, triggers SWR).
       final updatedAtMs = value['updatedAtMs'];
-      final updatedAt = updatedAtMs is int ? DateTime.fromMillisecondsSinceEpoch(updatedAtMs) : null;
+      final updatedAt = updatedAtMs is int
+          ? DateTime.fromMillisecondsSinceEpoch(updatedAtMs)
+          : null;
 
       // ── Step 4: deserialize with user-supplied function (or pass through) ─
       dynamic data;
