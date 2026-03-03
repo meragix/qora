@@ -5,61 +5,52 @@ Documentation officielle pour Qora v0.1.0 - Bibliothèque de gestion d'état ser
 ## 📁 Structure de la documentation
 
 ```
-docs/
-├── docs/                           # Contenu de la documentation
-│   ├── introduction/               # Guide de démarrage
-│   │   ├── what-is-qora.md        # Présentation de Qora
-│   │   ├── installation.md        # Guide d'installation
-│   │   ├── quick-start.md         # Tutoriel rapide (5 min)
-│   │   └── comparison.md          # Comparaison avec autres solutions
-│   │
-│   ├── core-concepts/             # Concepts fondamentaux
-│   │   ├── queries.md             # Queries en profondeur
-│   │   ├── query-keys.md          # Système de clés
-│   │   ├── query-states.md        # Machine à états
-│   │   ├── caching.md             # Stratégies de cache
-│   │   ├── stale-while-revalidate.md  # SWR pattern
-│   │   └── deduplication.md       # Déduplication des requêtes
-│   │
-│   ├── guides/                    # Guides pratiques
-│   │   ├── basic-usage.md         # Usage basique
-│   │   ├── mutations.md           # POST/PUT/DELETE
-│   │   ├── infinite-queries.md    # Pagination infinie
-│   │   ├── optimistic-updates.md  # Mises à jour optimistes
-│   │   ├── persistence.md         # Cache persistant
-│   │   ├── error-handling.md      # Gestion d'erreurs
-│   │   └── testing.md             # Tests unitaires
-│   │
-│   ├── flutter-integration/       # Intégration Flutter
-│   │   ├── setup.md               # Configuration
-│   │   ├── qora-scope.md          # QoraScope widget
-│   │   ├── qora-builder.md        # QoraBuilder widget
-│   │   ├── qora-mutation-builder.md   # Mutations UI
-│   │   ├── qora-infinite-builder.md   # Infinite scroll UI
-│   │   └── best-practices.md      # Bonnes pratiques
-│   │
-│   ├── api-reference/             # Référence API complète
-│   │   ├── qora-client.md         # QoraClient
-│   │   ├── qora-key.md            # QoraKey
-│   │   ├── qora-state.md          # QoraState
-│   │   ├── qora-options.md        # QoraOptions
-│   │   ├── qora-mutation.md       # QoraMutation
-│   │   ├── qora-infinite-query.md # QoraInfiniteQuery
-│   │   ├── qora-optimistic.md     # QoraOptimistic
-│   │   └── qora-persister.md      # QoraPersister
-│   │
-│   ├── examples/                  # Exemples complets
-│   │   ├── todo-app.md            # App Todo complète
-│   │   ├── user-management.md     # CRUD utilisateurs
-│   │   ├── infinite-scroll.md     # Liste infinie
-│   │   ├── real-time-updates.md   # Temps réel
-│   │   └── offline-first.md       # Offline-first
-│   │
-│   └── migration/                 # Guides de migration
-│       ├── from-provider.md       # Depuis Provider
-│       ├── from-bloc.md           # Depuis BLoC
-│       └── from-riverpod.md       # Depuis Riverpod
+1. getting-started
+   ├── what-is-qora          ← comparaison Riverpod/Bloc/dio+setState
+   ├── installation
+   ├── quick-start           ← QoraScope + QoraBuilder en 20 lignes, RUNNABLE
+   ├── comparison            ← existant ✅
+   └── migration             ← NOUVEAU — schéma v1→v2, nommage serializers
+
+2. core-concepts             ← théorie pure, pas de Flutter
+   ├── queries
+   ├── query-keys
+   ├── query-states          ← sealed class, pattern matching
+   ├── caching
+   ├── stale-while-revalidate
+   └── deduplication
+
+3. flutter-integration       ← MONTÉ en #3
+   ├── setup
+   ├── qora-scope
+   ├── qora-builder          ← Aha moment ici
+   ├── qora-mutation-builder
+   ├── infinite-query-builder
+   ├── hooks
+   ├── network-status
+   └── best-practices
+
+4. recipes                   ← anciennement "guides", renommé
+   ├── basic-usage
+   ├── mutations
+   ├── optimistic-updates
+   ├── persistence
+   ├── network-aware
+   ├── infinite-queries
+   ├── dependent-queries
+   ├── cancel-token
+   ├── ssr-hydration
+   ├── error-handling
+   └── testing               ← NOUVEAU
+
+5. api-reference
+6. devtools
+7. integrations
+8. examples
+
+   troubleshooting.md        ← NOUVEAU — page standalone dans la nav racine
 ```
+
 
 ## 🛠️ Installation locale
 
