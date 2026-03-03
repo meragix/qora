@@ -77,3 +77,9 @@ base in docs/README.md update docs/content with all changed
 update docs config
 <!-- https://docus.dev/fr/concepts/configuration -->
 <!-- https://docus.dev/fr/concepts/customization -->
+
+examples/
+├── 01_basic_query/          ← App complète
+├── 02_mutations/            ← App complète
+├── 03_infinite_scroll/      ← App complète
+└── 07_complete_todo_app/    ← App qui combine tout
