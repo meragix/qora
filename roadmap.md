@@ -83,3 +83,33 @@ examples/
 ├── 02_mutations/            ← App complète
 ├── 03_infinite_scroll/      ← App complète
 └── 07_complete_todo_app/    ← App qui combine tout
+
+<!-- Pour la documentation technique de Qora, nous devons adopter un ton 'Senior Architect' : concis, autoritaire et structuré
+
+docs/content/1.getting-started
+
+Corrige cette sections de docs en adoptant un ton technique, affirmatif et professionnel.
+
+Contraintes strictes :
+- Supprime totalement les tirets cadratins (—).
+- Évite le ton conversationnel.
+- Pas de formulations informelles.
+- Pas de questions rhétoriques.
+- Utilise des phrases déclaratives claires et structurées.
+- Privilégie la précision technique.
+- Remplace les incises par des phrases distinctes si nécessaire.
+- Évite les adjectifs vagues ou marketing.
+- Style sobre, calme, senior engineer.
+
+Objectif :
+Obtenir une documentation qui ressemble à une spec technique ou à une documentation d’architecture, pas à un article de blog. 
+
+-- 
+Regarde cet exemple de transformation :
+
+Version IA (Lourde) : La persistance permet de garder les données offline — c'est une feature clé de Qora.
+
+Version Senior (Impact) : La persistance garantit la disponibilité des données hors-ligne. Il s'agit d'une fonctionnalité centrale de Qora.
+
+Tu vois la différence ? La deuxième version est affirmative, calme et professionnelle. La première est une conversation informelle.
+-->
