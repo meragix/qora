@@ -17,7 +17,8 @@ void main() {
   // ── useQueryClient ─────────────────────────────────────────────────────────
 
   group('useQueryClient', () {
-    testWidgets('returns the QoraClient from the nearest QoraScope', (tester) async {
+    testWidgets('returns the QoraClient from the nearest QoraScope',
+        (tester) async {
       late QoraClient captured;
       final client = QoraClient();
 
@@ -38,7 +39,8 @@ void main() {
   // ── useQuery ───────────────────────────────────────────────────────────────
 
   group('useQuery', () {
-    testWidgets('starts in Initial then transitions to Success', (tester) async {
+    testWidgets('starts in Initial then transitions to Success',
+        (tester) async {
       final client = QoraClient();
       final states = <QoraState<String>>[];
 
@@ -117,7 +119,8 @@ void main() {
   // ── useMutation ────────────────────────────────────────────────────────────
 
   group('useMutation', () {
-    testWidgets('starts Idle then transitions through Pending to Success', (tester) async {
+    testWidgets('starts Idle then transitions through Pending to Success',
+        (tester) async {
       final client = QoraClient();
       final states = <MutationState<String, String>>[];
       late MutationHandle<String, String> handle;
@@ -207,7 +210,8 @@ void main() {
             handle = useInfiniteQuery<List<int>, int>(
               key: const ['inf-1'],
               fetcher: (page) async => [page * 10, page * 10 + 1],
-              getNextPageParam: (page) => page.last < 100 ? page.last ~/ 10 + 1 : null,
+              getNextPageParam: (page) =>
+                  page.last < 100 ? page.last ~/ 10 + 1 : null,
               initialPageParam: 0,
             );
             return const SizedBox.shrink();
@@ -233,7 +237,8 @@ void main() {
             handle = useInfiniteQuery<List<int>, int>(
               key: const ['inf-2'],
               fetcher: (page) async => [page],
-              getNextPageParam: (page) => page.first < 2 ? page.first + 1 : null,
+              getNextPageParam: (page) =>
+                  page.first < 2 ? page.first + 1 : null,
               initialPageParam: 0,
             );
             return const SizedBox.shrink();
@@ -249,7 +254,8 @@ void main() {
       expect(handle.pages, hasLength(2));
     });
 
-    testWidgets('hasNextPage becomes false when getNextPageParam returns null', (tester) async {
+    testWidgets('hasNextPage becomes false when getNextPageParam returns null',
+        (tester) async {
       final client = QoraClient();
       late InfiniteQueryHandle<List<int>, int> handle;
 

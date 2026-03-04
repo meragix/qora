@@ -2,7 +2,7 @@ name: qora_hooks
 description: >-
   flutter_hooks integration for qora.
   useQuery, useMutation, useQueryClient and useInfiniteQuery.
-version: 0.5.0
+version: 0.7.0
 repository: https://github.com/meragix/qora/tree/main/packages/hooks
 
 

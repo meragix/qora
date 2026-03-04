@@ -11,11 +11,13 @@
 
 ## Getting started
 
+Add both `qora_flutter` and `qora_hooks` to your `pubspec.yaml`:
+
 ```yaml
 dependencies:
-  qora_flutter: ^0.1.0   # QoraScope + QoraClient
-  flutter_hooks: ^0.21.0 # HookWidget
-  qora_hooks: ^0.1.0     # useQuery, useMutation, …
+  qora_flutter: ^0.7.0
+  qora_hooks: ^0.7.0
+  flutter_hooks: ^0.20.0 # Make sure to have flutter_hooks installed
 ```
 
 Wrap your app with `QoraScope`:
@@ -53,9 +55,9 @@ class UserScreen extends HookWidget {
     );
 
     return switch (state) {
-      Initial()             => const SizedBox.shrink(),
-      Loading()             => const CircularProgressIndicator(),
-      Success(:final data)  => UserCard(data),
+      Initial() => const SizedBox.shrink(),
+      Loading() => const CircularProgressIndicator(),
+      Success(:final data) => UserCard(data),
       Failure(:final error) => ErrorView(error),
     };
   }
