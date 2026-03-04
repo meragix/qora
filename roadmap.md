@@ -113,3 +113,8 @@ Version Senior (Impact) : La persistance garantit la disponibilité des données
 
 Tu vois la différence ? La deuxième version est affirmative, calme et professionnelle. La première est une conversation informelle.
 -->
+
+<!-- Qora is not a clone of TanStack Query.
+It is a Dart-native server-state engine with Flutter lifecycle integration. -->
+
+<!-- "Je développe une application Flutter en utilisant Qora (Server-State Management). Qora utilise un QoraClient pour le cache et des widgets comme QoraBuilder ou des hooks comme useQuery. Ne confonds pas avec TanStack Query ou Riverpod. Voici les règles de base : [Lien vers ton llms.txt]. Aide-moi à implémenter..." -->
