@@ -22,7 +22,7 @@ import 'package:qora/qora.dart';
 /// ```dart
 /// QoraBuilder<User>(
 ///   queryKey: ['users', userId],
-///   queryFn: () => api.getUser(userId),
+///   fetcher: () => api.getUser(userId),
 ///   builder: (context, state, fetchStatus) {
 ///     if (fetchStatus == FetchStatus.paused) {
 ///       return OfflinePlaceholder(staleData: state.dataOrNull);
@@ -48,7 +48,7 @@ import 'package:qora/qora.dart';
 /// ```dart
 /// QoraBuilder<Profile>(
 ///   queryKey: ['profiles', userId],
-///   queryFn: () => api.getProfile(userId!),
+///   fetcher: () => api.getProfile(userId!),
 ///   enabled: userId != null,
 ///   builder: (context, state, fetchStatus) { ... },
 /// )
@@ -59,7 +59,7 @@ import 'package:qora/qora.dart';
 /// ```dart
 /// QoraBuilder<List<Post>>(
 ///   queryKey: ['posts', page],
-///   queryFn: () => api.getPosts(page),
+///   fetcher: () => api.getPosts(page),
 ///   keepPreviousData: true,
 ///   builder: (context, state, fetchStatus) {
 ///     // Loading state always carries the last page's data
@@ -75,7 +75,7 @@ class QoraBuilder<T> extends StatefulWidget {
   final Object queryKey;
 
   /// The async function that performs the network/IO request.
-  final Future<T> Function() queryFn;
+  final Future<T> Function() fetcher;
 
   /// Builds the widget tree from the current [QoraState] and [FetchStatus].
   ///
@@ -132,7 +132,7 @@ class QoraBuilder<T> extends StatefulWidget {
   const QoraBuilder({
     super.key,
     required this.queryKey,
-    required this.queryFn,
+    required this.fetcher,
     required this.builder,
     this.options,
     this.client,
@@ -210,13 +210,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         //
         // If a fetch is already in-flight or paused, the client's
         // deduplication mechanism prevents duplicate requests.
-        if (widget.enabled &&
-            state is Loading<T> &&
-            state.previousData != null) {
+        if (widget.enabled && state is Loading<T> && state.previousData != null) {
           _client
               .fetchQuery<T>(
                 key: widget.queryKey,
-                fetcher: widget.queryFn,
+                fetcher: widget.fetcher,
                 options: widget.options,
               )
               .ignore();
@@ -240,7 +238,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     try {
       await _client.fetchQuery<T>(
         key: widget.queryKey,
-        fetcher: widget.queryFn,
+        fetcher: widget.fetcher,
         options: widget.options,
       );
     } on QoraOfflineException {
@@ -253,8 +251,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveState =
-        widget.keepPreviousData ? _withPreviousData(_state) : _state;
+    final effectiveState = widget.keepPreviousData ? _withPreviousData(_state) : _state;
     return widget.builder(context, effectiveState, _fetchStatus);
   }
 

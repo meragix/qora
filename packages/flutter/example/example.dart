@@ -84,7 +84,7 @@ class UserListScreen extends StatelessWidget {
       ),
       body: QoraBuilder<List<User>>(
         queryKey: const ['users'],
-        queryFn: ApiService.getUsers,
+        fetcher: ApiService.getUsers,
         // builder now receives fetchStatus as the third argument.
         builder: (context, state, fetchStatus) {
           return switch (state) {
@@ -100,9 +100,7 @@ class UserListScreen extends StatelessWidget {
                 : const Center(child: CircularProgressIndicator()),
             Success(:final data) => Stack(
                 children: [
-                  data.isEmpty
-                      ? const Center(child: Text('No users found'))
-                      : UserListView(users: data),
+                  data.isEmpty ? const Center(child: Text('No users found')) : UserListView(users: data),
                   // Background revalidation paused (offline) — show chip.
                   if (fetchStatus == FetchStatus.paused)
                     const Positioned(
@@ -114,8 +112,7 @@ class UserListScreen extends StatelessWidget {
               ),
             Failure(:final error, :final previousData) => Column(
                 children: [
-                  if (previousData != null)
-                    Expanded(child: UserListView(users: previousData)),
+                  if (previousData != null) Expanded(child: UserListView(users: previousData)),
                   ErrorBanner(message: '$error'),
                 ],
               ),
@@ -149,7 +146,7 @@ class _PaginatedUsersScreenState extends State<PaginatedUsersScreen> {
           Expanded(
             child: QoraBuilder<List<User>>(
               queryKey: ['users', 'page', _page],
-              queryFn: () => ApiService.getUsersPaged(_page),
+              fetcher: () => ApiService.getUsersPaged(_page),
               // Keep the previous page visible while the next page loads.
               keepPreviousData: true,
               builder: (context, state, _) {
@@ -228,7 +225,7 @@ class UserDetailScreen extends StatelessWidget {
       ),
       body: QoraBuilder<User>(
         queryKey: ['users', userId],
-        queryFn: () => ApiService.getUser(userId),
+        fetcher: () => ApiService.getUser(userId),
         builder: (context, state, fetchStatus) {
           return switch (state) {
             Initial() || Loading(previousData: null) => const Center(
@@ -368,7 +365,7 @@ class _ConditionalQueryWidgetState extends State<ConditionalQueryWidget> {
         ),
         QoraBuilder<String>(
           queryKey: const ['conditional'],
-          queryFn: ApiService.getData,
+          fetcher: ApiService.getData,
           enabled: _enabled,
           builder: (context, state, _) => ListTile(
             title: Text('State: ${state.runtimeType}'),
@@ -421,11 +418,9 @@ class CreateUserScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (isOptimistic) const _PendingSyncBanner(),
-                if (state case MutationSuccess(:final data, :final isOptimistic)
-                    when !isOptimistic)
+                if (state case MutationSuccess(:final data, :final isOptimistic) when !isOptimistic)
                   _SuccessBanner(name: data.name),
-                if (state case MutationFailure(:final error))
-                  ErrorBanner(message: '$error'),
+                if (state case MutationFailure(:final error)) ErrorBanner(message: '$error'),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: state.isPending ? null : () => mutate('New User'),
@@ -503,8 +498,7 @@ class _OfflineSyncChip extends StatelessWidget {
           children: [
             Icon(Icons.sync, size: 12, color: Colors.white),
             SizedBox(width: 4),
-            Text('Sync pending',
-                style: TextStyle(color: Colors.white, fontSize: 12)),
+            Text('Sync pending', style: TextStyle(color: Colors.white, fontSize: 12)),
           ],
         ),
       ),

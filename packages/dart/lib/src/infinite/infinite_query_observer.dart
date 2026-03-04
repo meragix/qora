@@ -29,7 +29,7 @@ import 'infinite_query_state.dart';
 /// final observer = InfiniteQueryObserver<List<Post>, int>(
 ///   client: client,
 ///   key: ['posts'],
-///   queryFn: (page) => api.getPosts(page: page),
+///   fetcher: (page) => api.getPosts(page: page),
 ///   options: InfiniteQueryOptions(
 ///     initialPageParam: 1,
 ///     getNextPageParam: (last, all) => last.hasMore ? all.length + 1 : null,
@@ -81,12 +81,10 @@ class InfiniteQueryObserver<TData, TPageParam> {
   ///
   /// Backed by the shared [InfiniteCacheEntry] on [client]. Subscribing
   /// prevents the cache entry from being garbage-collected.
-  Stream<InfiniteQueryState<TData, TPageParam>> get stream =>
-      _client.watchInfiniteState<TData, TPageParam>(_key);
+  Stream<InfiniteQueryState<TData, TPageParam>> get stream => _client.watchInfiniteState<TData, TPageParam>(_key);
 
   /// The current [InfiniteQueryState] (synchronous snapshot).
-  InfiniteQueryState<TData, TPageParam> get state =>
-      _client.getInfiniteQueryState<TData, TPageParam>(_key);
+  InfiniteQueryState<TData, TPageParam> get state => _client.getInfiniteQueryState<TData, TPageParam>(_key);
 
   /// Fetch the first page.
   ///
@@ -171,9 +169,7 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData: currentState is InfiniteSuccess<TData, TPageParam>
-              ? currentState.data
-              : null,
+          previousData: currentState is InfiniteSuccess<TData, TPageParam> ? currentState.data : null,
         ),
       );
     } finally {
@@ -225,9 +221,7 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData: currentState is InfiniteSuccess<TData, TPageParam>
-              ? currentState.data
-              : null,
+          previousData: currentState is InfiniteSuccess<TData, TPageParam> ? currentState.data : null,
         ),
       );
     } finally {
@@ -287,9 +281,7 @@ class InfiniteQueryObserver<TData, TPageParam> {
         InfiniteFailure(
           error: e,
           stackTrace: st,
-          previousData: latestState is InfiniteSuccess<TData, TPageParam>
-              ? latestState.data
-              : currentState.data,
+          previousData: latestState is InfiniteSuccess<TData, TPageParam> ? latestState.data : currentState.data,
         ),
       );
     } finally {
@@ -336,8 +328,7 @@ class InfiniteQueryObserver<TData, TPageParam> {
   void _emitSuccess(InfiniteData<TData, TPageParam> data) {
     if (_isDisposed) return;
 
-    final hasNextPage = data.isNotEmpty &&
-        _options.getNextPageParam(data.pages.last, data.pages) != null;
+    final hasNextPage = data.isNotEmpty && _options.getNextPageParam(data.pages.last, data.pages) != null;
 
     final hasPreviousPage = _options.getPreviousPageParam != null &&
         data.isNotEmpty &&

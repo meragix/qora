@@ -54,7 +54,7 @@ runApp(
 ```dart
 QoraBuilder<List<User>>(
   queryKey: const ['users'],
-  queryFn: FakeApi.getUsers,
+  fetcher: FakeApi.getUsers,
   builder: (context, state, fetchStatus) {
     final banner = switch (fetchStatus) {
       FetchStatus.fetching => const _StatusBanner('Updating…'),
@@ -82,7 +82,7 @@ Each user detail screen uses its own cache key:
 ```dart
 QoraBuilder<User>(
   queryKey: ['users', userId],
-  queryFn: () => FakeApi.getUser(userId),
+  fetcher: () => FakeApi.getUser(userId),
   options: const QoraOptions(staleTime: Duration(minutes: 5)),
   builder: (context, state, fetchStatus) { ... },
 )

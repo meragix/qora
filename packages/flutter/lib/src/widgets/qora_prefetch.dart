@@ -15,7 +15,7 @@ import 'qora_scope.dart';
 ///   child: _prefetch
 ///       ? QoraPrefetch<User>(
 ///           queryKey: ['user', userId],
-///           queryFn: () => api.getUser(userId),
+///           fetcher: () => api.getUser(userId),
 ///           child: UserListTile(userId: userId),
 ///         )
 ///       : UserListTile(userId: userId),
@@ -34,7 +34,7 @@ class QoraPrefetch<T> extends StatefulWidget {
   final Object queryKey;
 
   /// The async function that fetches data.
-  final Future<T> Function() queryFn;
+  final Future<T> Function() fetcher;
 
   /// The child widget to render (unaffected by prefetch outcome).
   final Widget child;
@@ -48,7 +48,7 @@ class QoraPrefetch<T> extends StatefulWidget {
   const QoraPrefetch({
     super.key,
     required this.queryKey,
-    required this.queryFn,
+    required this.fetcher,
     required this.child,
     this.options,
     this.client,
@@ -81,7 +81,7 @@ class _QoraPrefetchState<T> extends State<QoraPrefetch<T>> {
     _client
         .prefetch<T>(
           key: widget.queryKey,
-          fetcher: widget.queryFn,
+          fetcher: widget.fetcher,
           options: widget.options,
         )
         .ignore();

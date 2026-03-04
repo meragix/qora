@@ -17,7 +17,7 @@ Request deduplication merges concurrent same-key fetches into one in-flight Futu
 Cooperative cancellation uses CancelToken in fetchQuery, watchQuery, prefetch, and surfaces QoraCancelException on abort.
 
 Flutter Integration:
-QoraBuilder<T> binds queryKey, queryFn, and QoraOptions, rendering (BuildContext, QoraState<T>, FetchStatus) with automatic re-fetch on invalidation.
+QoraBuilder<T> binds queryKey, fetcher, and QoraOptions, rendering (BuildContext, QoraState<T>, FetchStatus) with automatic re-fetch on invalidation.
 QoraMutationBuilder<TData, TVariables, TContext> manages mutation lifecycle and exposes mutate with hooks (onMutate, onSuccess, onError, onSettled).
 InfiniteQueryBuilder<TData, TPageParam> wraps InfiniteQueryObserver and exposes InfiniteQueryController.fetchNextPage, fetchPreviousPage, refetch.
 Hooks API (useQuery, useMutation, useInfiniteQuery, useQueryClient, useIsFetching, useIsMutating) provides composable server-state bindings without manual widget state.

@@ -54,7 +54,7 @@
 ///   Widget build(BuildContext context) {
 ///     return QoraBuilder<User>(
 ///       queryKey: ['users', userId],
-///       queryFn: () => api.getUser(userId),
+///       fetcher: () => api.getUser(userId),
 ///       builder: (context, state) {
 ///         return switch (state) {
 ///           Initial()                    => const SizedBox.shrink(),

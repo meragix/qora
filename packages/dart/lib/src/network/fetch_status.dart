@@ -19,7 +19,7 @@
 /// ```dart
 /// QoraBuilder<User>(
 ///   queryKey: ['users', userId],
-///   queryFn: () => api.getUser(userId),
+///   fetcher: () => api.getUser(userId),
 ///   builder: (context, state, fetchStatus) {
 ///     if (fetchStatus == FetchStatus.paused) {
 ///       return OfflineIndicator(staleData: state.dataOrNull);

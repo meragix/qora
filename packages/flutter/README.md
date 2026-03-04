@@ -51,7 +51,7 @@ void main() {
 ```dart
 QoraBuilder<User>(
   queryKey: ['users', userId],
-  queryFn: () => api.getUser(userId),
+  fetcher: () => api.getUser(userId),
   builder: (context, state, fetchStatus) {
     return state.when(
       onInitial: () => const SizedBox.shrink(),

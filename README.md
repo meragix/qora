@@ -1,6 +1,6 @@
 # Qora
 
-**Async state management for Dart and Flutter — inspired by TanStack Query.**
+**Server-state management engine for Dart and Flutter.**
 
 Stop writing boilerplate to fetch, cache, and sync server data. Qora handles deduplication, stale-while-revalidate, retries, and invalidation so you can focus on your product.
 
@@ -20,14 +20,14 @@ In Flutter, bind it directly to your UI — no `setState`, no `StreamBuilder` bo
 ```dart
 QoraBuilder<User>(
   queryKey: ['users', userId],
-  queryFn: () => api.getUser(userId),
+  fetcher: () => api.getUser(userId),
   builder: (context, state) => switch (state) {
-    Initial()                          => const SizedBox.shrink(),
-    Loading(:final previousData)       => previousData != null
+    Initial() => const SizedBox.shrink(),
+    Loading(:final previousData) => previousData != null
         ? UserCard(previousData)
         : const CircularProgressIndicator(),
-    Success(:final data)               => UserCard(data),
-    Failure(:final error)              => ErrorScreen(error),
+    Success(:final data) => UserCard(data),
+    Failure(:final error) => ErrorScreen(error),
   },
 )
 ```

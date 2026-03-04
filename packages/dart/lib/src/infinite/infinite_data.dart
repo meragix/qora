@@ -16,7 +16,7 @@ class InfiniteData<TData, TPageParam> {
 
   /// The page parameters used to fetch each page.
   ///
-  /// `pageParams[i]` is the parameter that was passed to `queryFn` to
+  /// `pageParams[i]` is the parameter that was passed to `fetcher` to
   /// produce `pages[i]`. Storing the params alongside the pages makes it
   /// possible to refetch each page individually during [InfiniteQueryObserver.refetch].
   final List<TPageParam> pageParams;
@@ -57,8 +57,7 @@ class InfiniteData<TData, TPageParam> {
   /// Creates a new [InfiniteData] with [page] and [param] appended at the end.
   ///
   /// Used internally by [InfiniteQueryObserver.fetchNextPage].
-  InfiniteData<TData, TPageParam> append(TData page, TPageParam param) =>
-      InfiniteData(
+  InfiniteData<TData, TPageParam> append(TData page, TPageParam param) => InfiniteData(
         pages: List.unmodifiable([...pages, page]),
         pageParams: List.unmodifiable([...pageParams, param]),
       );
@@ -67,8 +66,7 @@ class InfiniteData<TData, TPageParam> {
   ///
   /// Used internally by [InfiniteQueryObserver.fetchPreviousPage] for
   /// bi-directional infinite scroll (e.g. chat feed loading older messages).
-  InfiniteData<TData, TPageParam> prepend(TData page, TPageParam param) =>
-      InfiniteData(
+  InfiniteData<TData, TPageParam> prepend(TData page, TPageParam param) => InfiniteData(
         pages: List.unmodifiable([page, ...pages]),
         pageParams: List.unmodifiable([param, ...pageParams]),
       );
@@ -108,12 +106,10 @@ class InfiniteData<TData, TPageParam> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(Object.hashAll(pages), Object.hashAll(pageParams));
+  int get hashCode => Object.hash(Object.hashAll(pages), Object.hashAll(pageParams));
 
   @override
-  String toString() =>
-      'InfiniteData(pageCount: $pageCount, params: $pageParams)';
+  String toString() => 'InfiniteData(pageCount: $pageCount, params: $pageParams)';
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

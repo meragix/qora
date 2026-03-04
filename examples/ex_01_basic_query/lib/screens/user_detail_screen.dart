@@ -31,7 +31,7 @@ class UserDetailScreen extends StatelessWidget {
       ),
       body: QoraBuilder<User>(
         queryKey: ['users', userId],
-        queryFn: () => FakeApi.getUser(userId),
+        fetcher: () => FakeApi.getUser(userId),
         options: const QoraOptions(staleTime: Duration(minutes: 5)),
         builder: (context, state, fetchStatus) {
           final offlineBanner = fetchStatus == FetchStatus.paused
