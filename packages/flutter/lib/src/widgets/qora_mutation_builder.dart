@@ -20,7 +20,7 @@ import 'package:qora/qora.dart';
 ///
 /// ```dart
 /// QoraMutationBuilder<Post, String, void>(
-///   mutationFn: (title) => api.createPost(title),
+///   mutator: (title) => api.createPost(title),
 ///   builder: (context, state, mutate) {
 ///     return ElevatedButton(
 ///       onPressed: state.isPending ? null : () => mutate('New Post'),
@@ -36,7 +36,7 @@ import 'package:qora/qora.dart';
 ///
 /// ```dart
 /// QoraMutationBuilder<Post, String, void>(
-///   mutationFn: (title) => api.createPost(title),
+///   mutator: (title) => api.createPost(title),
 ///   options: MutationOptions(
 ///     offlineQueue: true,
 ///     optimisticResponse: (title) => Post.draft(title),
@@ -61,7 +61,7 @@ import 'package:qora/qora.dart';
 ///
 /// ```dart
 /// QoraMutationBuilder<Post, String, List<Post>?>(
-///   mutationFn: (title) => api.createPost(title),
+///   mutator: (title) => api.createPost(title),
 ///   options: MutationOptions(
 ///     onMutate: (title) async {
 ///       final prev = context.qora.getQueryData<List<Post>>(['posts']);
@@ -88,7 +88,7 @@ import 'package:qora/qora.dart';
 /// ```
 class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// The async function that performs the server-side write.
-  final MutatorFunction<TData, TVariables> mutationFn;
+  final MutatorFunction<TData, TVariables> mutator;
 
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
@@ -100,7 +100,7 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   ///
   /// ```dart
   /// QoraMutationBuilder(
-  ///   mutationFn: authApi.login,
+  ///   mutator: authApi.login,
   ///   metadata: {'category': 'auth', 'screen': 'login'},
   ///   builder: (context, state, mutate) { ... },
   /// )
@@ -130,7 +130,7 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
 
   const QoraMutationBuilder({
     super.key,
-    required this.mutationFn,
+    required this.mutator,
     required this.builder,
     this.options,
     this.metadata,
@@ -145,8 +145,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
     extends State<QoraMutationBuilder<TData, TVariables, TContext>> {
   late MutationController<TData, TVariables, TContext> _controller;
   StreamSubscription<MutationState<TData, TVariables>>? _subscription;
-  MutationState<TData, TVariables> _state =
-      const MutationIdle<Never, Never>() as MutationState<Never, Never>;
+  MutationState<TData, TVariables> _state = const MutationIdle<Never, Never>() as MutationState<Never, Never>;
 
   @override
   void initState() {
@@ -161,7 +160,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
   ) {
     super.didUpdateWidget(oldWidget);
     // Recreate the controller only if identity-relevant parameters changed.
-    if (!identical(widget.mutationFn, oldWidget.mutationFn) ||
+    if (!identical(widget.mutator, oldWidget.mutator) ||
         !identical(widget.options, oldWidget.options) ||
         !identical(widget.metadata, oldWidget.metadata)) {
       _controller.dispose();
@@ -182,7 +181,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
     final client = QoraScope.maybeOf(context);
 
     _controller = MutationController<TData, TVariables, TContext>(
-      mutator: widget.mutationFn,
+      mutator: widget.mutator,
       options: widget.options,
       tracker: client,
       metadata: widget.metadata,

@@ -391,7 +391,7 @@ class CreateUserScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: QoraMutationBuilder<User, String, void>(
-          mutationFn: ApiService.createUser,
+          mutator: ApiService.createUser,
           options: MutationOptions(
             // Enqueue in FIFO offline queue — replays on reconnect.
             offlineQueue: true,

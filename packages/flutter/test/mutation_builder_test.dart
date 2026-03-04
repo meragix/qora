@@ -21,7 +21,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutationFn: (v) async => v,
+            mutator: (v) async => v,
             builder: (context, state, mutate) {
               return Text(state.isIdle ? 'idle' : 'other');
             },
@@ -36,7 +36,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutationFn: (title) async => 'created:$title',
+            mutator: (title) async => 'created:$title',
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -68,7 +68,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutationFn: (_) async => throw Exception('boom'),
+            mutator: (_) async => throw Exception('boom'),
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -91,12 +91,11 @@ void main() {
       expect(find.textContaining('error:'), findsOneWidget);
     });
 
-    testWidgets('success state is visible after mutate completes',
-        (tester) async {
+    testWidgets('success state is visible after mutate completes', (tester) async {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutationFn: (v) async => v,
+            mutator: (v) async => v,
             builder: (context, state, mutate) {
               return Column(
                 children: [
@@ -119,14 +118,13 @@ void main() {
       expect(find.text('done'), findsOneWidget);
     });
 
-    testWidgets('mutate is disabled while pending (guard pattern)',
-        (tester) async {
+    testWidgets('mutate is disabled while pending (guard pattern)', (tester) async {
       var mutateCallCount = 0;
 
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutationFn: (v) async {
+            mutator: (v) async {
               mutateCallCount++;
               await Future<void>.delayed(const Duration(milliseconds: 50));
               return v;
@@ -153,8 +151,7 @@ void main() {
       expect(mutateCallCount, 1);
     });
 
-    testWidgets('optimistic update: onMutate applies and onError rolls back',
-        (tester) async {
+    testWidgets('optimistic update: onMutate applies and onError rolls back', (tester) async {
       final client = QoraClient();
       client.setQueryData<List<String>>(['items'], ['a', 'b']);
 
@@ -166,7 +163,7 @@ void main() {
             client: client,
             child: Scaffold(
               body: QoraMutationBuilder<String, String, List<String>?>(
-                mutationFn: (_) async => throw Exception('server error'),
+                mutator: (_) async => throw Exception('server error'),
                 options: MutationOptions(
                   onMutate: (item) async {
                     final prev = client.getQueryData<List<String>>(['items']);
@@ -175,18 +172,14 @@ void main() {
                       [...?prev, item],
                     );
                     log.add(
-                      'optimistic:${client.getQueryData<List<String>>([
-                            'items'
-                          ])?.join(',')}',
+                      'optimistic:${client.getQueryData<List<String>>(['items'])?.join(',')}',
                     );
                     return prev;
                   },
                   onError: (error, variables, previous) async {
                     client.restoreQueryData(['items'], previous);
                     log.add(
-                      'rollback:${client.getQueryData<List<String>>([
-                            'items'
-                          ])?.join(',')}',
+                      'rollback:${client.getQueryData<List<String>>(['items'])?.join(',')}',
                     );
                   },
                 ),
