@@ -1,0 +1,47 @@
+Getting Started:
+Install qora_flutter, create a single QoraClient with QoraClientConfig(defaultOptions: QoraOptions(...), reconnectStrategy, maxCacheSize, debugMode).
+Mount QoraScope(client: ...) at app root to expose the client through context.qora, QoraScope.of(context), and QoraScope.maybeOf(context).
+Attach FlutterLifecycleManager and FlutterConnectivityManager in QoraScope for resume-triggered and reconnect-triggered invalidation/refetch.
+Validate bootstrap with a first QoraBuilder or watchQuery using normalized keys (List or QoraKey).
+
+Core Concepts:
+State model is QoraState<T> with Initial, Loading(previousData), Success(data, updatedAt), Failure(error, previousData).
+SWR lifecycle is controlled by staleTime: serve cached state immediately, then revalidate in background through fetchQuery or watchQuery.
+Cache lifecycle is controlled by cacheTime, LRU pressure (maxCacheSize), and explicit invalidation (invalidate, invalidateWhere, removeQuery, clear).
+Key consistency uses normalizeKey, QoraKey, and deep structural equality for cache hits, deduplication, and targeted invalidation.
+
+Guides:
+Offline behavior is defined by NetworkMode (online, always, offlineFirst) and runtime FetchStatus (fetching, paused, idle) via watchFetchStatus and builder callbacks.
+Retry policy uses retryCount, retryDelay, retryDelayCalculator with exponential backoff, plus global error normalization via errorMapper.
+Request deduplication merges concurrent same-key fetches into one in-flight Future, then fan-outs the result to all waiters/subscribers.
+Cooperative cancellation uses CancelToken in fetchQuery, watchQuery, prefetch, and surfaces QoraCancelException on abort.
+
+Flutter Integration:
+QoraBuilder<T> binds queryKey, queryFn, and QoraOptions, rendering (BuildContext, QoraState<T>, FetchStatus) with automatic re-fetch on invalidation.
+QoraMutationBuilder<TData, TVariables, TContext> manages mutation lifecycle and exposes mutate with hooks (onMutate, onSuccess, onError, onSettled).
+InfiniteQueryBuilder<TData, TPageParam> wraps InfiniteQueryObserver and exposes InfiniteQueryController.fetchNextPage, fetchPreviousPage, refetch.
+Hooks API (useQuery, useMutation, useInfiniteQuery, useQueryClient, useIsFetching, useIsMutating) provides composable server-state bindings without manual widget state.
+
+API Reference:
+QoraClient core methods: fetchQuery, watchQuery, prefetch, getQueryData, getQueryState, setQueryData, restoreQueryData, invalidate, invalidateWhere, debugInfo.
+Global config is QoraClientConfig: defaultOptions, refetchOnMount, reconnectStrategy, errorMapper, onCacheEvict, maxCacheSize, debugMode.
+Per-query config is QoraOptions: staleTime, cacheTime, enabled, dependsOn, retryCount, refetchInterval, networkMode.
+Persistence API is PersistQoraClient with registerSerializer, hydrate, persistQuery, evictFromStorage, clearStorage, backed by StorageAdapter.
+
+DevTools:
+Two tooling surfaces: in-app overlay (QoraInspector, OverlayTracker) and IDE extension (VmTracker in Flutter DevTools).
+Observability pipeline is driven by QoraTracker with NoOpTracker fallback in release to remove tracking emissions and runtime overhead.
+Real-time inspection covers queries, mutations, event timeline, retry metadata, rollback context, plus command actions like Refetch and Invalidate.
+IDE extension adds network activity metrics, per-key performance stats, dependency graphing, and chunked payload retrieval for large cache objects.
+
+Integrations:
+With Provider, BLoC, and Riverpod: keep UI state/DI where it is, move server-state read/write orchestration to QoraClient, QoraBuilder, and mutation APIs.
+BLoC integration pattern: inject QoraClient into write-oriented blocs and call invalidate after successful domain mutations.
+Riverpod integration pattern: run ProviderScope with QoraScope, replace FutureProvider read paths with useQuery or QoraBuilder where SWR/previousData is required.
+qora_hooks supplies typed handles (MutationHandle, InfiniteQueryHandle) while sharing the same cache graph as widget builders.
+
+Examples:
+CRUD examples use fetchQuery for reads, MutationController or QoraMutationBuilder for writes, then setQueryData/restoreQueryData plus invalidateWhere for consistency.
+Infinite scroll examples use InfiniteQueryObserver with InfiniteQueryOptions(getNextPageParam, maxPages) and flatten to render page-accumulated lists.
+Offline-first examples combine PersistQoraClient, hydrate, and QoraSerializer<T> registration to warm cache before first frame.
+Reconnect sync examples use OfflineMutationQueue, ReconnectStrategy, and NetworkMode.offlineFirst to replay queued writes and converge cache with server state.
