@@ -203,13 +203,11 @@ class QoraClient implements MutationTracker {
   /// updates (including completed events that have already left the snapshot).
   final Map<String, MutationEvent> _activeMutations = {};
 
-  final StreamController<MutationEvent> _mutationBus =
-      StreamController<MutationEvent>.broadcast();
+  final StreamController<MutationEvent> _mutationBus = StreamController<MutationEvent>.broadcast();
 
   /// Broadcast stream that emits the number of in-flight query requests each
   /// time that count changes.  Derive a boolean from `count > 0`.
-  final StreamController<int> _fetchingCountBus =
-      StreamController<int>.broadcast();
+  final StreamController<int> _fetchingCountBus = StreamController<int>.broadcast();
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -249,9 +247,7 @@ class QoraClient implements MutationTracker {
 
   /// `true` when a [ConnectivityManager] is attached and reports online status,
   /// or when no manager is configured (assumed online by default).
-  bool get isOnline =>
-      _networkStatus == NetworkStatus.online ||
-      _networkStatus == NetworkStatus.unknown;
+  bool get isOnline => _networkStatus == NetworkStatus.online || _networkStatus == NetworkStatus.unknown;
 
   /// The current network status as reported by the attached
   /// [ConnectivityManager].
@@ -506,8 +502,7 @@ class QoraClient implements MutationTracker {
     try {
       if (opts.enabled) {
         // Decide whether to fetch on mount.
-        final shouldRefetchOnMount =
-            opts.refetchOnMount ?? config.refetchOnMount;
+        final shouldRefetchOnMount = opts.refetchOnMount ?? config.refetchOnMount;
         final isFirstFetch = entry.state is Initial<T>;
         final isStale = entry.isStale(opts.staleTime);
 
@@ -532,9 +527,7 @@ class QoraClient implements MutationTracker {
           } else {
             // Dependency not yet ready — subscribe and fire when it resolves.
             depSub = depEntry.stream.listen((depState) {
-              if (depState.dataOrNull != null &&
-                  !_isDisposed &&
-                  entry.isActive) {
+              if (depState.dataOrNull != null && !_isDisposed && entry.isActive) {
                 depSub?.cancel();
                 depSub = null;
                 unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
@@ -735,12 +728,11 @@ class QoraClient implements MutationTracker {
 
     if (entry != null) {
       _log('Invalidating: $normalized');
-      final previous = entry.state.dataOrNull;
-      entry.updateState(
-        previous != null
-            ? Loading<dynamic>(previousData: previous)
-            : Initial<dynamic>(),
-      );
+
+      // We delegate the invalidation to the entry.
+      // The entry 'QueryEntry<T>' already knows its 'T'.
+      entry.invalidate();
+
       _pendingRequests.remove(_stringKey(normalized));
       _emitFetchingCount();
       _tracker.onQueryInvalidated(_stringKey(normalized));
@@ -842,8 +834,7 @@ class QoraClient implements MutationTracker {
   ///
   /// Used by [InfiniteQueryObserver] and [InfiniteQueryBuilder]; you can also
   /// call it directly when building a custom widget on top of an observer.
-  Stream<InfiniteQueryState<TData, TPageParam>>
-      watchInfiniteState<TData, TPageParam>(Object key) async* {
+  Stream<InfiniteQueryState<TData, TPageParam>> watchInfiniteState<TData, TPageParam>(Object key) async* {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
     final entry = _getOrCreateInfiniteEntry<TData, TPageParam>(normalized);
@@ -894,11 +885,9 @@ class QoraClient implements MutationTracker {
 
   /// Returns the current [InfiniteQueryState] for [key], or [InfiniteInitial]
   /// if no entry exists yet.
-  InfiniteQueryState<TData, TPageParam>
-      getInfiniteQueryState<TData, TPageParam>(Object key) {
+  InfiniteQueryState<TData, TPageParam> getInfiniteQueryState<TData, TPageParam>(Object key) {
     _assertNotDisposed();
-    final entry = _infiniteCache.get(normalizeKey(key))
-        as InfiniteCacheEntry<TData, TPageParam>?;
+    final entry = _infiniteCache.get(normalizeKey(key)) as InfiniteCacheEntry<TData, TPageParam>?;
     return entry?.state ?? const InfiniteInitial();
   }
 
@@ -928,12 +917,10 @@ class QoraClient implements MutationTracker {
   }) {
     _assertNotDisposed();
     final currentState = getInfiniteQueryState<TData, TPageParam>(key);
-    final effectiveHasNext = hasNextPage ??
-        (currentState is InfiniteSuccess<TData, TPageParam> &&
-            currentState.hasNextPage);
-    final effectiveHasPrev = hasPreviousPage ??
-        (currentState is InfiniteSuccess<TData, TPageParam> &&
-            currentState.hasPreviousPage);
+    final effectiveHasNext =
+        hasNextPage ?? (currentState is InfiniteSuccess<TData, TPageParam> && currentState.hasNextPage);
+    final effectiveHasPrev =
+        hasPreviousPage ?? (currentState is InfiniteSuccess<TData, TPageParam> && currentState.hasPreviousPage);
 
     updateInfiniteQueryState<TData, TPageParam>(
       key,
@@ -1060,8 +1047,7 @@ class QoraClient implements MutationTracker {
   /// final pending = client.activeMutations;
   /// client.mutationEvents.listen((event) { ... });
   /// ```
-  Map<String, MutationEvent> get activeMutations =>
-      Map.unmodifiable(_activeMutations);
+  Map<String, MutationEvent> get activeMutations => Map.unmodifiable(_activeMutations);
 
   /// A snapshot of all mutations currently waiting in the offline queue.
   ///
@@ -1083,8 +1069,7 @@ class QoraClient implements MutationTracker {
   }) {
     if (_isDisposed || _mutationBus.isClosed) return;
 
-    final isOptimistic =
-        state is MutationSuccess<TData, TVariables> && state.isOptimistic;
+    final isOptimistic = state is MutationSuccess<TData, TVariables> && state.isOptimistic;
 
     final event = MutationEvent(
       mutatorId: id,
@@ -1345,8 +1330,7 @@ class QoraClient implements MutationTracker {
       await Future.wait(batch.map((fn) => fn()));
 
       // Jitter between batches to spread the server load spike.
-      if (strategy.jitter > Duration.zero &&
-          i + strategy.maxConcurrent < keys.length) {
+      if (strategy.jitter > Duration.zero && i + strategy.maxConcurrent < keys.length) {
         final jitterMs = random.nextInt(strategy.jitter.inMilliseconds + 1);
         await Future<void>.delayed(Duration(milliseconds: jitterMs));
       }
@@ -1471,8 +1455,7 @@ class QoraClient implements MutationTracker {
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
-    final future =
-        _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
+    final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (data) {
         // Mid-flight cancellation — discard result, restore pre-fetch state.
         if (cancelToken?.isCancelled == true) {
@@ -1619,8 +1602,7 @@ class QoraClient implements MutationTracker {
     entry.updateState(
       Success<T>(
         data: raw as T, // safe: guarded by `raw is! T` check above
-        updatedAt:
-            opts.initialDataUpdatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt: opts.initialDataUpdatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
       ),
     );
     _log('initialData applied: ${entry.state}');
@@ -1634,8 +1616,7 @@ class QoraClient implements MutationTracker {
     final existing = _cache.get<T>(key);
 
     if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.cacheTime) &&
-          !existing.isActive) {
+      if (existing.shouldEvict(config.defaultOptions.cacheTime) && !existing.isActive) {
         _log('Lazy evict: $key');
         _cache.remove(key);
       } else {
@@ -1650,10 +1631,8 @@ class QoraClient implements MutationTracker {
   }
 
   /// Return an existing [InfiniteCacheEntry] or create a fresh [InfiniteInitial] one.
-  InfiniteCacheEntry<TData, TPageParam>
-      _getOrCreateInfiniteEntry<TData, TPageParam>(List<dynamic> key) {
-    final existing =
-        _infiniteCache.get(key) as InfiniteCacheEntry<TData, TPageParam>?;
+  InfiniteCacheEntry<TData, TPageParam> _getOrCreateInfiniteEntry<TData, TPageParam>(List<dynamic> key) {
+    final existing = _infiniteCache.get(key) as InfiniteCacheEntry<TData, TPageParam>?;
     if (existing != null) {
       existing.touch();
       return existing;
@@ -1708,10 +1687,8 @@ class QoraClient implements MutationTracker {
   /// Remove all inactive entries that have exceeded their cache time.
   void _evictExpiredEntries() {
     final cacheTime = config.defaultOptions.cacheTime;
-    final expired = _cache.entries
-        .where((e) => !e.value.isActive && e.value.shouldEvict(cacheTime))
-        .map((e) => e.key)
-        .toList();
+    final expired =
+        _cache.entries.where((e) => !e.value.isActive && e.value.shouldEvict(cacheTime)).map((e) => e.key).toList();
 
     for (final key in expired) {
       _cache.remove(key);

@@ -94,8 +94,3 @@ melos:
         melos exec --scope="qora_flutter" -- dart pub publish --force
         melos exec --scope="qora_hooks" -- dart pub publish --force
         melos exec --scope="qora_devtools_overlay" -- dart pub publish --force
-
-    # ── Clean ─────────────────────────────────────────────────────────
-    clean:
-      description: Clean all packages
-      run: melos exec -- dart run build_runner clean

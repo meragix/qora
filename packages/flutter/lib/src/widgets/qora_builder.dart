@@ -145,7 +145,7 @@ class QoraBuilder<T> extends StatefulWidget {
 }
 
 class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
-  late QoraClient _client;
+  QoraClient? _client;
   StreamSubscription<QoraState<T>>? _stateSub;
   StreamSubscription<FetchStatus>? _fetchStatusSub;
   QoraState<T> _state = Initial<T>();
@@ -156,8 +156,9 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   T? _lastKnownData;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
     _initClient();
     _subscribe();
     if (widget.enabled) unawaited(_executeFetch());
@@ -187,15 +188,21 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   }
 
   void _initClient() {
-    _client = widget.client ?? QoraScope.of(context);
+    final newClient = widget.client ?? QoraScope.of(context);
+    if (_client != newClient) {
+      _client = newClient;
+    }
   }
 
   void _subscribe() {
     _stateSub?.cancel();
     _fetchStatusSub?.cancel();
 
+    final client = _client;
+    if (client == null) return;
+
     // Subscribe to query state changes.
-    _stateSub = _client.watchState<T>(widget.queryKey).listen(
+    _stateSub = client.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
         setState(() {
@@ -211,7 +218,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         // If a fetch is already in-flight or paused, the client's
         // deduplication mechanism prevents duplicate requests.
         if (widget.enabled && state is Loading<T> && state.previousData != null) {
-          _client
+          client
               .fetchQuery<T>(
                 key: widget.queryKey,
                 fetcher: widget.fetcher,
@@ -226,7 +233,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     );
 
     // Subscribe to fetch status (fetching / paused / idle).
-    _fetchStatusSub = _client.watchFetchStatus(widget.queryKey).listen(
+    _fetchStatusSub = client.watchFetchStatus(widget.queryKey).listen(
       (status) {
         if (!mounted) return;
         setState(() => _fetchStatus = status);
@@ -235,8 +242,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   }
 
   Future<void> _executeFetch() async {
+    final client = _client;
+    if (client == null) return;
+
     try {
-      await _client.fetchQuery<T>(
+      await client.fetchQuery<T>(
         key: widget.queryKey,
         fetcher: widget.fetcher,
         options: widget.options,
