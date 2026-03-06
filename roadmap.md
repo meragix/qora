@@ -281,3 +281,16 @@ badge fetch status
 [ERROR]
 
 badge fetch status
+
+staleTime	durée pendant laquelle les données sont considérées fraîches
+gcTime	durée avant suppression du cache
+observers	combien de widgets/consumers utilisent la query
+
+Query: todos?page=1
+
+Status: success
+Observers: 2
+Fresh: false
+Stale in: 0 ms 
+GC in: 4m 12s
+Last fetched: 3.2s ago

@@ -115,31 +115,73 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now().subtract(Duration(minutes: 2)).millisecondsSinceEpoch;
+    final now2 = DateTime.now().subtract(Duration(minutes: 5)).millisecondsSinceEpoch;
+
+    final staleTimeLeft = query.timestampMs - now;
+    final gcTimeLeft = query.timestampMs - now2;
+
     return Row(
       children: [
-        _MetaChip('${query.totalChunks}', icon: LucideIcons.usersRound), // todo: implement observers
+        _MetaChip(
+          label: '',
+          value: '2',
+          icon: LucideIcons.usersRound,
+        ),
         const SizedBox(width: 10),
-        _MetaChip('stale: ${query.data}', icon: LucideIcons.clock),
+        _MetaChip(
+          label: 'stale: ',
+          value: formatQueryTime(staleTimeLeft),
+          icon: LucideIcons.clock,
+          valueColor: staleTimeLeft <= 0 ? Colors.orange : null,
+        ),
         const SizedBox(width: 10),
-        _MetaChip('gc: ${query.fetchDurationMs}', icon: LucideIcons.trash2),
+        _MetaChip(
+          label: 'gc: ',
+          value: formatQueryTime(gcTimeLeft),
+          icon: LucideIcons.trash2,
+          valueColor: gcTimeLeft <= 0 ? DevtoolsColors.statusError : null,
+        ),
       ],
     );
   }
 }
 
 class _MetaChip extends StatelessWidget {
-  final String text;
+  final String label;
+  final String value;
   final IconData icon;
+  final Color? valueColor;
 
-  const _MetaChip(this.text, {this.icon = Icons.info_outline});
+  const _MetaChip({
+    required this.label,
+    required this.value,
+    this.icon = Icons.info_outline,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14),
+        Icon(icon, size: 14, color: DevtoolsTypography.queryMeta.color),
         const SizedBox(width: 4),
-        Text(text, style: DevtoolsTypography.queryMeta),
+        Text.rich(
+          TextSpan(
+            style: DevtoolsTypography.queryMeta,
+            children: [
+              TextSpan(text: label),
+              TextSpan(
+                text: value,
+                style: TextStyle(
+                  color: valueColor ?? DevtoolsTypography.queryMeta.color,
+                  fontWeight: valueColor != null ? FontWeight.bold : null,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

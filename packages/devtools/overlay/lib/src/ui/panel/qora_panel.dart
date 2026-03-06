@@ -66,7 +66,7 @@ class QoraPanel extends StatelessWidget {
             child: Column(
               children: [
                 PanelHeader(onClose: onClose),
-                const Divider(height: 1, thickness: 1, color: Color(0xFF1E293B)),
+                const Divider(height: 1),
                 const Expanded(child: PanelTabBar()),
               ],
             ),

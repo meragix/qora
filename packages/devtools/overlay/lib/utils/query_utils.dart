@@ -24,8 +24,13 @@ String formatQueryKey(dynamic key) {
 /// - `>= 60s` → `'2m 5s'`
 String formatQueryTime(int ms) {
   if (ms <= 0) return 'expired';
-  final seconds = ms ~/ 1000;
-  if (seconds < 60) return '${seconds}s';
-  final minutes = seconds ~/ 60;
-  return '${minutes}m ${seconds % 60}s';
+
+  final duration = Duration(milliseconds: ms);
+  final minutes = duration.inMinutes;
+  final seconds = duration.inSeconds % 60;
+
+  if (ms > 0 && ms < 1000) return '< 1s';
+  if (minutes == 0) return '${seconds}s';
+
+  return '${minutes}m ${seconds}s';
 }

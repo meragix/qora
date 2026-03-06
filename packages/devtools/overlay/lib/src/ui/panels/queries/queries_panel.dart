@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panels/queries/queries_list.dart';
 import 'package:qora_devtools_overlay/src/ui/panels/queries/query_row.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Queries panel — displays all observed query keys with their latest status.
@@ -48,7 +49,7 @@ class _EmptyState extends StatelessWidget {
     return const Center(
       child: Text(
         'No queries yet',
-        style: TextStyle(color: Color(0xFF475569), fontSize: 13),
+        style: DevtoolsTypography.bodyMuted,
       ),
     );
   }

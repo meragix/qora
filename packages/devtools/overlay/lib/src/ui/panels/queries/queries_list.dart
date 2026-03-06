@@ -61,10 +61,10 @@ class _QueriesListState extends State<QueriesList> {
           onChanged: (s) => setState(() => _search = s.toLowerCase()),
         ),
         if (filtered.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(32),
             child: Text(
-              'No queries found.',
+              'No queries match "$_search".',
               style: DevtoolsTypography.bodyMuted,
             ),
           ),
