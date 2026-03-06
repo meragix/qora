@@ -62,13 +62,14 @@ class DevtoolsTypography {
   // ---------------------------------------------------------------------------
 
   static const TextStyle queryKey = TextStyle(
-    fontSize: md,
+    fontSize: lg,
     fontFamily: 'monospace',
+    fontWeight: FontWeight.w500,
     color: DevtoolsColors.textPrimary,
   );
 
   static const TextStyle queryMeta = TextStyle(
-    fontSize: xs,
+    fontSize: sm,
     color: DevtoolsColors.textMuted,
   );
 

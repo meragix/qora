@@ -100,18 +100,7 @@ class _QoraInspectorState extends State<QoraInspector> {
         child: Stack(
           children: [
             widget.child,
-            if (_panelOpen)
-              Material(
-                type: MaterialType.transparency,
-                child: Localizations(
-                    locale: const Locale('en', 'US'),
-                    delegates: const [
-                      DefaultMaterialLocalizations.delegate,
-                      DefaultWidgetsLocalizations.delegate,
-                      DefaultMaterialLocalizations.delegate,
-                    ],
-                    child: QoraPanel(onClose: () => setState(() => _panelOpen = false))),
-              ),
+            if (_panelOpen) QoraPanel(onClose: () => setState(() => _panelOpen = false)),
             if (!_panelOpen) QoraFab(onTap: () => setState(() => _panelOpen = true)),
           ],
         ),

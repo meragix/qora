@@ -15,6 +15,7 @@ class DevtoolsSpacing {
 
   // Layout paddings
   static const double panelPadding = 12;
+  static const double panelHeaderHeight = 44;
   static const double sectionPadding = 8;
 
   // Row sizes
@@ -27,7 +28,7 @@ class DevtoolsSpacing {
 
   // Search bar
   static const double searchBarHeight = 36;
-  static const double searchBarPadding = 10;
+  static const double searchBarPadding = 12;
 
   // Tabs
   static const double tabHeight = 36;

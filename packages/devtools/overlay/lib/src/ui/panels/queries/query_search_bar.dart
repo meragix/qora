@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 class QuerySearchBar extends StatelessWidget {
   final TextEditingController controller;
@@ -14,21 +17,22 @@ class QuerySearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 36,
+      height: DevtoolsSpacing.searchBarHeight,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: const TextStyle(fontSize: 14, color: Colors.white),
+        style: DevtoolsTypography.body,
         decoration: InputDecoration(
+          filled: true,
+          fillColor: DevtoolsColors.inputBackground,
           hintText: 'Search queries...',
-          hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          prefixIcon: const Icon(LucideIcons.search, color: Color(0xFF475569), size: 16),
+          hintStyle: const TextStyle(color: DevtoolsColors.textMuted),
+          prefixIcon: const Icon(LucideIcons.search),
           border: InputBorder.none,
-          errorBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          contentPadding: const EdgeInsets.all(DevtoolsSpacing.searchBarPadding),
         ),
       ),
     );

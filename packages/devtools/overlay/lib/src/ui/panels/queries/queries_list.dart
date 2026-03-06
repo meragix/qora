@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:qora_devtools_overlay/src/ui/panels/queries/query_row.dart';
 import 'package:qora_devtools_overlay/src/ui/panels/queries/query_search_bar.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
@@ -61,10 +62,10 @@ class _QueriesListState extends State<QueriesList> {
         ),
         if (filtered.isEmpty)
           const Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(32),
             child: Text(
               'No queries found.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              style: DevtoolsTypography.bodyMuted,
             ),
           ),
         Expanded(

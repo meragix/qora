@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/panels/shared/breadcrumb_key.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
@@ -27,15 +29,15 @@ class QueryRow extends StatelessWidget {
         'QueryEvent details: eventId=${query.eventId}, totalChunks=${query.totalChunks}, data=${query.data}, fetchDurationMs=${query.fetchDurationMs}'); // Debug print
     return InkWell(
       onTap: onTap,
-      hoverColor: const Color(0xFF1E293B).withValues(alpha: .5),
+      hoverColor: DevtoolsColors.rowHover,
       child: Container(
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF1E293B) : Colors.transparent,
+          color: isActive ? DevtoolsColors.rowSelected : Colors.transparent,
           border: Border(
             left: isActive
                 ? BorderSide(
-                    color: _queryStatus(query).color,
-                    width: 3,
+                    color: DevtoolsColors.accent,
+                    width: 2,
                   )
                 : BorderSide.none,
           ),
@@ -52,11 +54,7 @@ class QueryRow extends StatelessWidget {
                 children: [
                   Text(
                     formatQueryKey(query.key),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: DevtoolsTypography.queryKey,
                   ),
                   const SizedBox(height: 4),
                   _MetaRow(query: query),
@@ -80,10 +78,10 @@ class QueryRow extends StatelessWidget {
 // ── Status enum ──────────────────────────────────────────────────────────────
 
 enum _QueryStatus {
-  fetching(Color(0xFFFBBF24)),
-  error(Color(0xFFEF4444)),
-  fresh(Color(0xFF22C55E)),
-  stale(Color(0xFF3B82F6));
+  fetching(DevtoolsColors.statusFetching),
+  error(DevtoolsColors.statusError),
+  fresh(DevtoolsColors.statusFresh),
+  stale(DevtoolsColors.statusStale);
 
   const _QueryStatus(this.color);
   final Color color;
@@ -135,18 +133,13 @@ class _MetaChip extends StatelessWidget {
 
   const _MetaChip(this.text, {this.icon = Icons.info_outline});
 
-  static const _style = TextStyle(
-    fontSize: 11,
-    color: Color(0xFF9CA3AF),
-  );
-
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: _style.color),
+        Icon(icon, size: 14),
         const SizedBox(width: 4),
-        Text(text, style: _style),
+        Text(text, style: DevtoolsTypography.queryMeta),
       ],
     );
   }

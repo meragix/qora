@@ -21,9 +21,6 @@ class PanelTabBar extends StatelessWidget {
               Tab(text: 'QUERIES'),
               Tab(text: 'MUTATIONS'),
             ],
-            labelColor: Color(0xFFE2E8F0),
-            unselectedLabelColor: Color(0xFF475569),
-            indicatorColor: Color(0xFF3B82F6),
             labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
           const Expanded(

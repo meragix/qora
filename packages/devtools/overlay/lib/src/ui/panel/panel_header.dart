@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 class PanelHeader extends StatelessWidget {
   final VoidCallback onClose;
@@ -11,15 +15,15 @@ class PanelHeader extends StatelessWidget {
     final activeCount = context.watch<QueriesNotifier>().activeQueryCount;
 
     return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: DevtoolsSpacing.panelHeaderHeight,
+      padding: const EdgeInsets.symmetric(horizontal: DevtoolsSpacing.lg),
       child: Row(
         children: [
           // Logo Q
           const Text(
             'Q',
             style: TextStyle(
-              color: Color(0xFF3B82F6),
+              color: DevtoolsColors.accent,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -27,11 +31,7 @@ class PanelHeader extends StatelessWidget {
           const SizedBox(width: 8),
           const Text(
             'Qora Devtools',
-            style: TextStyle(
-              color: Color(0xFFE2E8F0),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: DevtoolsTypography.sectionTitle,
           ),
           const SizedBox(width: 8),
           // Badge "5 queries active"
@@ -39,31 +39,28 @@ class PanelHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A5F),
+                color: DevtoolsColors.accent.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 '$activeCount ${activeCount == 1 ? 'query' : 'queries'} active',
-                style: const TextStyle(
-                  color: Color(0xFF93C5FD),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: DevtoolsTypography.smallMuted.copyWith(fontWeight: FontWeight.w500),
               ),
             ),
           const Spacer(),
           // Expand
           IconButton(
-            icon: const Icon(Icons.open_in_full_rounded,
-                color: Color(0xFF475569), size: 16),
+            icon: const Icon(
+              LucideIcons.maximize2, // LucideIcons.minimize2 for the opposite icon
+              size: 16,
+            ),
             onPressed: () {},
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           ),
           // Close
           IconButton(
-            icon: const Icon(Icons.close_rounded,
-                color: Color(0xFF475569), size: 16),
+            icon: const Icon(LucideIcons.x, size: 16),
             onPressed: onClose,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),

@@ -24,6 +24,7 @@ class DevtoolsColors {
   static const zinc700 = Color(0xFF3F3F46);
   static const zinc800 = Color(0xFF27272A);
   static const zinc900 = Color(0xFF18181B);
+  static const zinc950 = Color(0xFF09090b);
 
   // Status palette (Tailwind)
   static const green400 = Color(0xFF4ADE80);
@@ -35,6 +36,9 @@ class DevtoolsColors {
   // Panel Layout
   // ---------------------------------------------------------------------------
 
+  /// Main background color (body)
+  static const background = zinc950;
+
   /// Main DevTools panel background
   static const panelBackground = zinc900;
 
@@ -42,16 +46,25 @@ class DevtoolsColors {
   static const panelSecondaryBackground = zinc800;
 
   /// Row hover background
-  static const rowHover = Color(0xFF27272A);
+  // static const rowHover = Color(0xFF27272A);
+  static const rowHover = zinc800;
+
 
   /// Active / selected query
-  static const rowSelected = Color(0xFF3F3F46);
+  // static const rowSelected = Color(0xFF3F3F46);
+  static const rowSelected = zinc800;
 
   /// Divider lines
   static const divider = zinc700;
 
   /// Generic borders
   static const border = zinc700;
+
+  // ---------------------------------------------------------------------------
+  // Accent Colors
+  // ---------------------------------------------------------------------------
+
+  static const accent = Color(0xFFc084fc); // purple-400 // #a855f7 // 500 in Tailwind
 
   // ---------------------------------------------------------------------------
   // Text
