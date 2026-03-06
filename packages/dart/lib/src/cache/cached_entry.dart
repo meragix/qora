@@ -123,8 +123,6 @@ class CacheEntry<T> {
     final previous = state.dataOrNull;
     // Here, the compiler knows that we are in QueryEntry<T>,
     // therefore Loading is naturally instantiated as Loading<T>.
-    print('Invalidating entry with previous data: $previous');
-    print('Current state before invalidation: $state');
     updateState(previous != null ? Loading<T>(previousData: previous) : Initial<T>());
   }
 

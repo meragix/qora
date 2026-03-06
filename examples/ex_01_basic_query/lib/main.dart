@@ -1,18 +1,26 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_overlay/qora_devtools_overlay.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 import 'screens/user_detail_screen.dart';
 import 'screens/user_list_screen.dart';
 
 void main() {
+  final tracker = OverlayTracker();
   final qoraClient = QoraClient(
     config: const QoraClientConfig(
       defaultOptions: QoraOptions(staleTime: Duration(minutes: 5), cacheTime: Duration(minutes: 10)),
       debugMode: kDebugMode,
     ),
+    tracker: kDebugMode ? tracker : null,
   );
 
-  runApp(MyApp(qoraClient: qoraClient));
+  runApp(
+    QoraInspector(
+      tracker: tracker,
+      child: MyApp(qoraClient: qoraClient),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

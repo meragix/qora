@@ -30,8 +30,7 @@ class QueriesNotifier extends ChangeNotifier {
   List<QueryEvent> get queries => _queries.values.toList();
 
   /// Number of queries whose last known status is `'loading'`.
-  int get activeQueryCount =>
-      _queries.values.where((e) => e.status == 'loading').length;
+  int get activeQueryCount => _queries.values.where((e) => e.status == 'loading').length;
 
   @override
   void dispose() {

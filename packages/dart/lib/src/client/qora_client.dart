@@ -1708,7 +1708,7 @@ class QoraClient implements MutationTracker {
   ///
   /// Used to key [_pendingRequests] (a plain [Map]) without needing deep
   /// equality — list [toString] is deterministic for primitives.
-  String _stringKey(List<dynamic> key) => key.toString();
+  String _stringKey(List<dynamic> key) => jsonEncode(key);
 
   void _assertNotDisposed() {
     if (_isDisposed) throw StateError('QoraClient has been disposed.');
