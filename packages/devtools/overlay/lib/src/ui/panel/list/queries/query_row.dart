@@ -63,7 +63,15 @@ class QueryRow extends StatelessWidget {
   _QueryStatus _queryStatus(QueryEvent q) {
     if (q.status == 'loading') return _QueryStatus.fetching;
     if (q.status == 'error') return _QueryStatus.error;
-    if (q.status == 'success') return _QueryStatus.fresh;
+    if (q.status == 'success') {
+      if (q.staleTimeMs != null && q.staleTimeMs! > 0) {
+        final staleAt = q.timestampMs + q.staleTimeMs!;
+        if (DateTime.now().millisecondsSinceEpoch >= staleAt) {
+          return _QueryStatus.stale;
+        }
+      }
+      return _QueryStatus.fresh;
+    }
     return _QueryStatus.stale;
   }
 }
@@ -109,8 +117,13 @@ class _MetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final staleTimeLeft = query.staleTimeMs ?? 0 - now;
-    final gcTimeLeft = query.gcTimeMs ?? 0 - now;
+    // staleTimeMs is a duration — remaining time = (fetchedAt + duration) - now
+    final staleTimeLeft = query.staleTimeMs != null
+        ? (query.timestampMs + query.staleTimeMs!) - now
+        : null;
+    final gcTimeLeft = query.gcTimeMs != null
+        ? (query.timestampMs + query.gcTimeMs!) - now
+        : null;
 
     return Wrap(
       spacing: 10,
@@ -123,15 +136,15 @@ class _MetaRow extends StatelessWidget {
         ),
         _MetaChip(
           label: 'stale: ',
-          value: formatQueryTime(staleTimeLeft),
+          value: staleTimeLeft != null ? formatQueryTime(staleTimeLeft) : '—',
           icon: LucideIcons.clock,
-          color: staleTimeLeft <= 0 ? DevtoolsColors.orange400 : null,
+          color: staleTimeLeft != null && staleTimeLeft <= 0 ? DevtoolsColors.orange400 : null,
         ),
         _MetaChip(
           label: 'gc: ',
-          value: formatQueryTime(gcTimeLeft),
+          value: gcTimeLeft != null ? formatQueryTime(gcTimeLeft) : '—',
           icon: LucideIcons.trash2,
-          color: gcTimeLeft <= 0 ? DevtoolsColors.red400 : null,
+          color: gcTimeLeft != null && gcTimeLeft <= 0 ? DevtoolsColors.red400 : null,
         ),
       ],
     );
