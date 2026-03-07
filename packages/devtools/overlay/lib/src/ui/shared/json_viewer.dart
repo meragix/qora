@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'json_value.dart';
 
 // ─────────────────────────────────────────────
-// Colour palette (mirrors the React component)
+// Colour palette)
 // ─────────────────────────────────────────────
 class _C {
   static const null_ = Color(0xFF94A3B8); // slate-400
@@ -19,11 +19,6 @@ class _C {
 // Entry point — accepts raw dynamic
 // ─────────────────────────────────────────────
 
-/// Drop-in replacement for the React JSONViewer.
-///
-/// ```dart
-/// JsonViewer(data: response.data)
-/// ```
 class JsonViewer extends StatelessWidget {
   /// Any value: Map, List, String, num, bool, null — or a pre-built [JsonValue].
   final dynamic data;
@@ -41,13 +36,10 @@ class JsonViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final value = data is JsonValue ? data as JsonValue : JsonValue.fromDynamic(data);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: _JsonNode(
-        value: value,
-        depth: 0,
-        autoExpandDepth: autoExpandDepth,
-      ),
+    return _JsonNode(
+      value: value,
+      depth: 0,
+      autoExpandDepth: autoExpandDepth,
     );
   }
 }

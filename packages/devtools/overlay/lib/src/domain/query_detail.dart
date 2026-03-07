@@ -12,7 +12,7 @@ class QueryDetail {
   /// Human-readable query status: `'success'`, `'loading'`, `'error'`, etc.
   final String status;
 
-  /// Raw cached data for the ExpandableObject viewer.
+  /// Raw cached data for the JSON viewer.
   final Object? data;
 
   /// Truncated string representation for quick preview.
