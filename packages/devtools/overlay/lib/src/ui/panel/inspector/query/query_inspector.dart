@@ -3,8 +3,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/query_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/inspector_widgets.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/empty_state.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/json_viewer.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 /// Inspector detail view for a selected query.
@@ -19,8 +21,7 @@ class QueryInspector extends StatefulWidget {
   State<QueryInspector> createState() => _QueryInspectorState();
 }
 
-class _QueryInspectorState extends State<QueryInspector>
-    with SingleTickerProviderStateMixin {
+class _QueryInspectorState extends State<QueryInspector> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -41,19 +42,14 @@ class _QueryInspectorState extends State<QueryInspector>
     final detail = notifier.detail;
 
     if (detail == null) {
-      return const Center(
-        child: Text(
-          'Select a query to inspect',
-          style: TextStyle(color: DevtoolsColors.textMuted, fontSize: 13),
-        ),
-      );
+      return const EmptyState(message: 'Select a query to inspect');
     }
 
     return Column(
       children: [
         // ── Tab bar ─────────────────────────────────────────────────────────
         SizedBox(
-          height: 36,
+          height: DevtoolsSpacing.tabHeight,
           child: TabBar(
             controller: _tabController,
             indicatorSize: TabBarIndicatorSize.tab,
@@ -75,8 +71,7 @@ class _QueryInspectorState extends State<QueryInspector>
                   InspectorSection(
                     label: 'QUERY KEY',
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
                         color: DevtoolsColors.panelSecondaryBackground,
                         borderRadius: BorderRadius.circular(4),
@@ -136,11 +131,8 @@ class _QueryInspectorState extends State<QueryInspector>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InspectorMetaRow(
-                            'Updated At', fmtDateTime(detail.updatedAt)),
-                        if (detail.staleAt != null)
-                          InspectorMetaRow(
-                              'Stale At', fmtDateTime(detail.staleAt!)),
+                        InspectorMetaRow('Updated At', fmtDateTime(detail.updatedAt)),
+                        if (detail.staleAt != null) InspectorMetaRow('Stale At', fmtDateTime(detail.staleAt!)),
                         if (detail.cacheTimeMs != null)
                           InspectorMetaRow(
                             'Cache Time',
@@ -148,8 +140,7 @@ class _QueryInspectorState extends State<QueryInspector>
                           ),
                         InspectorMetaRow('Observers', '${detail.observerCount}'),
                         if (detail.fetchDurationMs != null)
-                          InspectorMetaRow(
-                              'Fetch Duration', '${detail.fetchDurationMs}ms'),
+                          InspectorMetaRow('Fetch Duration', '${detail.fetchDurationMs}ms'),
                       ],
                     ),
                   ),
@@ -180,9 +171,6 @@ class _QueryInspectorState extends State<QueryInspector>
 
   /// Formats the serialised key into a readable `[ "user", "42" ]` form.
   String _formatKey(String key) {
-    return key
-        .replaceAll(',', ', ')
-        .replaceAll('[', '[ ')
-        .replaceAll(']', ' ]');
+    return key.replaceAll(',', ', ').replaceAll('[', '[ ').replaceAll(']', ' ]');
   }
 }

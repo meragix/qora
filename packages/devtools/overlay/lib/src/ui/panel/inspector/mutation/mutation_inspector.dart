@@ -5,6 +5,7 @@ import 'package:qora_devtools_overlay/src/ui/panel/inspector/inspector_widgets.d
 import 'package:qora_devtools_overlay/src/ui/shared/json_viewer.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/status_badge.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 /// Inspector detail view for a selected mutation.
@@ -53,7 +54,7 @@ class _MutationInspectorState extends State<MutationInspector>
       children: [
         // ── Tab bar ─────────────────────────────────────────────────────────
         SizedBox(
-          height: 36,
+         height: DevtoolsSpacing.tabHeight,
           child: TabBar(
             controller: _tabController,
             indicatorSize: TabBarIndicatorSize.tab,

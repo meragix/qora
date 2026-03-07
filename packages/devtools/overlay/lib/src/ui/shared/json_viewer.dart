@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'json_value.dart';
 
 // ─────────────────────────────────────────────
@@ -190,28 +191,16 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
               const SizedBox(width: 2),
               Text(
                 _open,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: _C.bracket_,
-                ),
+                style: DevtoolsTypography.code.copyWith(color: _C.bracket_),
               ),
               if (!_expanded) ...[
                 Text(
                   ' $_length ${_isArray ? "items" : "keys"} ',
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    color: _C.chevron_,
-                  ),
+                  style: DevtoolsTypography.code.copyWith(color: _C.bracket_, fontSize: 11),
                 ),
                 Text(
                   _close,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    color: _C.bracket_,
-                  ),
+                  style: DevtoolsTypography.code.copyWith(color: _C.bracket_),
                 ),
               ],
             ],
@@ -245,11 +234,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
                             // Key
                             Text(
                               '${entry.key}: ',
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
-                                color: _C.key_,
-                              ),
+                              style: DevtoolsTypography.code.copyWith(color: _C.key_),
                             ),
                             // Value (recursive)
                             _JsonNode(
@@ -259,13 +244,9 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
                             ),
                             // Trailing comma
                             if (i < _length - 1)
-                              const Text(
+                              Text(
                                 ',',
-                                style: TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 12,
-                                  color: _C.chevron_,
-                                ),
+                                style: DevtoolsTypography.code.copyWith(color: _C.chevron_),
                               ),
                           ],
                         ),
@@ -279,11 +260,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
           // Closing bracket
           Text(
             _close,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: _C.bracket_,
-            ),
+            style: DevtoolsTypography.code.copyWith(color: _C.bracket_),
           ),
         ],
       ],
