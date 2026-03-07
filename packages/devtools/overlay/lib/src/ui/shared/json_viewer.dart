@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'json_value.dart';
 
 // ─────────────────────────────────────────────
 // Colour palette)
 // ─────────────────────────────────────────────
+
 class _C {
-  static const null_ = Color(0xFF94A3B8); // slate-400
-  static const string_ = Color(0xFFFBBF24); // amber-400
-  static const number_ = Color(0xFF22D3EE); // cyan-400
-  static const bool_ = Color(0xFFA78BFA); // violet-400
-  static const key_ = Color(0xFF22D3EE); // cyan-400  (same as number)
-  static const bracket_ = Color(0xFF94A3B8); // slate-400
-  static const chevron_ = Color(0xFF64748B); // slate-500
-  static const indent_ = Color(0xFF334155); // slate-700
+  static const null_ = DevtoolsColors.accent;
+  static const string_ = DevtoolsColors.green400;
+  static const number_ = DevtoolsColors.blue400;
+  static const bool_ = DevtoolsColors.orange400;
+  static const key_ = DevtoolsColors.cyan400;
+  static const bracket_ = DevtoolsColors.zinc500;
+  static const chevron_ = DevtoolsColors.zinc500;
+  static const indent_ = DevtoolsColors.zinc700;
 }
 
 // ─────────────────────────────────────────────
@@ -37,10 +40,16 @@ class JsonViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final value = data is JsonValue ? data as JsonValue : JsonValue.fromDynamic(data);
 
-    return _JsonNode(
-      value: value,
-      depth: 0,
-      autoExpandDepth: autoExpandDepth,
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: _JsonNode(
+          value: value,
+          depth: 0,
+          autoExpandDepth: autoExpandDepth,
+        ),
+      ),
     );
   }
 }
@@ -95,11 +104,7 @@ class _PrimitiveChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
-        fontFamily: 'monospace',
-        fontSize: 12,
-        color: color,
-      ),
+      style: DevtoolsTypography.code.copyWith(color: color),
     );
   }
 }
@@ -165,11 +170,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
     if (_length == 0) {
       return Text(
         '$_open$_close',
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-          color: _C.bracket_,
-        ),
+        style: DevtoolsTypography.code.copyWith(color: _C.bracket_),
       );
     }
 
@@ -186,9 +187,9 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
               AnimatedRotation(
                 turns: _expanded ? 0.25 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: const Icon(Icons.chevron_right, size: 14, color: _C.chevron_),
+                child: const Icon(LucideIcons.chevronRight, size: 14, color: _C.chevron_),
               ),
-              const SizedBox(width: 2),
+              const SizedBox(width: 4),
               Text(
                 _open,
                 style: DevtoolsTypography.code.copyWith(color: _C.bracket_),

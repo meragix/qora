@@ -13,8 +13,14 @@ import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 class InspectorSection extends StatelessWidget {
   final String label;
   final Widget child;
+  final bool shwowDivider;
 
-  const InspectorSection({super.key, required this.label, required this.child});
+  const InspectorSection({
+    super.key,
+    required this.label,
+    required this.child,
+    this.shwowDivider = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +37,10 @@ class InspectorSection extends StatelessWidget {
               color: DevtoolsColors.textDisabled,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           child,
-          const SizedBox(height: 4),
-          Divider(height: DevtoolsSpacing.borderWidth),
+          const SizedBox(height: 6),
+          if (shwowDivider) Divider(height: DevtoolsSpacing.borderWidth),
         ],
       ),
     );

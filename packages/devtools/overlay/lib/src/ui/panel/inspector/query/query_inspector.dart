@@ -53,8 +53,12 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
           height: DevtoolsSpacing.tabHeight,
           child: TabBar(
             controller: _tabController,
+            isScrollable: true,
             indicatorSize: TabBarIndicatorSize.tab,
-            tabs: const [Tab(text: 'OVERVIEW'), Tab(text: 'DATA')],
+            padding: 12.edgeInsetsH,
+            labelPadding: 13.edgeInsetsH,
+            tabAlignment: TabAlignment.start,
+            tabs: const [Tab(text: 'Overview'), Tab(text: 'Data')],
             labelStyle: DevtoolsTypography.tab,
           ),
         ),
@@ -154,12 +158,23 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                 children: [
                   InspectorSection(
                     label: 'CACHED DATA',
+                    shwowDivider: false,
                     child: detail.hasLargePayload
                         ? Text(
                             'Large payload — pull via DevTools extension',
                             style: DevtoolsTypography.smallMuted,
                           )
-                        : JsonViewer(data: detail.data),
+                        : Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: .3),
+                              borderRadius: 8.borderRadiusA,
+                            ),
+                            child: Padding(
+                              padding: 12.edgeInsetsA,
+                              child: JsonViewer(data: detail.data),
+                            ),
+                          ),
                   ),
                 ],
               ),

@@ -97,7 +97,7 @@ class OverlayTracker implements QoraTracker {
     final event = QueryEvent.fetched(
       key: key,
       status: status,
-      data: null,
+      data: data,
       staleTimeMs: staleTimeMs,
       gcTimeMs: gcTimeMs,
       observerCount: observerCount,

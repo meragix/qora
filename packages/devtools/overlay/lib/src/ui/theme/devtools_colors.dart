@@ -31,21 +31,8 @@ class DevtoolsColors {
   static const yellow400 = Color(0xFFFACC15);
   static const blue400 = Color(0xFF60A5FA);
   static const red400 = Color(0xFFF87171);
-
-    //  status: {
-  //     fresh: '#10b981',     // emerald-500
-  //     stale: '#f59e0b',     // amber-500
-  //     fetching: '#06b6d4',  // cyan-500
-  //     error: '#ef4444',     // red-500
-  //   },
-//   export const EVENT_COLORS = {
-//   QueryCreated: 'text-slate-400',
-//   FetchStarted: 'text-cyan-400',
-//   FetchSuccess: 'text-emerald-400',
-//   FetchError: 'text-red-400',
-//   Invalidated: 'text-amber-400',
-//   GarbageCollected: 'text-slate-500',
-// } as const;
+  static const orange400 = Color(0xFFFB923C);
+  static const cyan400 = Color(0xFF22D3EE);
 
   // ---------------------------------------------------------------------------
   // Panel Layout
@@ -64,7 +51,6 @@ class DevtoolsColors {
   // static const rowHover = Color(0xFF27272A);
   static const rowHover = zinc800;
 
-
   /// Active / selected query
   // static const rowSelected = Color(0xFF3F3F46);
   static const rowSelected = zinc800;
@@ -79,7 +65,7 @@ class DevtoolsColors {
   // Accent Colors
   // ---------------------------------------------------------------------------
 
-  static const accent = Color(0xFFc084fc); // purple-400 // #a855f7 // 500 in Tailwind
+  static const accent = Color(0xFFc084fc); // purple-400
 
   // ---------------------------------------------------------------------------
   // Text

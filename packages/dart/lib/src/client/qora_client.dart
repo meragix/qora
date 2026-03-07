@@ -1493,7 +1493,7 @@ class QoraClient implements MutationTracker {
         entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
         _tracker.onQueryFetched(
           _stringKey(key),
-          data,
+          _serializeForTracker(data, opts),
           'success',
           staleTimeMs: opts.staleTime.inMilliseconds,
           gcTimeMs: opts.cacheTime.inMilliseconds,
@@ -1741,6 +1741,30 @@ class QoraClient implements MutationTracker {
 
   void _assertNotDisposed() {
     if (_isDisposed) throw StateError('QoraClient has been disposed.');
+  }
+
+  /// Converts [data] into a JSON-safe value for the DevTools tracker.
+  ///
+  /// Resolution order:
+  /// 1. [opts.toJson] — explicit serializer, always wins.
+  /// 2. Already JSON-safe (`Map`, `List`, `String`, `num`, `bool`, `null`).
+  /// 3. Dynamic `toJson()` call — works for `json_serializable`/`freezed` models.
+  /// 4. `.toString()` fallback — never throws.
+  Object? _serializeForTracker(Object? data, QoraOptions opts) {
+    if (opts.toJson != null) return opts.toJson!(data);
+    if (data == null ||
+        data is Map ||
+        data is List ||
+        data is String ||
+        data is num ||
+        data is bool) {
+      return data;
+    }
+    try {
+      return (data as dynamic).toJson();
+    } catch (_) {
+      return data.toString();
+    }
   }
 
   void _log(String message) {

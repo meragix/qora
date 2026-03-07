@@ -70,7 +70,7 @@ class DevtoolsTypography {
 
   static const TextStyle queryMeta = TextStyle(
     fontSize: sm,
-    color: DevtoolsColors.textMuted,
+    color: DevtoolsColors.textDisabled,
   );
 
   // ---------------------------------------------------------------------------

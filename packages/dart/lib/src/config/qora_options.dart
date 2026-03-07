@@ -228,6 +228,30 @@ class QoraOptions {
   /// ```
   final Object? dependsOn;
 
+  /// Optional serializer used by DevTools to display query data as structured
+  /// JSON.
+  ///
+  /// When provided, the result of `toJson(data)` is forwarded to the
+  /// [QoraTracker] instead of the raw Dart object. This allows the DevTools
+  /// overlay and IDE extension to render your models as an interactive JSON
+  /// tree rather than falling back to `.toString()`.
+  ///
+  /// The returned value must be JSON-encodable (`Map`, `List`, `String`,
+  /// `num`, `bool`, or `null`).
+  ///
+  /// ```dart
+  /// fetchQuery<User>(
+  ///   key: ['user', id],
+  ///   fetcher: () => api.getUser(id),
+  ///   options: QoraOptions(toJson: (data) => (data as User).toJson()),
+  /// );
+  /// ```
+  ///
+  /// If omitted, data that is already a `Map` or `List` (e.g. from
+  /// `jsonDecode`) is passed through unchanged. Custom Dart objects fall back
+  /// to their `.toString()` representation in the DevTools viewer.
+  final Object? Function(Object? data)? toJson;
+
   const QoraOptions({
     this.staleTime = Duration.zero,
     this.cacheTime = const Duration(minutes: 5),
@@ -244,6 +268,7 @@ class QoraOptions {
     this.initialDataUpdatedAt,
     this.placeholderData,
     this.dependsOn,
+    this.toJson,
   });
 
   /// Returns the retry delay for the given zero-based [attemptIndex].
@@ -280,6 +305,7 @@ class QoraOptions {
       initialDataUpdatedAt: other.initialDataUpdatedAt ?? initialDataUpdatedAt,
       placeholderData: other.placeholderData ?? placeholderData,
       dependsOn: other.dependsOn ?? dependsOn,
+      toJson: other.toJson ?? toJson,
     );
   }
 }

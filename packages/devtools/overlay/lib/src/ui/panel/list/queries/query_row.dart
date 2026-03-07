@@ -109,43 +109,30 @@ class _MetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final ageMs = now - query.timestampMs;
-    final staleMs = query.staleTimeMs;
-    final gcMs = query.gcTimeMs;
-    //final isFresh = staleMs != null && staleMs > 0 && ageMs < staleMs;
+    final staleTimeLeft = query.staleTimeMs ?? 0 - now;
+    final gcTimeLeft = query.gcTimeMs ?? 0 - now;
 
     return Wrap(
       spacing: 10,
       runSpacing: 2,
       children: [
-        // _MetaChip(label: 'fetched ', value: _fmtAge(ageMs), icon: LucideIcons.clock),
-        // if (query.fetchDurationMs != null)
-        //   _MetaChip(label: '', value: '${query.fetchDurationMs}ms', icon: LucideIcons.zap),
         _MetaChip(
           label: '',
           value: '${query.observerCount}',
           icon: LucideIcons.userRound,
         ),
-        // _MetaChip(
-        //   label: isFresh ? 'fresh' : 'stale',
-        //   value: '',
-        //   icon: isFresh ? LucideIcons.shieldCheck : LucideIcons.circleAlert,
-        //   color: isFresh ? DevtoolsColors.statusFresh : DevtoolsColors.statusStale,
-        // ),
-        if (staleMs != null)
-          _MetaChip(
-            label: 'stale: ',
-            value: formatQueryTime(staleMs),
-            icon: LucideIcons.trash2,
-            color: staleMs <= 0 ? DevtoolsColors.statusStale : null,
-          ),
-        if (gcMs != null)
-          _MetaChip(
-            label: 'gc: ',
-            value: formatQueryTime(gcMs - ageMs),
-            icon: LucideIcons.trash2,
-            color: gcMs <= 0 ? DevtoolsColors.statusError : null,
-          ),
+        _MetaChip(
+          label: 'stale: ',
+          value: formatQueryTime(staleTimeLeft),
+          icon: LucideIcons.clock,
+          color: staleTimeLeft <= 0 ? DevtoolsColors.orange400 : null,
+        ),
+        _MetaChip(
+          label: 'gc: ',
+          value: formatQueryTime(gcTimeLeft),
+          icon: LucideIcons.trash2,
+          color: gcTimeLeft <= 0 ? DevtoolsColors.red400 : null,
+        ),
       ],
     );
   }
