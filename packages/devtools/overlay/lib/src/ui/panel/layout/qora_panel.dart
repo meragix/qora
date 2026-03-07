@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:qora_devtools_overlay/src/ui/panel/panel_header.dart';
-import 'package:qora_devtools_overlay/src/ui/panel/panel_tab_bar.dart';
+import 'package:qora_devtools_overlay/src/ui/panel/layout/panel_header.dart';
+import 'package:qora_devtools_overlay/src/ui/panel/layout/panel_body.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 
 /// The main DevTools panel — a dark sheet anchored to the bottom of the screen.
-///
-/// Contains [PanelHeader] (close / expand controls) and [PanelTabBar]
-/// (QUERIES / MUTATIONS tabs). Mounted above the app content by [QoraInspector].
 class QoraPanel extends StatelessWidget {
   final VoidCallback onClose;
 
@@ -61,13 +58,12 @@ class QoraPanel extends StatelessWidget {
             delegates: const [
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,
-              DefaultMaterialLocalizations.delegate,
             ],
             child: Column(
               children: [
                 PanelHeader(onClose: onClose),
                 const Divider(height: 1),
-                const Expanded(child: PanelTabBar()),
+                const Expanded(child: PanelBody()),
               ],
             ),
           ),

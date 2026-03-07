@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/timeline_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Timeline tab — column 3, first tab of the Mutations panel.
@@ -24,28 +25,36 @@ class TimelineTab extends StatelessWidget {
           Text(
             'TIMELINE (${events.length} EVENTS)',
             style: const TextStyle(
-              color: Color(0xFF64748B),
+              color: DevtoolsColors.textSecondary,
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
             ),
           ),
           const Spacer(),
-          // Filter input
+          // ── Filter input ───────────────────────────────────────
           SizedBox(
-            width: 80,
+            width: 90,
             height: 26,
             child: TextField(
               onChanged: notifier.setFilter,
-              style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 11),
+              style: const TextStyle(
+                color: DevtoolsColors.textPrimary,
+                fontSize: 11,
+              ),
               decoration: InputDecoration(
                 hintText: 'Filter…',
-                hintStyle:
-                    const TextStyle(color: Color(0xFF475569), fontSize: 11),
-                prefixIcon: const Icon(Icons.filter_list_rounded,
-                    size: 12, color: Color(0xFF475569)),
+                hintStyle: const TextStyle(
+                  color: DevtoolsColors.textMuted,
+                  fontSize: 11,
+                ),
+                prefixIcon: const Icon(
+                  Icons.filter_list_rounded,
+                  size: 12,
+                  color: DevtoolsColors.textMuted,
+                ),
                 filled: true,
-                fillColor: const Color(0xFF1E293B),
+                fillColor: DevtoolsColors.inputBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(4),
                   borderSide: BorderSide.none,
@@ -55,7 +64,7 @@ class TimelineTab extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          // Pause / Resume
+          // ── Pause / Resume ─────────────────────────────────────
           _ToolbarChip(
             label: notifier.paused ? 'Resume' : 'Pause',
             onTap: notifier.togglePause,
@@ -92,13 +101,13 @@ class _ToolbarChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: DevtoolsColors.buttonBackground,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,
           style: const TextStyle(
-            color: Color(0xFFE2E8F0),
+            color: DevtoolsColors.buttonText,
             fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
@@ -139,7 +148,7 @@ class TimelineEventRow extends StatelessWidget {
               Text(
                 event.type.displayName,
                 style: const TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: DevtoolsColors.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -148,7 +157,7 @@ class TimelineEventRow extends StatelessWidget {
                 Text(
                   event.key!,
                   style: const TextStyle(
-                    color: Color(0xFF64748B),
+                    color: DevtoolsColors.textMuted,
                     fontSize: 10,
                     fontFamily: 'monospace',
                   ),
@@ -159,7 +168,7 @@ class TimelineEventRow extends StatelessWidget {
         Text(
           _fmtTime(event.timestamp),
           style: const TextStyle(
-            color: Color(0xFF475569),
+            color: DevtoolsColors.textMuted,
             fontSize: 10,
             fontFamily: 'monospace',
           ),
@@ -169,42 +178,15 @@ class TimelineEventRow extends StatelessWidget {
   }
 
   (IconData, Color) _iconForType(TimelineEventType t) => switch (t) {
-        TimelineEventType.optimisticUpdate => (
-            Icons.auto_fix_high,
-            const Color(0xFFF59E0B)
-          ),
-        TimelineEventType.mutationStarted => (
-            Icons.play_arrow_rounded,
-            const Color(0xFF8B5CF6)
-          ),
-        TimelineEventType.mutationSuccess => (
-            Icons.check_circle_outline,
-            const Color(0xFF22C55E)
-          ),
-        TimelineEventType.mutationError => (
-            Icons.error_outline,
-            const Color(0xFFEF4444)
-          ),
-        TimelineEventType.fetchStarted => (
-            Icons.download_rounded,
-            const Color(0xFF3B82F6)
-          ),
-        TimelineEventType.fetchError => (
-            Icons.cloud_off_rounded,
-            const Color(0xFFEF4444)
-          ),
-        TimelineEventType.queryCreated => (
-            Icons.add_circle_outline,
-            const Color(0xFF22C55E)
-          ),
-        TimelineEventType.cacheCleared => (
-            Icons.delete_sweep_rounded,
-            const Color(0xFF94A3B8)
-          ),
-        TimelineEventType.queryCancelled => (
-            Icons.cancel_outlined,
-            const Color(0xFFF97316)
-          ),
+        TimelineEventType.optimisticUpdate => (Icons.auto_fix_high, const Color(0xFFF59E0B)),
+        TimelineEventType.mutationStarted => (Icons.play_arrow_rounded, const Color(0xFF8B5CF6)),
+        TimelineEventType.mutationSuccess => (Icons.check_circle_outline, const Color(0xFF22C55E)),
+        TimelineEventType.mutationError => (Icons.error_outline, const Color(0xFFEF4444)),
+        TimelineEventType.fetchStarted => (Icons.download_rounded, const Color(0xFF3B82F6)),
+        TimelineEventType.fetchError => (Icons.cloud_off_rounded, const Color(0xFFEF4444)),
+        TimelineEventType.queryCreated => (Icons.add_circle_outline, const Color(0xFF22C55E)),
+        TimelineEventType.cacheCleared => (Icons.delete_sweep_rounded, const Color(0xFF94A3B8)),
+        TimelineEventType.queryCancelled => (Icons.cancel_outlined, const Color(0xFFF97316)),
       };
 
   String _fmtTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'

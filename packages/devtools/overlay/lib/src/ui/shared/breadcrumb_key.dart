@@ -4,11 +4,8 @@ class BreadcrumbKey extends StatelessWidget {
   final String queryKey;
   const BreadcrumbKey({super.key, required this.queryKey});
 
-  List<String> get _segments => queryKey
-      .split(RegExp(r'[./\[\],]'))
-      .map((s) => s.trim())
-      .where((s) => s.isNotEmpty)
-      .toList();
+  List<String> get _segments =>
+      queryKey.split(RegExp(r'[./\[\],]')).map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +24,13 @@ class BreadcrumbKey extends StatelessWidget {
           if (i < segs.length - 1)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Text('›',
-                  style: TextStyle(
-                    color: Color(0xFF475569),
-                    fontSize: 13,
-                  )),
+              child: Text(
+                '›',
+                style: TextStyle(
+                  color: Color(0xFF475569),
+                  fontSize: 13,
+                ),
+              ),
             ),
         ],
       ],

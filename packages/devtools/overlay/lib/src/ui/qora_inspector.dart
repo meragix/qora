@@ -6,9 +6,10 @@ import 'package:qora_devtools_overlay/src/domain/cache_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/mutations_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
+import 'package:qora_devtools_overlay/src/domain/query_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/timeline_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/fab/qora_fab.dart';
-import 'package:qora_devtools_overlay/src/ui/panel/qora_panel.dart';
+import 'package:qora_devtools_overlay/src/ui/panel/layout/qora_panel.dart';
 
 /// Public entry point for the Qora DevTools overlay.
 ///
@@ -53,6 +54,7 @@ class QoraInspector extends StatefulWidget {
 
 class _QoraInspectorState extends State<QoraInspector> {
   late final TimelineNotifier _timelineNotifier;
+  late final QueryInspectorNotifier _queryInspectorNotifier;
   late final MutationInspectorNotifier _mutationInspectorNotifier;
   late final QueriesNotifier _queriesNotifier;
   late final MutationsNotifier _mutationsNotifier;
@@ -65,6 +67,7 @@ class _QoraInspectorState extends State<QoraInspector> {
     super.initState();
     if (!kDebugMode) return;
     _timelineNotifier = TimelineNotifier(widget.tracker);
+    _queryInspectorNotifier = QueryInspectorNotifier(widget.tracker);
     _mutationInspectorNotifier = MutationInspectorNotifier(widget.tracker);
     _queriesNotifier = QueriesNotifier(widget.tracker);
     _mutationsNotifier = MutationsNotifier(widget.tracker);
@@ -75,6 +78,7 @@ class _QoraInspectorState extends State<QoraInspector> {
   void dispose() {
     if (kDebugMode) {
       _timelineNotifier.dispose();
+      _queryInspectorNotifier.dispose();
       _mutationInspectorNotifier.dispose();
       _queriesNotifier.dispose();
       _mutationsNotifier.dispose();
@@ -91,6 +95,7 @@ class _QoraInspectorState extends State<QoraInspector> {
       providers: [
         ChangeNotifierProvider.value(value: _queriesNotifier),
         ChangeNotifierProvider.value(value: _mutationsNotifier),
+        ChangeNotifierProvider.value(value: _queryInspectorNotifier),
         ChangeNotifierProvider.value(value: _mutationInspectorNotifier),
         ChangeNotifierProvider.value(value: _timelineNotifier),
         ChangeNotifierProvider.value(value: _cacheNotifier),

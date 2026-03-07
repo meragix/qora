@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:qora_devtools_overlay/src/ui/panels/shared/breadcrumb_key.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/breadcrumb_key.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
+import 'package:qora_devtools_overlay/utils/query_utils.dart' show formatQueryKey;
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Single row in the Queries panel list.
@@ -24,9 +24,6 @@ class QueryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building QueryRow for ${query.key} with status ${query.status}'); // Debug print
-    print(
-        'QueryEvent details: eventId=${query.eventId}, totalChunks=${query.totalChunks}, data=${query.data}, fetchDurationMs=${query.fetchDurationMs}'); // Debug print
     return InkWell(
       onTap: onTap,
       hoverColor: DevtoolsColors.rowHover,
@@ -115,35 +112,37 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now().subtract(Duration(minutes: 2)).millisecondsSinceEpoch;
-    final now2 = DateTime.now().subtract(Duration(minutes: 5)).millisecondsSinceEpoch;
-
-    final staleTimeLeft = query.timestampMs - now;
-    final gcTimeLeft = query.timestampMs - now2;
+    final ageMs = DateTime.now().millisecondsSinceEpoch - query.timestampMs;
+    final ageLabel = _fmtAge(ageMs);
+    final durationMs = query.fetchDurationMs;
 
     return Row(
       children: [
         _MetaChip(
-          label: '',
-          value: '2',
-          icon: LucideIcons.usersRound,
-        ),
-        const SizedBox(width: 10),
-        _MetaChip(
-          label: 'stale: ',
-          value: formatQueryTime(staleTimeLeft),
+          label: 'fetched ',
+          value: ageLabel,
           icon: LucideIcons.clock,
-          valueColor: staleTimeLeft <= 0 ? Colors.orange : null,
         ),
-        const SizedBox(width: 10),
-        _MetaChip(
-          label: 'gc: ',
-          value: formatQueryTime(gcTimeLeft),
-          icon: LucideIcons.trash2,
-          valueColor: gcTimeLeft <= 0 ? DevtoolsColors.statusError : null,
-        ),
+        if (durationMs != null) ...[
+          const SizedBox(width: 10),
+          _MetaChip(
+            label: '',
+            value: '${durationMs}ms',
+            icon: LucideIcons.zap,
+          ),
+        ],
       ],
     );
+  }
+
+  /// Formats elapsed milliseconds as a compact human-readable age string.
+  String _fmtAge(int ms) {
+    if (ms < 1000) return 'just now';
+    final s = ms ~/ 1000;
+    if (s < 60) return '${s}s ago';
+    final m = s ~/ 60;
+    if (m < 60) return '${m}m ago';
+    return '${m ~/ 60}h ago';
   }
 }
 
@@ -151,13 +150,11 @@ class _MetaChip extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final Color? valueColor;
 
   const _MetaChip({
     required this.label,
     required this.value,
     this.icon = Icons.info_outline,
-    this.valueColor,
   });
 
   @override
@@ -165,20 +162,14 @@ class _MetaChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: DevtoolsTypography.queryMeta.color),
-        const SizedBox(width: 4),
+        Icon(icon, size: 12, color: DevtoolsTypography.queryMeta.color),
+        const SizedBox(width: 3),
         Text.rich(
           TextSpan(
             style: DevtoolsTypography.queryMeta,
             children: [
               TextSpan(text: label),
-              TextSpan(
-                text: value,
-                style: TextStyle(
-                  color: valueColor ?? DevtoolsTypography.queryMeta.color,
-                  fontWeight: valueColor != null ? FontWeight.bold : null,
-                ),
-              ),
+              TextSpan(text: value),
             ],
           ),
         ),
