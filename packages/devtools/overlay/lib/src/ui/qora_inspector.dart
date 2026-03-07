@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qora/qora.dart';
 import 'package:qora_devtools_overlay/src/data/overlay_tracker.dart';
 import 'package:qora_devtools_overlay/src/domain/cache_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
@@ -41,12 +42,19 @@ class QoraInspector extends StatefulWidget {
     super.key,
     required this.child,
     required this.tracker,
+    this.client,
   });
 
   final Widget child;
 
   /// The [OverlayTracker] connected to the [QoraClient] of this app.
   final OverlayTracker tracker;
+
+  /// Optional [QoraClient] reference used by the inspector action buttons
+  /// (Refetch, Invalidate, Remove, Mark Stale, Simulate Error).
+  ///
+  /// When omitted the actions section is hidden.
+  final QoraClient? client;
 
   @override
   State<QoraInspector> createState() => _QoraInspectorState();
@@ -67,7 +75,7 @@ class _QoraInspectorState extends State<QoraInspector> {
     super.initState();
     if (!kDebugMode) return;
     _timelineNotifier = TimelineNotifier(widget.tracker);
-    _queryInspectorNotifier = QueryInspectorNotifier(widget.tracker);
+    _queryInspectorNotifier = QueryInspectorNotifier(widget.tracker, client: widget.client);
     _mutationInspectorNotifier = MutationInspectorNotifier(widget.tracker);
     _queriesNotifier = QueriesNotifier(widget.tracker);
     _mutationsNotifier = MutationsNotifier(widget.tracker);

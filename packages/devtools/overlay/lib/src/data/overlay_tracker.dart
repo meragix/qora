@@ -85,9 +85,23 @@ class OverlayTracker implements QoraTracker {
   }
 
   @override
-  void onQueryFetched(String key, Object? data, dynamic status) {
+  void onQueryFetched(
+    String key,
+    Object? data,
+    dynamic status, {
+    int? staleTimeMs,
+    int? gcTimeMs,
+    int observerCount = 0,
+  }) {
     if (_disposed) return;
-    final event = QueryEvent.fetched(key: key, status: status, data: null);
+    final event = QueryEvent.fetched(
+      key: key,
+      status: status,
+      data: null,
+      staleTimeMs: staleTimeMs,
+      gcTimeMs: gcTimeMs,
+      observerCount: observerCount,
+    );
     _push(_queryHistory, _queryController, event);
     _cacheState[key] = QuerySnapshot(
       key: key,

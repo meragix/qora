@@ -57,7 +57,22 @@ abstract interface class QoraTracker {
   /// chunking when data exceeds 80 KB).
   /// [status] is `'success'` for a normal fetch; implementations may receive
   /// other string values for future SWR sub-states.
-  void onQueryFetched(String key, Object? data, dynamic status);
+  ///
+  /// Named parameters carry cache metadata for DevTools display:
+  /// - [staleTimeMs] — configured stale threshold in milliseconds (`null` =
+  ///   never stale).
+  /// - [gcTimeMs] — cache time (GC delay after last subscriber) in
+  ///   milliseconds.
+  /// - [observerCount] — number of active stream subscribers at the moment
+  ///   the fetch settled.
+  void onQueryFetched(
+    String key,
+    Object? data,
+    dynamic status, {
+    int? staleTimeMs,
+    int? gcTimeMs,
+    int observerCount = 0,
+  });
 
   /// Called when a fetch was cancelled via [CancelToken] — either before the
   /// request started or while it was in-flight.

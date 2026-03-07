@@ -68,39 +68,45 @@ class InspectorMetaRow extends StatelessWidget {
 }
 
 /// A small action button rendered inside inspector ACTIONS sections.
+///
+/// [accentColor] tints the background and icon — use it to colour-code
+/// actions by severity (blue = safe, orange = warning, red = destructive).
 class InspectorActionButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final Color? accentColor;
 
   const InspectorActionButton({
     super.key,
     required this.label,
     required this.icon,
     required this.onTap,
+    this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = accentColor ?? DevtoolsColors.accent;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: DevtoolsColors.buttonBackground,
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: DevtoolsColors.border),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: DevtoolsColors.textPrimary),
+            Icon(icon, size: 12, color: color),
             const SizedBox(width: 4),
             Text(
               label,
               style: DevtoolsTypography.smallMuted.copyWith(
-                color: DevtoolsColors.textPrimary,
-                fontWeight: FontWeight.w500,
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

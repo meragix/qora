@@ -100,6 +100,18 @@ final class QueryEvent extends QoraEvent {
   /// Performance Metrics screens.
   final int? fetchDurationMs;
 
+  /// Configured stale threshold in milliseconds (`null` = never stale,
+  /// `0` = always stale). Used by DevTools to compute freshness indicators.
+  final int? staleTimeMs;
+
+  /// Cache time (GC delay after last subscriber unsubscribes) in milliseconds.
+  /// Used by DevTools to show the "GC in …" countdown.
+  final int? gcTimeMs;
+
+  /// Number of active stream subscribers at the moment the fetch settled.
+  /// Corresponds to how many widgets/consumers are watching this query.
+  final int observerCount;
+
   /// Creates a query event.
   ///
   /// Prefer the named factories ([QueryEvent.fetched], [QueryEvent.invalidated])
@@ -116,6 +128,9 @@ final class QueryEvent extends QoraEvent {
     this.totalChunks,
     this.summary,
     this.fetchDurationMs,
+    this.staleTimeMs,
+    this.gcTimeMs,
+    this.observerCount = 0,
   }) : super(kind: 'query.${type.name}');
 
   /// Helper constructor for `query.fetched`.
@@ -130,6 +145,9 @@ final class QueryEvent extends QoraEvent {
     int? totalChunks,
     Map<String, Object?>? summary,
     int? fetchDurationMs,
+    int? staleTimeMs,
+    int? gcTimeMs,
+    int observerCount = 0,
   }) {
     return QueryEvent(
       eventId: QoraEvent.generateId(),
@@ -143,6 +161,9 @@ final class QueryEvent extends QoraEvent {
       totalChunks: totalChunks,
       summary: summary,
       fetchDurationMs: fetchDurationMs,
+      staleTimeMs: staleTimeMs,
+      gcTimeMs: gcTimeMs,
+      observerCount: observerCount,
     );
   }
 
@@ -188,6 +209,9 @@ final class QueryEvent extends QoraEvent {
           ? Map<String, Object?>.from(json['summary']! as Map)
           : null,
       fetchDurationMs: json['fetchDurationMs'] as int?,
+      staleTimeMs: json['staleTimeMs'] as int?,
+      gcTimeMs: json['gcTimeMs'] as int?,
+      observerCount: (json['observerCount'] as int?) ?? 0,
     );
   }
 
@@ -204,5 +228,8 @@ final class QueryEvent extends QoraEvent {
         'totalChunks': totalChunks,
         'summary': summary,
         'fetchDurationMs': fetchDurationMs,
+        'staleTimeMs': staleTimeMs,
+        'gcTimeMs': gcTimeMs,
+        'observerCount': observerCount,
       };
 }

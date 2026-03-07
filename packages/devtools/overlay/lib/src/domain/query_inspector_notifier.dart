@@ -1,51 +1,89 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:qora/qora.dart';
 import 'package:qora_devtools_overlay/src/data/overlay_tracker.dart';
 import 'package:qora_devtools_overlay/src/domain/query_detail.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
-/// Manages the selected mutation for the Inspector column (column 2).
+/// Manages the selected query for the Inspector column (column 2).
 ///
-/// The list column (column 1) calls [select] when the user taps a mutation row.
-/// The inspector panel reads [detail] to render STATUS / VARIABLES / ERROR /
-/// ROLLBACK CONTEXT / METADATA sections.
-///
-/// Auto-updates when a new [QueryEvent] with the same [QueryEvent.id]
-/// arrives (e.g. retry settled), keeping the inspector in sync without
-/// requiring the user to re-tap.
+/// The list column calls [select] when the user taps a query row.
+/// When a [QoraClient] is provided, the action methods (refetch, invalidate,
+/// remove, markStale, simulateError) operate directly on the live cache.
 class QueryInspectorNotifier extends ChangeNotifier {
   final OverlayTracker _tracker;
+  final QoraClient? _client;
   late final StreamSubscription<QueryEvent> _sub;
 
   QueryEvent? _selected;
 
-  /// The currently selected mutation event, or `null` when nothing is selected.
+  /// The currently selected query event, or `null` when nothing is selected.
   QueryEvent? get selected => _selected;
 
   /// View-model for the inspector panel, derived from [selected].
-  ///
-  /// `null` when [selected] is `null` — the panel renders a placeholder.
   QueryDetail? get detail =>
       _selected == null ? null : QueryDetail.fromEvent(_selected!);
 
-  QueryInspectorNotifier(this._tracker) {
+  /// Whether action buttons should be enabled.
+  bool get hasClient => _client != null;
+
+  QueryInspectorNotifier(this._tracker, {QoraClient? client}) : _client = client {
     _sub = _tracker.onQuery.listen((event) {
-      // Auto-update if the selected mutation changes state (e.g. retry settled)
-      if (_selected != null && event.eventId == _selected!.eventId) {
+      // Auto-update when the selected query key receives a new event.
+      if (_selected != null && event.key == _selected!.key) {
         _selected = event;
         notifyListeners();
       }
     });
   }
 
-  /// Selects [mutation] for inspection; triggers a panel rebuild.
+  /// Selects [query] for inspection; triggers a panel rebuild.
   void select(QueryEvent query) {
     _selected = query;
     notifyListeners();
   }
 
-  //todo: implement actions logic for queries when supported by QoraClient (e.g. refetch, cancel)
+  // ── Actions ──────────────────────────────────────────────────────────────
+
+  /// Marks the selected query stale, causing active observers to refetch.
+  void refetch() => _withKey(_client!.invalidate);
+
+  /// Marks the selected query as stale (same effect as [refetch] in Qora).
+  void invalidate() => _withKey(_client!.invalidate);
+
+  /// Removes the selected query from the cache entirely.
+  void remove() => _withKey(_client!.removeQuery);
+
+  /// Marks the selected query stale without triggering an immediate refetch.
+  void markStale() => _withKey(_client!.invalidate);
+
+  /// Forces the selected query into a [Failure] state for testing.
+  void simulateError() {
+    if (_selected == null || _client == null) return;
+    _client.debugSetQueryError(
+      _parsedKey(_selected!.key),
+      Exception('Simulated error from DevTools'),
+    );
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /// Decodes the JSON-serialised key back to a Dart object so that
+  /// [QoraClient.normalizeKey] can process it correctly.
+  Object _parsedKey(String serialized) {
+    try {
+      return jsonDecode(serialized) as Object;
+    } catch (_) {
+      return serialized;
+    }
+  }
+
+  void _withKey(void Function(Object) action) {
+    if (_selected == null || _client == null) return;
+    action(_parsedKey(_selected!.key));
+  }
 
   @override
   void dispose() {

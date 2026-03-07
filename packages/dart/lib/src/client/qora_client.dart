@@ -880,6 +880,7 @@ class QoraClient implements MutationTracker {
       _stringKey(normalized),
       state is InfiniteSuccess<TData, TPageParam> ? state.data : null,
       state.runtimeType.toString(),
+      observerCount: entry.subscriberCount,
     );
   }
 
@@ -947,6 +948,27 @@ class QoraClient implements MutationTracker {
     entry.updateState(const InfiniteInitial());
     _tracker.onQueryInvalidated(_stringKey(normalized));
     _log('Infinite query invalidated: $normalized');
+  }
+
+  // ── Debug / DevTools helpers ─────────────────────────────────────────────
+
+  /// Forces the cached entry for [key] into a [Failure] state with [error].
+  ///
+  /// Intended exclusively for DevTools "Simulate Error" actions. In release
+  /// builds this method still executes, so call it only in debug/profile code
+  /// (e.g. behind a `kDebugMode` guard in the overlay).
+  ///
+  /// No-op when [key] does not exist in the cache.
+  void debugSetQueryError(Object key, Object error) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _cache.get<dynamic>(normalized);
+    if (entry != null) {
+      entry.updateState(
+        Failure<dynamic>(error: error, previousData: entry.state.dataOrNull),
+      );
+      _log('debugSetQueryError: $normalized');
+    }
   }
 
   // ── Removal ──────────────────────────────────────────────────────────────
@@ -1469,7 +1491,14 @@ class QoraClient implements MutationTracker {
 
         entry.lastOptions = opts;
         entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
-        _tracker.onQueryFetched(_stringKey(key), data, 'success');
+        _tracker.onQueryFetched(
+          _stringKey(key),
+          data,
+          'success',
+          staleTimeMs: opts.staleTime.inMilliseconds,
+          gcTimeMs: opts.cacheTime.inMilliseconds,
+          observerCount: entry.subscriberCount,
+        );
         onFetchSuccess<T>(key, data);
         _pendingRequests.remove(sk);
         _emitFetchingCount();

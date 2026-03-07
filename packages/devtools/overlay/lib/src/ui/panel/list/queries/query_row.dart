@@ -112,30 +112,40 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ageMs = DateTime.now().millisecondsSinceEpoch - query.timestampMs;
-    final ageLabel = _fmtAge(ageMs);
-    final durationMs = query.fetchDurationMs;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final ageMs = now - query.timestampMs;
+    final staleMs = query.staleTimeMs;
+    final gcMs = query.gcTimeMs;
+    final isFresh = staleMs != null && staleMs > 0 && ageMs < staleMs;
 
-    return Row(
+    return Wrap(
+      spacing: 10,
+      runSpacing: 2,
       children: [
+        _MetaChip(label: 'fetched ', value: _fmtAge(ageMs), icon: LucideIcons.clock),
+        if (query.fetchDurationMs != null)
+          _MetaChip(label: '', value: '${query.fetchDurationMs}ms', icon: LucideIcons.zap),
         _MetaChip(
-          label: 'fetched ',
-          value: ageLabel,
-          icon: LucideIcons.clock,
+          label: '',
+          value: '${query.observerCount}',
+          icon: LucideIcons.eye,
         ),
-        if (durationMs != null) ...[
-          const SizedBox(width: 10),
+        _MetaChip(
+          label: isFresh ? 'fresh' : 'stale',
+          value: '',
+          icon: isFresh ? LucideIcons.shieldCheck : LucideIcons.circleAlert,
+          color: isFresh ? DevtoolsColors.statusFresh : DevtoolsColors.statusStale,
+        ),
+        if (gcMs != null)
           _MetaChip(
-            label: '',
-            value: '${durationMs}ms',
-            icon: LucideIcons.zap,
+            label: 'GC ',
+            value: _fmtDuration(gcMs - ageMs),
+            icon: LucideIcons.trash2,
           ),
-        ],
       ],
     );
   }
 
-  /// Formats elapsed milliseconds as a compact human-readable age string.
   String _fmtAge(int ms) {
     if (ms < 1000) return 'just now';
     final s = ms ~/ 1000;
@@ -144,29 +154,41 @@ class _MetaRow extends StatelessWidget {
     if (m < 60) return '${m}m ago';
     return '${m ~/ 60}h ago';
   }
+
+  String _fmtDuration(int ms) {
+    if (ms <= 0) return '0s';
+    final s = ms ~/ 1000;
+    if (s < 60) return '${s}s';
+    final m = s ~/ 60;
+    final rem = s % 60;
+    return rem > 0 ? '${m}m ${rem}s' : '${m}m';
+  }
 }
 
 class _MetaChip extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final Color? color;
 
   const _MetaChip({
     required this.label,
     required this.value,
     this.icon = Icons.info_outline,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? DevtoolsTypography.queryMeta.color;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: DevtoolsTypography.queryMeta.color),
+        Icon(icon, size: 12, color: effectiveColor),
         const SizedBox(width: 3),
         Text.rich(
           TextSpan(
-            style: DevtoolsTypography.queryMeta,
+            style: DevtoolsTypography.queryMeta.copyWith(color: effectiveColor),
             children: [
               TextSpan(text: label),
               TextSpan(text: value),

@@ -49,7 +49,14 @@ final class NoOpTracker implements QoraTracker {
   void onQueryFetching(String key) {}
 
   @override
-  void onQueryFetched(String key, Object? data, dynamic status) {}
+  void onQueryFetched(
+    String key,
+    Object? data,
+    dynamic status, {
+    int? staleTimeMs,
+    int? gcTimeMs,
+    int observerCount = 0,
+  }) {}
 
   @override
   void onQueryCancelled(String key) {}

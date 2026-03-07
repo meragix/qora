@@ -103,7 +103,14 @@ class VmTracker implements QoraTracker {
   }
 
   @override
-  void onQueryFetched(String key, Object? data, dynamic status) {
+  void onQueryFetched(
+    String key,
+    Object? data,
+    dynamic status, {
+    int? staleTimeMs,
+    int? gcTimeMs,
+    int observerCount = 0,
+  }) {
     final lazy = _lazy.store(data);
     final summary = _summarizeData(data);
     final startedAt = _fetchStartTimes.remove(key);
@@ -121,6 +128,9 @@ class VmTracker implements QoraTracker {
         totalChunks: lazy.hasLargePayload ? lazy.totalChunks : null,
         summary: summary,
         fetchDurationMs: fetchDurationMs,
+        staleTimeMs: staleTimeMs,
+        gcTimeMs: gcTimeMs,
+        observerCount: observerCount,
       ),
     );
   }
