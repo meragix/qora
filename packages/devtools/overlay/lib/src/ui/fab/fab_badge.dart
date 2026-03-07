@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 
 /// Red counter badge shown on the [QoraFab] when queries are loading.
 ///
@@ -18,8 +19,8 @@ class FabBadge extends StatelessWidget {
       top: 0,
       right: 0,
       child: Container(
-        width: 16,
-        height: 16,
+        width: DevtoolsSpacing.lg,
+        height: DevtoolsSpacing.lg,
         decoration: const BoxDecoration(
           color: Color(0xFFEF4444),
           shape: BoxShape.circle,

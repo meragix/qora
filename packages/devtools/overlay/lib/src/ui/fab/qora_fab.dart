@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qora_devtools_overlay/src/ui/fab/fab_badge.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_shadows.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 
 /// Floating action button that opens the Qora DevTools overlay panel.
 ///
@@ -15,8 +16,8 @@ class QoraFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 24,
-      right: 16,
+      bottom: DevtoolsSpacing.xxl,
+      right: DevtoolsSpacing.lg,
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(

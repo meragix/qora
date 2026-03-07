@@ -2,24 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/layout/panel_header.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/layout/panel_body.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 
 /// The main DevTools panel — a dark sheet anchored to the bottom of the screen.
-class QoraPanel extends StatelessWidget {
+///
+/// The expand button in [PanelHeader] toggles between 60 % height (normal)
+/// and 95 % height (expanded), animated with [AnimatedPositioned].
+class QoraPanel extends StatefulWidget {
   final VoidCallback onClose;
 
   const QoraPanel({super.key, required this.onClose});
 
   @override
+  State<QoraPanel> createState() => _QoraPanelState();
+}
+
+class _QoraPanelState extends State<QoraPanel> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.sizeOf(context).height * 0.6;
-    return Positioned(
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final height = screenHeight * (_expanded ? 0.95 : 0.60);
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
       bottom: 0,
       left: 0,
       right: 0,
       height: height,
       child: Material(
         color: DevtoolsColors.panelBackground,
-        elevation: 8,
+        elevation: DevtoolsSpacing.sm,
         child: Theme(
           data: ThemeData(
             useMaterial3: true,
