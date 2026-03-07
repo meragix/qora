@@ -32,6 +32,7 @@ class _PanelBodyState extends State<PanelBody> {
 
       // ── Col 1 : Queries / Mutations list ─────────────────────────────────
       listColumn: LeftPanel(
+        onTabChanged: (index) => setState(() => _showQueryInspector = index == 0),
         onQueryTap: (query) {
           context.read<QueryInspectorNotifier>().select(query);
           final isMobile = MediaQuery.sizeOf(context).width < kMobileBreakpoint;

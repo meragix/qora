@@ -33,7 +33,7 @@ class DevtoolsTypography {
 
   static const TextStyle small = TextStyle(
     fontSize: sm,
-    color: DevtoolsColors.textPrimary,
+    color: DevtoolsColors.textDisabled,
   );
 
   static const TextStyle smallMuted = TextStyle(
@@ -62,9 +62,9 @@ class DevtoolsTypography {
   // ---------------------------------------------------------------------------
 
   static const TextStyle queryKey = TextStyle(
-    fontSize: lg,
+    fontSize: md,
     fontFamily: 'monospace',
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     color: DevtoolsColors.textPrimary,
   );
 

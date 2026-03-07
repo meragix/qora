@@ -15,6 +15,7 @@ class PanelHeader extends StatelessWidget {
     final activeCount = context.watch<QueriesNotifier>().activeQueryCount;
 
     return Container(
+      color: DevtoolsColors.background,
       height: DevtoolsSpacing.panelHeaderHeight,
       padding: const EdgeInsets.symmetric(horizontal: DevtoolsSpacing.lg),
       child: Row(

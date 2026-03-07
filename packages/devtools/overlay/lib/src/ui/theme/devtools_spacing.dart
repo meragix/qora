@@ -27,7 +27,7 @@ class DevtoolsSpacing {
   static const double iconGap = 8;
 
   // Search bar
-  static const double searchBarHeight = 36;
+  static const double searchBarHeight = 38;
   static const double searchBarPadding = 12;
 
   // Tabs

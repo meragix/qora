@@ -32,6 +32,21 @@ class DevtoolsColors {
   static const blue400 = Color(0xFF60A5FA);
   static const red400 = Color(0xFFF87171);
 
+    //  status: {
+  //     fresh: '#10b981',     // emerald-500
+  //     stale: '#f59e0b',     // amber-500
+  //     fetching: '#06b6d4',  // cyan-500
+  //     error: '#ef4444',     // red-500
+  //   },
+//   export const EVENT_COLORS = {
+//   QueryCreated: 'text-slate-400',
+//   FetchStarted: 'text-cyan-400',
+//   FetchSuccess: 'text-emerald-400',
+//   FetchError: 'text-red-400',
+//   Invalidated: 'text-amber-400',
+//   GarbageCollected: 'text-slate-500',
+// } as const;
+
   // ---------------------------------------------------------------------------
   // Panel Layout
   // ---------------------------------------------------------------------------
@@ -71,7 +86,7 @@ class DevtoolsColors {
   // ---------------------------------------------------------------------------
 
   /// Primary readable text
-  static const textPrimary = zinc100;
+  static const textPrimary = zinc200;
 
   /// Secondary text (metadata)
   static const textSecondary = zinc300;

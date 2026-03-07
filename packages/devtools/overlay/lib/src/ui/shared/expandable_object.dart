@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 /// Collapsible `> Object(N)` row used in the Mutation Inspector panel.
 ///
@@ -25,12 +26,9 @@ class _ExpandableObjectState extends State<ExpandableObject> {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor =
-        widget.isError ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0);
-    final previewColor =
-        widget.isError ? const Color(0xFFEF4444) : const Color(0xFF94A3B8);
-    final iconColor =
-        widget.isError ? const Color(0xFFEF4444) : const Color(0xFF64748B);
+    final labelColor = widget.isError ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0);
+    final previewColor = widget.isError ? const Color(0xFFEF4444) : const Color(0xFF94A3B8);
+    final iconColor = widget.isError ? const Color(0xFFEF4444) : const Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,11 +45,7 @@ class _ExpandableObjectState extends State<ExpandableObject> {
               const SizedBox(width: 4),
               Text(
                 widget.label,
-                style: TextStyle(
-                  color: labelColor,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                ),
+                style: DevtoolsTypography.code.copyWith(color: labelColor),
               ),
             ],
           ),
@@ -61,11 +55,7 @@ class _ExpandableObjectState extends State<ExpandableObject> {
             padding: const EdgeInsets.only(left: 18, top: 4, bottom: 2),
             child: Text(
               widget.preview!,
-              style: TextStyle(
-                color: previewColor,
-                fontSize: 11,
-                fontFamily: 'monospace',
-              ),
+              style: DevtoolsTypography.code.copyWith(color: previewColor),
             ),
           ),
       ],

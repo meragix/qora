@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/breadcrumb_key.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/status_badge.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class MutationRow extends StatelessWidget {
   final MutationEvent mutation;
   final VoidCallback onTap;
+  final bool isActive;
 
-  const MutationRow({super.key, required this.mutation, required this.onTap});
+  const MutationRow({
+    super.key,
+    required this.mutation,
+    required this.onTap,
+    this.isActive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      hoverColor: DevtoolsColors.rowHover,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isActive ? DevtoolsColors.rowSelected : Colors.transparent,
+          border: Border(
+            left: isActive
+                ? const BorderSide(color: DevtoolsColors.accent, width: 2)
+                : BorderSide.none,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
         child: Row(
           children: [
             Expanded(
@@ -25,8 +41,8 @@ class MutationRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     mutation.id,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
+                    style: TextStyle(
+                      color: DevtoolsColors.textMuted,
                       fontSize: 10,
                       fontFamily: 'monospace',
                     ),

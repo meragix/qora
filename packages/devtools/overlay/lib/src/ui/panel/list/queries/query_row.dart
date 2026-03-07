@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:qora_devtools_overlay/src/ui/shared/breadcrumb_key.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart' show formatQueryKey;
+import 'package:qora_devtools_overlay/utils/query_utils.dart' show formatQueryKey, formatQueryTime;
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
-/// Single row in the Queries panel list.
-///
-/// Displays the [QueryEvent.key] as a [BreadcrumbKey] breadcrumb on the left
-/// and the current status badge on the right.
 class QueryRow extends StatelessWidget {
   final QueryEvent query;
   final VoidCallback onTap;
@@ -116,52 +111,42 @@ class _MetaRow extends StatelessWidget {
     final ageMs = now - query.timestampMs;
     final staleMs = query.staleTimeMs;
     final gcMs = query.gcTimeMs;
-    final isFresh = staleMs != null && staleMs > 0 && ageMs < staleMs;
+    //final isFresh = staleMs != null && staleMs > 0 && ageMs < staleMs;
 
     return Wrap(
       spacing: 10,
       runSpacing: 2,
       children: [
-        _MetaChip(label: 'fetched ', value: _fmtAge(ageMs), icon: LucideIcons.clock),
-        if (query.fetchDurationMs != null)
-          _MetaChip(label: '', value: '${query.fetchDurationMs}ms', icon: LucideIcons.zap),
+        // _MetaChip(label: 'fetched ', value: _fmtAge(ageMs), icon: LucideIcons.clock),
+        // if (query.fetchDurationMs != null)
+        //   _MetaChip(label: '', value: '${query.fetchDurationMs}ms', icon: LucideIcons.zap),
         _MetaChip(
           label: '',
           value: '${query.observerCount}',
-          icon: LucideIcons.eye,
+          icon: LucideIcons.userRound,
         ),
-        _MetaChip(
-          label: isFresh ? 'fresh' : 'stale',
-          value: '',
-          icon: isFresh ? LucideIcons.shieldCheck : LucideIcons.circleAlert,
-          color: isFresh ? DevtoolsColors.statusFresh : DevtoolsColors.statusStale,
-        ),
+        // _MetaChip(
+        //   label: isFresh ? 'fresh' : 'stale',
+        //   value: '',
+        //   icon: isFresh ? LucideIcons.shieldCheck : LucideIcons.circleAlert,
+        //   color: isFresh ? DevtoolsColors.statusFresh : DevtoolsColors.statusStale,
+        // ),
+        if (staleMs != null)
+          _MetaChip(
+            label: 'stale: ',
+            value: formatQueryTime(staleMs),
+            icon: LucideIcons.trash2,
+            color: staleMs <= 0 ? DevtoolsColors.statusStale : null,
+          ),
         if (gcMs != null)
           _MetaChip(
-            label: 'GC ',
-            value: _fmtDuration(gcMs - ageMs),
+            label: 'gc: ',
+            value: formatQueryTime(gcMs - ageMs),
             icon: LucideIcons.trash2,
+            color: gcMs <= 0 ? DevtoolsColors.statusError : null,
           ),
       ],
     );
-  }
-
-  String _fmtAge(int ms) {
-    if (ms < 1000) return 'just now';
-    final s = ms ~/ 1000;
-    if (s < 60) return '${s}s ago';
-    final m = s ~/ 60;
-    if (m < 60) return '${m}m ago';
-    return '${m ~/ 60}h ago';
-  }
-
-  String _fmtDuration(int ms) {
-    if (ms <= 0) return '0s';
-    final s = ms ~/ 1000;
-    if (s < 60) return '${s}s';
-    final m = s ~/ 60;
-    final rem = s % 60;
-    return rem > 0 ? '${m}m ${rem}s' : '${m}m';
   }
 }
 
@@ -175,23 +160,25 @@ class _MetaChip extends StatelessWidget {
     required this.label,
     required this.value,
     this.icon = Icons.info_outline,
-    this.color,
+    this.color = DevtoolsColors.textDisabled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? DevtoolsTypography.queryMeta.color;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: effectiveColor),
+        Icon(icon, size: 13, color: DevtoolsColors.textDisabled),
         const SizedBox(width: 3),
         Text.rich(
           TextSpan(
-            style: DevtoolsTypography.queryMeta.copyWith(color: effectiveColor),
+            style: DevtoolsTypography.queryMeta,
             children: [
               TextSpan(text: label),
-              TextSpan(text: value),
+              TextSpan(
+                text: value,
+                style: DevtoolsTypography.queryMeta.copyWith(color: color),
+              )
             ],
           ),
         ),

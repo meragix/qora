@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 class BreadcrumbKey extends StatelessWidget {
   final String queryKey;
@@ -14,23 +15,11 @@ class BreadcrumbKey extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (var i = 0; i < segs.length; i++) ...[
-          Text(segs[i],
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontFamily: 'monospace',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              )),
+          Text(segs[i], style: DevtoolsTypography.queryKey),
           if (i < segs.length - 1)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                '›',
-                style: TextStyle(
-                  color: Color(0xFF475569),
-                  fontSize: 13,
-                ),
-              ),
+              child: Text('›', style: DevtoolsTypography.queryKey),
             ),
         ],
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/timeline_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
@@ -17,72 +18,77 @@ class TimelineTab extends StatelessWidget {
     final notifier = context.watch<TimelineNotifier>();
     final events = notifier.filteredEvents;
 
-    return Column(children: [
-      // ── Toolbar ────────────────────────────────────────────────
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(children: [
-          Text(
-            'TIMELINE (${events.length} EVENTS)',
-            style: const TextStyle(
-              color: DevtoolsColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const Spacer(),
-          // ── Filter input ───────────────────────────────────────
-          SizedBox(
-            width: 90,
-            height: 26,
-            child: TextField(
-              onChanged: notifier.setFilter,
+    return ColoredBox(
+      color: DevtoolsColors.background,
+      child: Column(children: [
+        // ── Toolbar ────────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(children: [
+            Text(
+              'TIMELINE (${events.length} EVENTS)',
               style: const TextStyle(
-                color: DevtoolsColors.textPrimary,
-                fontSize: 11,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Filter…',
-                hintStyle: const TextStyle(
-                  color: DevtoolsColors.textMuted,
-                  fontSize: 11,
-                ),
-                prefixIcon: const Icon(
-                  Icons.filter_list_rounded,
-                  size: 12,
-                  color: DevtoolsColors.textMuted,
-                ),
-                filled: true,
-                fillColor: DevtoolsColors.inputBackground,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: EdgeInsets.zero,
+                color: DevtoolsColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-          // ── Pause / Resume ─────────────────────────────────────
-          _ToolbarChip(
-            label: notifier.paused ? 'Resume' : 'Pause',
-            onTap: notifier.togglePause,
-          ),
-          const SizedBox(width: 4),
-          // Clear
-          _ToolbarChip(label: 'Clear', onTap: notifier.clear),
-        ]),
-      ),
-      // ── List ───────────────────────────────────────────────────
-      Expanded(
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          itemCount: events.length,
-          itemBuilder: (context, i) => TimelineEventRow(event: events[i]),
+            const Spacer(),
+            // ── Filter input ───────────────────────────────────────
+            // SizedBox(
+            //   width: 90,
+            //   height: 26,
+            //   child: TextField(
+            //     onChanged: notifier.setFilter,
+            //     style: const TextStyle(
+            //       color: DevtoolsColors.textPrimary,
+            //       fontSize: 11,
+            //     ),
+            //     decoration: InputDecoration(
+            //       hintText: 'Filter…',
+            //       hintStyle: const TextStyle(
+            //         color: DevtoolsColors.textMuted,
+            //         fontSize: 11,
+            //       ),
+            //       prefixIcon: const Icon(
+            //         Icons.filter_list_rounded,
+            //         size: 12,
+            //         color: DevtoolsColors.textMuted,
+            //       ),
+            //       filled: true,
+            //       fillColor: DevtoolsColors.inputBackground,
+            //       border: OutlineInputBorder(
+            //         borderRadius: BorderRadius.circular(4),
+            //         borderSide: BorderSide.none,
+            //       ),
+            //       contentPadding: EdgeInsets.zero,
+            //     ),
+            //   ),
+            // ),
+            // const SizedBox(width: 6),
+            // ── Pause / Resume ─────────────────────────────────────
+            _ToolbarChip(
+              label: notifier.paused ? 'Resume' : 'Pause',
+              icon: notifier.paused ? LucideIcons.pause : LucideIcons.play,
+              onTap: notifier.togglePause,
+              backgroundColor: notifier.paused ? DevtoolsColors.statusStale : null,
+            ),
+            const SizedBox(width: 4),
+            // Clear
+            _ToolbarChip(label: 'Clear', icon: LucideIcons.trash2, onTap: notifier.clear),
+          ]),
         ),
-      ),
-    ]);
+        // ── List ───────────────────────────────────────────────────
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            itemCount: events.length,
+            itemBuilder: (context, i) => TimelineEventRow(event: events[i]),
+          ),
+        ),
+      ]),
+    );
   }
 }
 
@@ -90,9 +96,16 @@ class TimelineTab extends StatelessWidget {
 
 class _ToolbarChip extends StatelessWidget {
   final String label;
+  final IconData icon;
   final VoidCallback onTap;
+  final Color? backgroundColor;
 
-  const _ToolbarChip({required this.label, required this.onTap});
+  const _ToolbarChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.backgroundColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -101,16 +114,22 @@ class _ToolbarChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: DevtoolsColors.buttonBackground,
+          color: backgroundColor ?? DevtoolsColors.inputBackground,
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: DevtoolsColors.buttonText,
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          children: [
+            Icon(icon, size: 12),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: DevtoolsColors.buttonText,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
