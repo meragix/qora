@@ -1747,18 +1747,23 @@ class QoraClient implements MutationTracker {
   ///
   /// Resolution order:
   /// 1. [opts.toJson] — explicit serializer, always wins.
-  /// 2. Already JSON-safe (`Map`, `List`, `String`, `num`, `bool`, `null`).
+  /// 2. Recursively walks `List` and `Map` — serializes each element.
   /// 3. Dynamic `toJson()` call — works for `json_serializable`/`freezed` models.
   /// 4. `.toString()` fallback — never throws.
   Object? _serializeForTracker(Object? data, QoraOptions opts) {
     if (opts.toJson != null) return opts.toJson!(data);
-    if (data == null ||
-        data is Map ||
-        data is List ||
-        data is String ||
-        data is num ||
-        data is bool) {
+    return _toJsonSafe(data);
+  }
+
+  Object? _toJsonSafe(Object? data) {
+    if (data == null || data is String || data is num || data is bool) {
       return data;
+    }
+    if (data is List) {
+      return data.map(_toJsonSafe).toList();
+    }
+    if (data is Map) {
+      return data.map((k, v) => MapEntry(k.toString(), _toJsonSafe(v)));
     }
     try {
       return (data as dynamic).toJson();

@@ -38,6 +38,31 @@ class UserDetailScreen extends StatelessWidget {
               ? const _Banner(icon: Icons.wifi_off, label: 'Offline — showing cached data', color: Colors.orange)
               : null;
 
+          if (fetchStatus == FetchStatus.paused && state.dataOrNull == null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off, size: 48, color: Colors.orange),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No internet connection\nNo cached data available.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      onPressed: () => context.qora.invalidate(['users', userId]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           return switch (state) {
             // ── First load ────────────────────────────────────────────────
             Initial() || Loading(previousData: null) => const Center(child: CircularProgressIndicator()),

@@ -25,7 +25,9 @@ class UserListScreen extends StatelessWidget {
       body: QoraBuilder<List<User>>(
         queryKey: const ['users'],
         fetcher: FakeApi.getUsers,
-        options: const QoraOptions(staleTime: Duration(minutes: 5), cacheTime: Duration(minutes: 10)),
+        options: const QoraOptions(
+          staleTime: Duration(minutes: 5), cacheTime: Duration(minutes: 10)
+          ),
         builder: (context, state, fetchStatus) {
           // Top banner: background refetch or offline indicator
           final banner = switch (fetchStatus) {
@@ -37,6 +39,31 @@ class UserListScreen extends StatelessWidget {
             ),
             FetchStatus.idle => const SizedBox.shrink(),
           };
+
+          if (fetchStatus == FetchStatus.paused && state.dataOrNull == null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off, size: 48, color: Colors.orange),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No internet connection\nNo cached data available.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      onPressed: () => context.qora.invalidateWhere((key) => key.firstOrNull == 'users'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
           return switch (state) {
             // ── First load (no cache) ───────────────────────────────────────

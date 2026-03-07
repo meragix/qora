@@ -172,7 +172,10 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                             ),
                             child: Padding(
                               padding: 12.edgeInsetsA,
-                              child: JsonViewer(data: detail.data),
+                              child: JsonViewer(
+                                key: ValueKey(detail.key),
+                                data: detail.data,
+                              ),
                             ),
                           ),
                   ),
