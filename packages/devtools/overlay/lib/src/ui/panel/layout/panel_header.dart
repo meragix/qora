@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 class PanelHeader extends StatelessWidget {
   final VoidCallback onClose;
-  const PanelHeader({super.key, required this.onClose});
+  final VoidCallback onToggleExpand;
+  final bool isExpanded;
+
+  const PanelHeader({
+    super.key,
+    required this.onClose,
+    required this.onToggleExpand,
+    this.isExpanded = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +26,7 @@ class PanelHeader extends StatelessWidget {
     return Container(
       color: DevtoolsColors.background,
       height: DevtoolsSpacing.panelHeaderHeight,
-      padding: const EdgeInsets.symmetric(horizontal: DevtoolsSpacing.lg),
+      padding: 16.edgeInsetsH,
       child: Row(
         children: [
           // Logo Q
@@ -51,11 +60,8 @@ class PanelHeader extends StatelessWidget {
           const Spacer(),
           // Expand
           IconButton(
-            icon: const Icon(
-              LucideIcons.maximize2, // LucideIcons.minimize2 for the opposite icon
-              size: 16,
-            ),
-            onPressed: () {},
+            icon: Icon(isExpanded ? LucideIcons.minimize2 : LucideIcons.maximize2, size: 16),
+            onPressed: onToggleExpand,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           ),

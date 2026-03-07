@@ -5,6 +5,7 @@ import 'package:qora_devtools_overlay/src/domain/query_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/inspector_widgets.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/empty_state.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/json_viewer.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
@@ -65,16 +66,16 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
             children: [
               // ── OVERVIEW ──────────────────────────────────────────────────
               ListView(
-                padding: const EdgeInsets.all(12),
+                padding: 12.edgeInsetsA,
                 children: [
                   // QUERY KEY
                   InspectorSection(
                     label: 'QUERY KEY',
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: [8, 10].edgeInsetsVH,
                       decoration: BoxDecoration(
                         color: DevtoolsColors.panelSecondaryBackground,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: 4.borderRadiusA,
                       ),
                       child: Text(
                         _formatKey(detail.key),
@@ -149,7 +150,7 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
 
               // ── DATA ──────────────────────────────────────────────────────
               ListView(
-                padding: const EdgeInsets.all(12),
+                padding: 12.edgeInsetsA,
                 children: [
                   InspectorSection(
                     label: 'CACHED DATA',

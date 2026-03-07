@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 import 'package:qora_devtools_overlay/utils/query_utils.dart' show formatQueryKey, formatQueryTime;
@@ -34,7 +35,7 @@ class QueryRow extends StatelessWidget {
                 : BorderSide.none,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: [8, 10].edgeInsetsVH,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -89,7 +90,7 @@ class _StatusDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 6),
+      margin: 6.edgeInsetsT,
       width: 10,
       height: 10,
       decoration: BoxDecoration(

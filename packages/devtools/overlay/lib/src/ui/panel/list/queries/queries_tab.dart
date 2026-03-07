@@ -7,6 +7,7 @@ import 'package:qora_devtools_overlay/src/domain/query_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/list/queries/query_row.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/list/queries/query_search_bar.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/empty_state.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/panel_section.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/utils/query_utils.dart';
@@ -24,7 +25,7 @@ class QueriesTab extends StatefulWidget {
 class _QueriesTabState extends State<QueriesTab> {
   final TextEditingController _controller = TextEditingController();
   String _search = '';
-  // Ticks every second to refresh age / GC / stale countdowns.
+  // Ticks every second to refresh stale / gc  countdowns.
   late final Timer _ticker;
 
   @override
@@ -67,7 +68,7 @@ class _QueriesTabState extends State<QueriesTab> {
         ),
         if (filtered.isEmpty)
           Padding(
-            padding: const EdgeInsets.all(32),
+            padding: 32.edgeInsetsA,
             child: EmptyState(message: 'No queries match "$_search".'),
           ),
         Expanded(

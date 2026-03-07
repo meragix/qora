@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
 // Internal shared widgets for the query and mutation inspector panels.
@@ -24,14 +25,16 @@ class InspectorSection extends StatelessWidget {
         children: [
           Text(
             label,
-            style: DevtoolsTypography.queryMeta.copyWith(
-              fontWeight: FontWeight.w700,
+            style: DevtoolsTypography.smallMuted.copyWith(
+              fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
-              color: DevtoolsColors.textMuted,
+              color: DevtoolsColors.textDisabled,
             ),
           ),
           const SizedBox(height: 4),
           child,
+          const SizedBox(height: 4),
+          Divider(height: DevtoolsSpacing.borderWidth),
         ],
       ),
     );
@@ -117,8 +120,7 @@ class InspectorActionButton extends StatelessWidget {
 }
 
 /// Formats a [DateTime] as `HH:mm:ss.mmm` for inspector metadata rows.
-String fmtDateTime(DateTime dt) =>
-    '${dt.hour.toString().padLeft(2, '0')}:'
+String fmtDateTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
     '${dt.minute.toString().padLeft(2, '0')}:'
     '${dt.second.toString().padLeft(2, '0')}.'
     '${dt.millisecond.toString().padLeft(3, '0')}';

@@ -75,7 +75,11 @@ class _QoraPanelState extends State<QoraPanel> {
             ],
             child: Column(
               children: [
-                PanelHeader(onClose: onClose),
+                PanelHeader(
+                  onClose: widget.onClose,
+                  isExpanded: _expanded,
+                  onToggleExpand: () => setState(() => _expanded = !_expanded),
+                ),
                 const Divider(height: 1),
                 const Expanded(child: PanelBody()),
               ],

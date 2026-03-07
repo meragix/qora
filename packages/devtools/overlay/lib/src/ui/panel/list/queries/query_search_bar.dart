@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
@@ -32,7 +33,7 @@ class QuerySearchBar extends StatelessWidget {
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
           isDense: true,
-          contentPadding: const EdgeInsets.all(DevtoolsSpacing.searchBarPadding),
+          contentPadding: DevtoolsSpacing.searchBarPadding.edgeInsetsA,
         ),
       ),
     );
