@@ -94,6 +94,13 @@ abstract interface class QoraTracker {
   /// reflects the actual cache state.
   void onQueryRemoved(String key);
 
+  /// Called when [QoraClient.markStale] silently flags a cache entry stale.
+  ///
+  /// Unlike [onQueryInvalidated], no state transition is pushed to observers
+  /// and no refetch is triggered. DevTools implementations should update the
+  /// query row to show a stale indicator without showing a loading state.
+  void onQueryMarkedStale(String key);
+
   /// Called when a [MutationController] transitions to [MutationPending].
   ///
   /// [id] is the stable controller identifier (e.g. `'mutation_3'`).

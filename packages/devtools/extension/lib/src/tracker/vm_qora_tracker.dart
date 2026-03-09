@@ -165,6 +165,17 @@ class VmTracker implements QoraTracker {
   }
 
   @override
+  void onQueryMarkedStale(String key) {
+    _emit(QueryEvent(
+      eventId: QoraEvent.generateId(),
+      timestampMs: DateTime.now().millisecondsSinceEpoch,
+      type: QueryEventType.updated,
+      key: key,
+      status: 'stale',
+    ));
+  }
+
+  @override
   void onMutationStarted(String id, String key, Object? variables) {
     _emit(MutationEvent.started(id: id, key: key, variables: variables));
   }

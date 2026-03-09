@@ -151,6 +151,24 @@ class OverlayTracker implements QoraTracker {
   }
 
   @override
+  void onQueryMarkedStale(String key) {
+    if (_disposed) return;
+    // Emit an updated event with status 'stale' so QueryRow shows the stale
+    // dot without emitting a timeline fetch entry.
+    _push(
+      _queryHistory,
+      _queryController,
+      QueryEvent(
+        eventId: QoraEvent.generateId(),
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        type: QueryEventType.updated,
+        key: key,
+        status: 'stale',
+      ),
+    );
+  }
+
+  @override
   void onMutationStarted(String id, String key, Object? variables) {
     if (_disposed) return;
     _mutationKeys[id] = key;

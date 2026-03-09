@@ -1007,9 +1007,11 @@ class QoraClient implements MutationTracker {
   void markStale(Object key) {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
+    final sk = _stringKey(normalized);
     final entry = _cache.peek(normalized);
     if (entry != null) {
       entry.markStale();
+      _tracker.onQueryMarkedStale(sk);
       _log('markStale: $normalized');
     }
   }
