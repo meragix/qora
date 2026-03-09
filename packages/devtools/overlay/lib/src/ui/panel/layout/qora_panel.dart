@@ -20,6 +20,38 @@ class QoraPanel extends StatefulWidget {
 class _QoraPanelState extends State<QoraPanel> {
   bool _expanded = false;
 
+  /// Stable [OverlayEntry] held for the lifetime of this widget.
+  ///
+  /// Created once in [initState] so that [markNeedsBuild] can be called
+  /// when [_expanded] changes without remounting the [Overlay].
+  late final OverlayEntry _contentEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentEntry = OverlayEntry(builder: _buildContent);
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return Column(
+      children: [
+        PanelHeader(
+          onClose: widget.onClose,
+          isExpanded: _expanded,
+          onToggleExpand: _toggleExpand,
+        ),
+        const Divider(height: 1),
+        const Expanded(child: PanelBody()),
+      ],
+    );
+  }
+
+  void _toggleExpand() {
+    setState(() => _expanded = !_expanded);
+    // Sync the OverlayEntry's content with the new _expanded value.
+    _contentEntry.markNeedsBuild();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -73,22 +105,10 @@ class _QoraPanelState extends State<QoraPanel> {
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,
             ],
+            // Overlay provides the ancestor required by TextField (and other
+            // focus-aware widgets) for selection handles and autocorrect UI.
             child: Overlay(
-              initialEntries: [
-                OverlayEntry(
-                  builder: (_) => Column(
-                    children: [
-                      PanelHeader(
-                        onClose: widget.onClose,
-                        isExpanded: _expanded,
-                        onToggleExpand: () => setState(() => _expanded = !_expanded),
-                      ),
-                      const Divider(height: 1),
-                      const Expanded(child: PanelBody()),
-                    ],
-                  ),
-                ),
-              ],
+              initialEntries: [_contentEntry],
             ),
           ),
         ),
