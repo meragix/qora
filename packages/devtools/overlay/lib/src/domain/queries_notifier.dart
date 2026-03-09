@@ -24,7 +24,11 @@ class QueriesNotifier extends ChangeNotifier {
       _queries[e.key] = e;
     }
     _sub = _tracker.onQuery.listen((event) {
-      _queries[event.key] = event;
+      if (event.type == QueryEventType.removed) {
+        _queries.remove(event.key);
+      } else {
+        _queries[event.key] = event;
+      }
       notifyListeners();
     });
   }

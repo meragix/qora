@@ -117,6 +117,17 @@ class CacheEntry<T> {
     };
   }
 
+  /// Force this entry into [Failure] state, preserving any [previousData].
+  ///
+  /// Used by [QoraClient.debugSetQueryError] to simulate an error without
+  /// knowing the concrete type T at the call site. Because Dart reifies
+  /// generics, [T] resolves to the actual type parameter of this entry at
+  /// runtime, ensuring [Failure<T>] is type-compatible with the entry's
+  /// broadcast stream.
+  void setError(Object error) {
+    updateState(Failure<T>(error: error, previousData: state.dataOrNull));
+  }
+
   /// Mark this entry as stale by transitioning to [Loading] with the
   /// current data as [previousData], or [Initial] if there is no current data.
   void invalidate() {

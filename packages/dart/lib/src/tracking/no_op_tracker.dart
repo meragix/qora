@@ -65,6 +65,9 @@ final class NoOpTracker implements QoraTracker {
   void onQueryInvalidated(String key) {}
 
   @override
+  void onQueryRemoved(String key) {}
+
+  @override
   void onMutationStarted(String id, String key, Object? variables) {}
 
   @override

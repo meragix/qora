@@ -962,11 +962,11 @@ class QoraClient implements MutationTracker {
   void debugSetQueryError(Object key, Object error) {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
-    final entry = _cache.get<dynamic>(normalized);
+    // Use peek (no LRU touch) and setError (T resolved at runtime) so that
+    // Failure<T> is correctly typed for the entry's broadcast stream.
+    final entry = _cache.peek(normalized);
     if (entry != null) {
-      entry.updateState(
-        Failure<dynamic>(error: error, previousData: entry.state.dataOrNull),
-      );
+      entry.setError(error);
       _log('debugSetQueryError: $normalized');
     }
   }
@@ -987,6 +987,7 @@ class QoraClient implements MutationTracker {
     _pendingRequests.remove(sk);
     _emitFetchingCount();
     _pausedFetches.remove(sk);
+    _tracker.onQueryRemoved(sk);
     _log('Removed: $normalized');
   }
 

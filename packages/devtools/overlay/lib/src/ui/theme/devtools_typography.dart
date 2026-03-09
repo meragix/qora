@@ -64,7 +64,7 @@ class DevtoolsTypography {
   static const TextStyle queryKey = TextStyle(
     fontSize: md,
     fontFamily: 'monospace',
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     color: DevtoolsColors.textPrimary,
   );
 

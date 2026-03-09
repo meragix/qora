@@ -155,6 +155,16 @@ class VmTracker implements QoraTracker {
   }
 
   @override
+  void onQueryRemoved(String key) {
+    _emit(QueryEvent(
+      eventId: QoraEvent.generateId(),
+      timestampMs: DateTime.now().millisecondsSinceEpoch,
+      type: QueryEventType.removed,
+      key: key,
+    ));
+  }
+
+  @override
   void onMutationStarted(String id, String key, Object? variables) {
     _emit(MutationEvent.started(id: id, key: key, variables: variables));
   }

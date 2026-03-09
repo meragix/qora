@@ -87,6 +87,13 @@ abstract interface class QoraTracker {
   /// [key] is the string-serialised normalised key.
   void onQueryInvalidated(String key);
 
+  /// Called when [QoraClient.removeQuery] evicts a cache entry.
+  ///
+  /// [key] is the string-serialised normalised key. DevTools implementations
+  /// should remove the corresponding row from the query list so the UI
+  /// reflects the actual cache state.
+  void onQueryRemoved(String key);
+
   /// Called when a [MutationController] transitions to [MutationPending].
   ///
   /// [id] is the stable controller identifier (e.g. `'mutation_3'`).

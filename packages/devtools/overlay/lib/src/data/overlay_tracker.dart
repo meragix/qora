@@ -81,7 +81,16 @@ class OverlayTracker implements QoraTracker {
 
   @override
   void onQueryFetching(String key) {
-    // Overlay tracks fetch completion only; no-op for the started hook.
+    if (_disposed) return;
+    // Emit a transient loading event so the status dot turns blue immediately.
+    // Not recorded in history — the subsequent onQueryFetched event will be.
+    _queryController.add(QueryEvent(
+      eventId: QoraEvent.generateId(),
+      timestampMs: DateTime.now().millisecondsSinceEpoch,
+      type: QueryEventType.updated,
+      key: key,
+      status: 'loading',
+    ));
   }
 
   @override
@@ -119,8 +128,25 @@ class OverlayTracker implements QoraTracker {
   }
 
   @override
+  void onQueryRemoved(String key) {
+    if (_disposed) return;
+    _cacheState.remove(key);
+    _push(
+      _queryHistory,
+      _queryController,
+      QueryEvent(
+        eventId: QoraEvent.generateId(),
+        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        type: QueryEventType.removed,
+        key: key,
+      ),
+    );
+  }
+
+  @override
   void onQueryInvalidated(String key) {
     if (_disposed) return;
+    _push(_queryHistory, _queryController, QueryEvent.invalidated(key: key));
     _emitTimeline(TimelineEventType.fetchStarted, key);
   }
 
