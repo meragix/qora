@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraInspector.client` — optional `QoraClient` parameter; when provided, the Query Inspector column exposes Refetch, Invalidate, Remove, Mark Stale, and Simulate Error action buttons; omitting it hides the actions section entirely.
+- `OverlayTracker.onQueryRemoved()` — implements the new `QoraTracker` hook; removes the key from `_cacheState` and pushes a `removed` event so `QueriesNotifier` evicts the row immediately.
+- `OverlayTracker.onQueryMarkedStale()` — implements the new `QoraTracker` hook; pushes a `QueryEvent(type: updated, status: 'stale')` so `QueryRow` shows the orange stale dot without emitting a timeline fetch entry.
+- `QueryInspectorNotifier.markStale()` — now calls `client.markStale()` instead of `client.invalidate()`; the action flags the entry stale without triggering an immediate refetch or loading state on active observers.
+
+### Fixed
+
+- `OverlayTracker.onQueryFetching()` — was a no-op; now emits a transient `QueryEvent(type: updated, status: 'loading')` directly to the stream (not history) so the status dot turns blue immediately when a fetch begins.
+- `OverlayTracker.onQueryInvalidated()` — was missing; now pushes a `QueryEvent.invalidated` to both `_queryHistory` and `_queryController` so the dot updates on invalidation.
+- `QueriesNotifier` — now removes the entry from `_queries` when it receives a `removed` event; previously removed queries remained in the list indefinitely.
+- `QueryInspectorNotifier` — now clears `_selected` and calls `notifyListeners()` when the selected query receives a `removed` event; previously the inspector panel continued to show stale metadata after a remove.
+- `QoraPanel` — added an `Overlay` widget ancestor (via a stable `OverlayEntry` created in `initState`) so `TextField` can render focus decorations and selection handles; previously focusing `QuerySearchBar` threw `No Overlay widget found`.
+
 ## [0.2.0] - 2026-03-02
 
 ### Added

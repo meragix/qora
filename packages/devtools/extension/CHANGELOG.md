@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `VmTracker.onQueryRemoved()` — implements the new `QoraTracker` hook; emits a `QueryEvent(type: removed)` to the DevTools UI so the query row is evicted from the cache inspector immediately.
+- `VmTracker.onQueryMarkedStale()` — implements the new `QoraTracker` hook; emits a `QueryEvent(type: updated, status: 'stale')` so the DevTools UI shows the stale indicator without implying an active fetch.
+
 ## [0.2.0] - 2026-03-02
 
 ### Added

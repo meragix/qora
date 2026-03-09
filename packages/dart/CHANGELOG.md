@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `CacheEntry.setError(Object error)` — transitions an entry to `Failure<T>` using the entry's own reified `T`; eliminates the `Failure<dynamic>` cast error that occurred when `debugSetQueryError` used an untyped cache lookup.
+- `CacheEntry.markStale()` — sets an internal `_forcedStale` flag without pushing any state update to observers; `isStale()` now returns `true` whenever `_forcedStale` is set, regardless of `staleTime`; the flag is cleared by `updateState()`.
+- `QoraClient.markStale(Object key)` — silently flags a cache entry stale without transitioning to `Loading` or triggering an immediate refetch; active observers see no change; the next `fetchQuery` / `watchQuery` mount will see `isStale() == true` and trigger an SWR background revalidation.
+- `QoraTracker.onQueryRemoved(String key)` — hook called when `removeQuery` evicts a cache entry; `NoOpTracker` ships an empty override.
+- `QoraTracker.onQueryMarkedStale(String key)` — hook called when `markStale` silently flags an entry; differs from `onQueryInvalidated` in that no state transition or timeline fetch entry is implied; `NoOpTracker` ships an empty override.
+
+### Fixed
+
+- `QoraClient.debugSetQueryError()` — previously called `_cache.get<dynamic>()` and pushed `Failure<dynamic>` into a `StreamController<QoraState<T>>`, causing a `TypeError` at runtime; now uses `_cache.peek()` and delegates to `CacheEntry.setError()` so the `Failure` is instantiated with the correct reified `T`.
+- `QoraClient.removeQuery()` — did not notify the tracker; now calls `_tracker.onQueryRemoved(sk)` so DevTools overlays remove the corresponding row immediately.
+
 ## [0.7.0] - 2026-03-03
 
 ### Added
