@@ -34,3 +34,9 @@ String formatQueryTime(int ms) {
 
   return '${minutes}m ${seconds}s';
 }
+
+/// Formats a [DateTime] as `HH:mm:ss.mmm` for inspector metadata rows.
+String fmtDateTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
+    '${dt.minute.toString().padLeft(2, '0')}:'
+    '${dt.second.toString().padLeft(2, '0')}.'
+    '${dt.millisecond.toString().padLeft(3, '0')}';

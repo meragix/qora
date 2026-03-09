@@ -18,8 +18,14 @@ enum TimelineEventType {
   /// A query fetch request was initiated.
   fetchStarted,
 
+  /// A query fetch completed successfully.
+  fetchSuccess,
+
   /// A query fetch request failed.
   fetchError,
+
+  /// A query was marked stale and will be re-fetched on next access.
+  queryInvalidated,
 
   /// A new query key was inserted into the cache.
   queryCreated,
@@ -37,7 +43,9 @@ enum TimelineEventType {
         TimelineEventType.mutationSuccess => 'Mutation Success',
         TimelineEventType.mutationError => 'Mutation Error',
         TimelineEventType.fetchStarted => 'Fetch Started',
+        TimelineEventType.fetchSuccess => 'Fetch Success',
         TimelineEventType.fetchError => 'Fetch Error',
+        TimelineEventType.queryInvalidated => 'Invalidated',
         TimelineEventType.queryCreated => 'Query Created',
         TimelineEventType.cacheCleared => 'Cache Cleared',
         TimelineEventType.queryCancelled => 'Query Cancelled',
@@ -65,10 +73,16 @@ class TimelineEvent {
   /// Wall-clock time at which the event was recorded.
   final DateTime timestamp;
 
+  /// Elapsed milliseconds between the paired start event and this completion
+  /// event. Set on [TimelineEventType.fetchSuccess], [fetchError],
+  /// [mutationSuccess], and [mutationError]. `null` for all other types.
+  final int? duration;
+
   const TimelineEvent({
     required this.type,
     this.key,
     this.mutationId,
     required this.timestamp,
+    this.duration,
   });
 }

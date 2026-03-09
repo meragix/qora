@@ -59,6 +59,10 @@ class OverlayTracker implements QoraTracker {
   // Tracks mutation id → query key for settled events (key not provided by interface)
   final _mutationKeys = <String, String>{};
 
+  // Start timestamps (ms since epoch) for in-flight fetches and mutations.
+  final _fetchStartMs = <String, int>{};
+  final _mutationStartMs = <String, int>{};
+
   // First-seen timestamp per query key (ms since epoch).
   final _queryCreatedAt = <String, int>{};
 
@@ -86,6 +90,8 @@ class OverlayTracker implements QoraTracker {
   void onQueryFetching(String key) {
     if (_disposed) return;
     final now = DateTime.now().millisecondsSinceEpoch;
+    final isNew = !_queryCreatedAt.containsKey(key);
+    _fetchStartMs[key] = now;
     // Emit a transient loading event so the status dot turns blue immediately.
     // Not recorded in history — the subsequent onQueryFetched event will be.
     _queryController.add(QueryEvent(
@@ -96,6 +102,10 @@ class OverlayTracker implements QoraTracker {
       status: 'loading',
       createdAtMs: _createdAt(key, now),
     ));
+    _emitTimeline(
+      isNew ? TimelineEventType.queryCreated : TimelineEventType.fetchStarted,
+      key,
+    );
   }
 
   @override
@@ -126,7 +136,14 @@ class OverlayTracker implements QoraTracker {
       status: status?.toString() ?? 'success',
       updatedAtMs: DateTime.now().millisecondsSinceEpoch,
     );
-    _emitTimeline(TimelineEventType.fetchStarted, key);
+    final isError = status?.toString() == 'error';
+    final startMs = _fetchStartMs.remove(key);
+    final duration = startMs != null ? now - startMs : null;
+    _emitTimeline(
+      isError ? TimelineEventType.fetchError : TimelineEventType.fetchSuccess,
+      key,
+      duration: duration,
+    );
   }
 
   @override
@@ -168,7 +185,7 @@ class OverlayTracker implements QoraTracker {
         createdAtMs: _queryCreatedAt[key],
       ),
     );
-    _emitTimeline(TimelineEventType.fetchStarted, key);
+    _emitTimeline(TimelineEventType.queryInvalidated, key);
   }
 
   @override
@@ -195,6 +212,7 @@ class OverlayTracker implements QoraTracker {
   void onMutationStarted(String id, String key, Object? variables) {
     if (_disposed) return;
     _mutationKeys[id] = key;
+    _mutationStartMs[id] = DateTime.now().millisecondsSinceEpoch;
     final event = MutationEvent.started(id: id, key: key, variables: variables);
     _push(_mutationHistory, _mutationController, event);
     _emitTimeline(TimelineEventType.mutationStarted, key, id: id);
@@ -204,6 +222,10 @@ class OverlayTracker implements QoraTracker {
   void onMutationSettled(String id, bool success, Object? result) {
     if (_disposed) return;
     final key = _mutationKeys[id] ?? '';
+    final startMs = _mutationStartMs.remove(id);
+    final duration = startMs != null
+        ? DateTime.now().millisecondsSinceEpoch - startMs
+        : null;
     final event = MutationEvent.settled(
       id: id,
       key: key,
@@ -217,6 +239,7 @@ class OverlayTracker implements QoraTracker {
           : TimelineEventType.mutationError,
       null,
       id: id,
+      duration: duration,
     );
   }
 
@@ -252,6 +275,8 @@ class OverlayTracker implements QoraTracker {
     _cacheState.clear();
     _mutationKeys.clear();
     _queryCreatedAt.clear();
+    _fetchStartMs.clear();
+    _mutationStartMs.clear();
   }
 
   // ── Internals ───────────────────────────────────────────────────────────────
@@ -261,12 +286,13 @@ class OverlayTracker implements QoraTracker {
   int _createdAt(String key, int now) =>
       _queryCreatedAt.putIfAbsent(key, () => now);
 
-  void _emitTimeline(TimelineEventType type, String? key, {String? id}) {
+  void _emitTimeline(TimelineEventType type, String? key, {String? id, int? duration}) {
     final event = TimelineEvent(
       type: type,
       key: key,
       mutationId: id,
       timestamp: DateTime.now(),
+      duration: duration,
     );
     if (_timelineHistory.length >= _kMaxEvents) _timelineHistory.removeFirst();
     _timelineHistory.addLast(event);
