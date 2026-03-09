@@ -21,6 +21,7 @@ void main() {
   runApp(
     QoraInspector(
       tracker: tracker,
+      client: kDebugMode ? qoraClient : null,
       child: MyApp(qoraClient: qoraClient),
     ),
   );
