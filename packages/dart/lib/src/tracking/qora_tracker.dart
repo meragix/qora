@@ -72,6 +72,7 @@ abstract interface class QoraTracker {
     int? staleTimeMs,
     int? gcTimeMs,
     int observerCount = 0,
+    int? retryCount,
   });
 
   /// Called when a fetch was cancelled via [CancelToken] — either before the

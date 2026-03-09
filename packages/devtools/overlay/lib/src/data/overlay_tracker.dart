@@ -59,6 +59,9 @@ class OverlayTracker implements QoraTracker {
   // Tracks mutation id → query key for settled events (key not provided by interface)
   final _mutationKeys = <String, String>{};
 
+  // First-seen timestamp per query key (ms since epoch).
+  final _queryCreatedAt = <String, int>{};
+
   bool _disposed = false;
 
   // ── Public streams ──────────────────────────────────────────────────────────
@@ -82,14 +85,16 @@ class OverlayTracker implements QoraTracker {
   @override
   void onQueryFetching(String key) {
     if (_disposed) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
     // Emit a transient loading event so the status dot turns blue immediately.
     // Not recorded in history — the subsequent onQueryFetched event will be.
     _queryController.add(QueryEvent(
       eventId: QoraEvent.generateId(),
-      timestampMs: DateTime.now().millisecondsSinceEpoch,
+      timestampMs: now,
       type: QueryEventType.updated,
       key: key,
       status: 'loading',
+      createdAtMs: _createdAt(key, now),
     ));
   }
 
@@ -101,8 +106,10 @@ class OverlayTracker implements QoraTracker {
     int? staleTimeMs,
     int? gcTimeMs,
     int observerCount = 0,
+    int? retryCount,
   }) {
     if (_disposed) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
     final event = QueryEvent.fetched(
       key: key,
       status: status,
@@ -110,6 +117,8 @@ class OverlayTracker implements QoraTracker {
       staleTimeMs: staleTimeMs,
       gcTimeMs: gcTimeMs,
       observerCount: observerCount,
+      createdAtMs: _createdAt(key, now),
+      retryCount: retryCount,
     );
     _push(_queryHistory, _queryController, event);
     _cacheState[key] = QuerySnapshot(
@@ -131,6 +140,7 @@ class OverlayTracker implements QoraTracker {
   void onQueryRemoved(String key) {
     if (_disposed) return;
     _cacheState.remove(key);
+    _queryCreatedAt.remove(key);
     _push(
       _queryHistory,
       _queryController,
@@ -146,13 +156,25 @@ class OverlayTracker implements QoraTracker {
   @override
   void onQueryInvalidated(String key) {
     if (_disposed) return;
-    _push(_queryHistory, _queryController, QueryEvent.invalidated(key: key));
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _push(
+      _queryHistory,
+      _queryController,
+      QueryEvent(
+        eventId: QoraEvent.generateId(),
+        timestampMs: now,
+        type: QueryEventType.invalidated,
+        key: key,
+        createdAtMs: _queryCreatedAt[key],
+      ),
+    );
     _emitTimeline(TimelineEventType.fetchStarted, key);
   }
 
   @override
   void onQueryMarkedStale(String key) {
     if (_disposed) return;
+    final now = DateTime.now().millisecondsSinceEpoch;
     // Emit an updated event with status 'stale' so QueryRow shows the stale
     // dot without emitting a timeline fetch entry.
     _push(
@@ -160,10 +182,11 @@ class OverlayTracker implements QoraTracker {
       _queryController,
       QueryEvent(
         eventId: QoraEvent.generateId(),
-        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        timestampMs: now,
         type: QueryEventType.updated,
         key: key,
         status: 'stale',
+        createdAtMs: _queryCreatedAt[key],
       ),
     );
   }
@@ -228,9 +251,15 @@ class OverlayTracker implements QoraTracker {
     _timelineHistory.clear();
     _cacheState.clear();
     _mutationKeys.clear();
+    _queryCreatedAt.clear();
   }
 
   // ── Internals ───────────────────────────────────────────────────────────────
+
+  /// Returns the first-seen timestamp for [key], recording [now] if this is
+  /// the first time the key is observed.
+  int _createdAt(String key, int now) =>
+      _queryCreatedAt.putIfAbsent(key, () => now);
 
   void _emitTimeline(TimelineEventType type, String? key, {String? id}) {
     final event = TimelineEvent(

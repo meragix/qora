@@ -1504,7 +1504,8 @@ class QoraClient implements MutationTracker {
     _tracker.onQueryFetching(sk);
 
     final future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
-      (data) {
+      (result) {
+        final data = result.value;
         // Mid-flight cancellation — discard result, restore pre-fetch state.
         if (cancelToken?.isCancelled == true) {
           entry.updateState(previousState);
@@ -1524,6 +1525,7 @@ class QoraClient implements MutationTracker {
           staleTimeMs: opts.staleTime.inMilliseconds,
           gcTimeMs: opts.cacheTime.inMilliseconds,
           observerCount: entry.subscriberCount,
+          retryCount: result.attempts,
         );
         onFetchSuccess<T>(key, data);
         _pendingRequests.remove(sk);
@@ -1610,7 +1612,7 @@ class QoraClient implements MutationTracker {
   ///
   /// Each retry is delayed by exponential backoff computed via
   /// [QoraOptions.getRetryDelay].
-  Future<T> _executeWithRetry<T>({
+  Future<({T value, int attempts})> _executeWithRetry<T>({
     required List<dynamic> key,
     required Future<T> Function() fetcher,
     required QoraOptions opts,
@@ -1621,7 +1623,8 @@ class QoraClient implements MutationTracker {
     while (attempt <= opts.retryCount) {
       try {
         _log('Fetching $key (attempt ${attempt + 1}/${opts.retryCount + 1})');
-        return await fetcher();
+        final value = await fetcher();
+        return (value: value, attempts: attempt);
       } catch (error) {
         lastError = error;
         if (attempt < opts.retryCount) {

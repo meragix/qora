@@ -112,6 +112,17 @@ final class QueryEvent extends QoraEvent {
   /// Corresponds to how many widgets/consumers are watching this query.
   final int observerCount;
 
+  /// Timestamp (ms since epoch) when this query key was first observed by the
+  /// tracker. Populated by [OverlayTracker] / [VmTracker] from an internal
+  /// first-seen map. `null` for events emitted by older runtimes.
+  final int? createdAtMs;
+
+  /// Configured maximum retry count from [QoraOptions.retryCount].
+  ///
+  /// `null` when not provided (e.g. for non-fetch events such as `invalidated`
+  /// or `removed`). Used by DevTools to display the retry policy per query.
+  final int? retryCount;
+
   /// Creates a query event.
   ///
   /// Prefer the named factories ([QueryEvent.fetched], [QueryEvent.invalidated])
@@ -131,6 +142,8 @@ final class QueryEvent extends QoraEvent {
     this.staleTimeMs,
     this.gcTimeMs,
     this.observerCount = 0,
+    this.createdAtMs,
+    this.retryCount,
   }) : super(kind: 'query.${type.name}');
 
   /// Helper constructor for `query.fetched`.
@@ -148,6 +161,8 @@ final class QueryEvent extends QoraEvent {
     int? staleTimeMs,
     int? gcTimeMs,
     int observerCount = 0,
+    int? createdAtMs,
+    int? retryCount,
   }) {
     return QueryEvent(
       eventId: QoraEvent.generateId(),
@@ -164,6 +179,8 @@ final class QueryEvent extends QoraEvent {
       staleTimeMs: staleTimeMs,
       gcTimeMs: gcTimeMs,
       observerCount: observerCount,
+      createdAtMs: createdAtMs,
+      retryCount: retryCount,
     );
   }
 
@@ -212,6 +229,8 @@ final class QueryEvent extends QoraEvent {
       staleTimeMs: json['staleTimeMs'] as int?,
       gcTimeMs: json['gcTimeMs'] as int?,
       observerCount: (json['observerCount'] as int?) ?? 0,
+      createdAtMs: json['createdAtMs'] as int?,
+      retryCount: json['retryCount'] as int?,
     );
   }
 
@@ -231,5 +250,7 @@ final class QueryEvent extends QoraEvent {
         'staleTimeMs': staleTimeMs,
         'gcTimeMs': gcTimeMs,
         'observerCount': observerCount,
+        'createdAtMs': createdAtMs,
+        'retryCount': retryCount,
       };
 }

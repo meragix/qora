@@ -136,16 +136,54 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InspectorMetaRow('Updated At', fmtDateTime(detail.updatedAt)),
-                        if (detail.staleAt != null) InspectorMetaRow('Stale At', fmtDateTime(detail.staleAt!)),
+                        if (detail.createdAt != null) InspectorMetaRow('Created At:', fmtDateTime(detail.createdAt!)),
+                        InspectorMetaRow('Updated At:', fmtDateTime(detail.updatedAt)),
+                        if (detail.staleAt != null) InspectorMetaRow('Stale At:', fmtDateTime(detail.staleAt!)),
                         if (detail.cacheTimeMs != null)
                           InspectorMetaRow(
-                            'Cache Time',
+                            'Cache Time:',
                             '${(detail.cacheTimeMs! / 1000).round()}s',
                           ),
-                        InspectorMetaRow('Observers', '${detail.observerCount}'),
                         if (detail.fetchDurationMs != null)
-                          InspectorMetaRow('Fetch Duration', '${detail.fetchDurationMs}ms'),
+                          InspectorMetaRow('Fetch Duration:', '${detail.fetchDurationMs}ms'),
+                        if (detail.retryCount != null) InspectorMetaRow('Retry Count:', '${detail.retryCount}'),
+                      ],
+                    ),
+                  ),
+
+                  // STATE MACHINE
+                  InspectorSection(
+                    label: 'STATE MACHINE',
+                    showDivider: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Builder(builder: (context) {
+                          final isFetching = detail.status == 'loading';
+                          final isStale = (detail.staleAt != null && DateTime.now().isAfter(detail.staleAt!)) ||
+                              detail.status == 'stale';
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              InspectorMetaRow(
+                                'Is Fetching:',
+                                isFetching ? 'true' : 'false',
+                                valueColor: isFetching ? DevtoolsColors.blue400 : DevtoolsColors.textDisabled,
+                              ),
+                              InspectorMetaRow(
+                                'Is Invalidated:',
+                                detail.isInvalidated ? 'true' : 'false',
+                                valueColor:
+                                    detail.isInvalidated ? DevtoolsColors.highlight : DevtoolsColors.textDisabled,
+                              ),
+                              InspectorMetaRow(
+                                'Is Stale:',
+                                isStale ? 'true' : 'false',
+                                valueColor: isStale ? DevtoolsColors.statusStale : DevtoolsColors.textDisabled,
+                              ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -158,7 +196,7 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                 children: [
                   InspectorSection(
                     label: 'CACHED DATA',
-                    shwowDivider: false,
+                    showDivider: false,
                     child: detail.hasLargePayload
                         ? Text(
                             'Large payload — pull via DevTools extension',

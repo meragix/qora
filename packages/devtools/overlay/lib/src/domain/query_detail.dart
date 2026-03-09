@@ -24,6 +24,11 @@ class QueryDetail {
   /// Wall-clock fetch duration in milliseconds, or `null` when not available.
   final int? fetchDurationMs;
 
+  /// Timestamp when this query key was first observed by the tracker.
+  /// `null` when not provided by the event (e.g. for very first events before
+  /// the tracker recorded it).
+  final DateTime? createdAt;
+
   /// Timestamp at which data was last fetched.
   final DateTime updatedAt;
 
@@ -36,6 +41,20 @@ class QueryDetail {
   /// Number of active observers at the time of the last fetch.
   final int observerCount;
 
+  /// Configured maximum retry count from [QoraOptions.retryCount], or `null`
+  /// when not provided by the event (e.g. non-fetch events).
+  final int? retryCount;
+
+  /// The type of the last event received for this query.
+  final QueryEventType eventType;
+
+  /// Sticky invalidated flag managed by [QueryInspectorNotifier].
+  ///
+  /// Remains `true` even after the invalidate triggers an immediate refetch
+  /// (which would overwrite [eventType]). Cleared only when a non-loading
+  /// fetch result arrives.
+  final bool isInvalidated;
+
   const QueryDetail({
     required this.key,
     required this.status,
@@ -43,14 +62,18 @@ class QueryDetail {
     this.dataPreview,
     this.hasLargePayload = false,
     this.fetchDurationMs,
+    this.createdAt,
     required this.updatedAt,
     this.staleAt,
     this.cacheTimeMs,
     this.observerCount = 0,
+    this.retryCount,
+    this.eventType = QueryEventType.updated,
+    this.isInvalidated = false,
   });
 
   /// Builds a [QueryDetail] from the latest [QueryEvent] snapshot.
-  factory QueryDetail.fromEvent(QueryEvent event) {
+  factory QueryDetail.fromEvent(QueryEvent event, {bool isInvalidated = false}) {
     final rawData = event.data;
     final preview = rawData != null ? _truncate(rawData.toString(), max: 300) : null;
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(event.timestampMs);
@@ -65,10 +88,16 @@ class QueryDetail {
       dataPreview: preview,
       hasLargePayload: event.hasLargePayload,
       fetchDurationMs: event.fetchDurationMs,
+      createdAt: event.createdAtMs != null
+          ? DateTime.fromMillisecondsSinceEpoch(event.createdAtMs!)
+          : null,
       updatedAt: updatedAt,
       staleAt: staleAt,
       cacheTimeMs: event.gcTimeMs,
       observerCount: event.observerCount,
+      retryCount: event.retryCount,
+      eventType: event.type,
+      isInvalidated: isInvalidated,
     );
   }
 

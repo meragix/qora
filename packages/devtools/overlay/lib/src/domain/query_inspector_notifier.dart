@@ -19,12 +19,20 @@ class QueryInspectorNotifier extends ChangeNotifier {
 
   QueryEvent? _selected;
 
+  /// Sticky flag: `true` from the moment the selected query is invalidated
+  /// until a non-loading fetch result (success or error) clears it.
+  ///
+  /// Tracked separately because `invalidate()` triggers an immediate refetch
+  /// that replaces the `invalidated` event before the UI can render it.
+  bool _isInvalidated = false;
+
   /// The currently selected query event, or `null` when nothing is selected.
   QueryEvent? get selected => _selected;
 
   /// View-model for the inspector panel, derived from [selected].
-  QueryDetail? get detail =>
-      _selected == null ? null : QueryDetail.fromEvent(_selected!);
+  QueryDetail? get detail => _selected == null
+      ? null
+      : QueryDetail.fromEvent(_selected!, isInvalidated: _isInvalidated);
 
   /// Whether action buttons should be enabled.
   bool get hasClient => _client != null;
@@ -34,7 +42,14 @@ class QueryInspectorNotifier extends ChangeNotifier {
       if (_selected == null || event.key != _selected!.key) return;
       if (event.type == QueryEventType.removed) {
         _selected = null;
+        _isInvalidated = false;
       } else {
+        if (event.type == QueryEventType.invalidated) {
+          _isInvalidated = true;
+        } else if (event.type == QueryEventType.fetched &&
+            event.status != 'loading') {
+          _isInvalidated = false;
+        }
         _selected = event;
       }
       notifyListeners();
