@@ -967,6 +967,7 @@ class QoraClient implements MutationTracker {
     final entry = _cache.peek(normalized);
     if (entry != null) {
       entry.setError(error);
+      _tracker.onQueryFetched(_stringKey(normalized), null, 'error');
       _log('debugSetQueryError: $normalized');
     }
   }
@@ -989,6 +990,28 @@ class QoraClient implements MutationTracker {
     _pausedFetches.remove(sk);
     _tracker.onQueryRemoved(sk);
     _log('Removed: $normalized');
+  }
+
+  /// Marks the query for [key] as stale without notifying active observers.
+  ///
+  /// Unlike [invalidate], this does **not** transition the entry to a
+  /// [Loading] state and does **not** trigger an immediate refetch on mounted
+  /// [QoraBuilder] widgets.  The stale flag is consumed on the next
+  /// [fetchQuery] or [watchQuery] mount — the SWR logic will then trigger a
+  /// background revalidation while the UI continues to show the previous data.
+  ///
+  /// ```dart
+  /// // Mark stale silently; the widget refetches on its next mount/interaction.
+  /// client.markStale(['users', userId]);
+  /// ```
+  void markStale(Object key) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    final entry = _cache.peek(normalized);
+    if (entry != null) {
+      entry.markStale();
+      _log('markStale: $normalized');
+    }
   }
 
   /// Remove all cached queries and cancel all pending requests.

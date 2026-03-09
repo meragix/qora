@@ -44,6 +44,7 @@ class CacheEntry<T> {
 
   final StreamController<QoraState<T>> _controller;
   bool _isDisposed = false;
+  bool _forcedStale = false;
 
   CacheEntry({required QoraState<T> state, DateTime? createdAt})
       : _state = state,
@@ -74,6 +75,7 @@ class CacheEntry<T> {
   void updateState(QoraState<T> newState) {
     if (_isDisposed) return;
     _state = newState;
+    _forcedStale = false;
     lastAccessedAt = DateTime.now();
     if (!_controller.isClosed) {
       _controller.add(newState);
@@ -108,13 +110,25 @@ class CacheEntry<T> {
   /// Returns `true` if the cached data is older than [staleTime].
   ///
   /// - Non-[Success] states are always considered stale.
-  /// - If [staleTime] is `null`, data is **never** stale.
+  /// - If [staleTime] is `null`, data is **never** stale unless [markStale]
+  ///   was called explicitly.
   bool isStale(Duration? staleTime) {
+    if (_forcedStale) return true;
     if (staleTime == null) return false;
     return switch (_state) {
       Success(:final updatedAt) => DateTime.now().difference(updatedAt) > staleTime,
       _ => true,
     };
+  }
+
+  /// Mark this entry as stale without pushing any state update to observers.
+  ///
+  /// Unlike [invalidate], this does **not** transition the state to [Loading]
+  /// and does **not** notify active subscribers. The next [fetchQuery] or
+  /// [watchQuery] mount that calls [isStale] will see the entry as stale and
+  /// trigger a background SWR revalidation.
+  void markStale() {
+    _forcedStale = true;
   }
 
   /// Force this entry into [Failure] state, preserving any [previousData].

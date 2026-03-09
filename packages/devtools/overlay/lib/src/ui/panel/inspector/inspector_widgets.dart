@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
@@ -39,7 +40,7 @@ class InspectorSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           child,
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
           if (shwowDivider) Divider(height: DevtoolsSpacing.borderWidth),
         ],
       ),
@@ -80,7 +81,7 @@ class InspectorMetaRow extends StatelessWidget {
 ///
 /// [accentColor] tints the background and icon — use it to colour-code
 /// actions by severity (blue = safe, orange = warning, red = destructive).
-class InspectorActionButton extends StatelessWidget {
+class InspectorActionButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
@@ -95,30 +96,44 @@ class InspectorActionButton extends StatelessWidget {
   });
 
   @override
+  State<InspectorActionButton> createState() => _InspectorActionButtonState();
+}
+
+class _InspectorActionButtonState extends State<InspectorActionButton> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? DevtoolsColors.accent;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
+          color: _hovered ? widget.accentColor?.withValues(alpha: 0.8) : widget.accentColor,
+          borderRadius: BorderRadius.circular(6),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: DevtoolsTypography.smallMuted.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: 6.borderRadiusA,
+          child: Padding(
+            padding: [4, 8].edgeInsetsVH,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.icon, size: 12, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(
+                  widget.label,
+                  style: DevtoolsTypography.smallMuted.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

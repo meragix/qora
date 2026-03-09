@@ -31,11 +31,13 @@ class QueryInspectorNotifier extends ChangeNotifier {
 
   QueryInspectorNotifier(this._tracker, {QoraClient? client}) : _client = client {
     _sub = _tracker.onQuery.listen((event) {
-      // Auto-update when the selected query key receives a new event.
-      if (_selected != null && event.key == _selected!.key) {
+      if (_selected == null || event.key != _selected!.key) return;
+      if (event.type == QueryEventType.removed) {
+        _selected = null;
+      } else {
         _selected = event;
-        notifyListeners();
       }
+      notifyListeners();
     });
   }
 
@@ -57,7 +59,11 @@ class QueryInspectorNotifier extends ChangeNotifier {
   void remove() => _withKey(_client!.removeQuery);
 
   /// Marks the selected query stale without triggering an immediate refetch.
-  void markStale() => _withKey(_client!.invalidate);
+  ///
+  /// Unlike [invalidate], this does not push a [Loading] state to active
+  /// observers. The query will be revalidated in the background on its next
+  /// access (mount or explicit fetch).
+  void markStale() => _withKey(_client!.markStale);
 
   /// Forces the selected query into a [Failure] state for testing.
   void simulateError() {
