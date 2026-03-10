@@ -34,7 +34,13 @@ enum TimelineEventType {
   cacheCleared,
 
   /// A fetch was cancelled via [CancelToken] before or during the request.
-  queryCancelled;
+  queryCancelled,
+
+  /// A query key was evicted from the cache (GC or explicit removal).
+  queryRemoved,
+
+  /// A query was silently marked stale without triggering a background refetch.
+  queryMarkedStale;
 
   /// Human-readable label shown in the DevTools timeline panel.
   String get displayName => switch (this) {
@@ -49,6 +55,8 @@ enum TimelineEventType {
         TimelineEventType.queryCreated => 'Query Created',
         TimelineEventType.cacheCleared => 'Cache Cleared',
         TimelineEventType.queryCancelled => 'Query Cancelled',
+        TimelineEventType.queryRemoved => 'Query Removed',
+        TimelineEventType.queryMarkedStale => 'Marked Stale',
       };
 }
 

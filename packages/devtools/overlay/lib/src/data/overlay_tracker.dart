@@ -168,6 +168,7 @@ class OverlayTracker implements QoraTracker {
         key: key,
       ),
     );
+    _emitTimeline(TimelineEventType.queryRemoved, key);
   }
 
   @override
@@ -206,6 +207,7 @@ class OverlayTracker implements QoraTracker {
         createdAtMs: _queryCreatedAt[key],
       ),
     );
+    _emitTimeline(TimelineEventType.queryMarkedStale, key);
   }
 
   @override

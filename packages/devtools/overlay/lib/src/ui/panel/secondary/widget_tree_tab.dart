@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 
 /// Widget Tree tab — column 3, second tab of the Mutations panel.
 ///
@@ -13,12 +15,12 @@ class WidgetTreeTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.account_tree_outlined, color: Color(0xFF334155), size: 32),
+          Icon(LucideIcons.listTree, color: DevtoolsColors.textMuted, size: 32),
           SizedBox(height: 8),
           Text(
             'Widget Tree',
             style: TextStyle(
-              color: Color(0xFF475569),
+              color: DevtoolsColors.textMuted,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -26,7 +28,7 @@ class WidgetTreeTab extends StatelessWidget {
           SizedBox(height: 4),
           Text(
             'Coming soon',
-            style: TextStyle(color: Color(0xFF334155), fontSize: 11),
+            style: TextStyle(color: DevtoolsColors.textDisabled, fontSize: 11),
           ),
         ],
       ),

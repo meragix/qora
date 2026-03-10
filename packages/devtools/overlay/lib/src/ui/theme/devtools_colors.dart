@@ -26,13 +26,16 @@ class DevtoolsColors {
   static const zinc900 = Color(0xFF18181B);
   static const zinc950 = Color(0xFF09090b);
 
-  // Status palette (Tailwind)
+  // Palette (Tailwind)
   static const green400 = Color(0xFF4ADE80);
   static const yellow400 = Color(0xFFFACC15);
   static const blue400 = Color(0xFF60A5FA);
   static const red400 = Color(0xFFF87171);
   static const orange400 = Color(0xFFFB923C);
   static const cyan400 = Color(0xFF22D3EE);
+  static const amber400 = Color(0xFFFBBF24);
+  static const emerald400 = Color(0xFF34D399);
+  static const purple400 = Color(0xFFC084FC);
 
   // ---------------------------------------------------------------------------
   // Panel Layout

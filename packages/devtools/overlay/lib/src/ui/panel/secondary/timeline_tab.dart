@@ -8,6 +8,8 @@ import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
+typedef EventStyle = ({IconData icon, Color color});
+
 /// Timeline tab — column 3, first tab of the Mutations panel.
 ///
 /// Shows all [TimelineEvent]s in reverse-chronological order with a filter
@@ -138,13 +140,11 @@ class _TimelineTabState extends State<TimelineTab> {
           // ── List ───────────────────────────────────────────────────
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
               itemCount: events.length,
               itemBuilder: (context, i) => Column(
                 children: [
-                  Divider(height: DevtoolsSpacing.borderWidth),
                   TimelineEventRow(event: events[i]),
-                  if (i < events.length - 1) const Divider(height: DevtoolsSpacing.borderWidth),
+                  const Divider(height: DevtoolsSpacing.borderWidth),
                 ],
               ),
             ),
@@ -165,115 +165,99 @@ class TimelineEventRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color) = _iconForType(event.type);
-    return InkWell(
-      onTap: () {},
-      hoverColor: DevtoolsColors.background.withValues(alpha: 0.5),
-      child: Padding(
-        padding: [8, 16].edgeInsetsVH,
-        child: Row(children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(4),
-              shape: BoxShape.circle,
+    final style = _getEventStyle(event.type);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        mouseCursor: SystemMouseCursors.text,
+        hoverColor: DevtoolsColors.zinc900.withValues(alpha: 0.5),
+        child: Padding(
+          padding: [8, 16].edgeInsetsVH,
+          child: Row(children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: style.color.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(style.icon, size: 12, color: style.color),
             ),
-            child: Icon(icon, size: 12, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      event.type.displayName,
-                      style: const TextStyle(
-                        color: DevtoolsColors.zinc300,
-                        fontSize: 12,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                    if (event.duration != null) ...[
-                      const SizedBox(width: 8),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
                       Text(
-                        '(${event.duration}ms)',
+                        event.type.displayName,
                         style: const TextStyle(
+                          color: DevtoolsColors.zinc300,
+                          fontSize: 12,
                           fontFamily: 'monospace',
-                          fontSize: 10,
-                          color: Color(0xFF71717A), // zinc-500
                         ),
                       ),
+                      if (event.duration != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '(${event.duration}ms)',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 10,
+                            color: DevtoolsColors.textDisabled,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 2),
-                if (event.key != null)
-                  Text(
-                    formatQueryKey(event.key!),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                      color: Color(0xFF71717A),
+                  ),
+                  const SizedBox(height: 2),
+                  if (event.key != null)
+                    Text(
+                      formatQueryKey(event.key!),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 10,
+                        color: DevtoolsColors.textDisabled,
+                      ),
                     ),
-                  ),
-                Text(
-                  fmtDateTime(event.timestamp),
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 10,
-                    color: Color(0xFF52525B), // zinc-600
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Text(
-            _fmtTime(event.timestamp),
-            style: const TextStyle(
-              color: DevtoolsColors.textMuted,
-              fontSize: 10,
-              fontFamily: 'monospace',
+            Text(
+              _fmtTime(event.timestamp),
+              style: const TextStyle(
+                color: DevtoolsColors.textMuted,
+                fontSize: 10,
+                fontFamily: 'monospace',
+              ),
             ),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
 
-  (IconData, Color) _iconForType(TimelineEventType t) => switch (t) {
-        TimelineEventType.optimisticUpdate => (LucideIcons.zap, const Color(0xFFF59E0B)),
-        TimelineEventType.mutationStarted => (LucideIcons.send, const Color(0xFF8B5CF6)),
-        TimelineEventType.mutationSuccess => (LucideIcons.circleCheck, const Color(0xFF22C55E)),
-        TimelineEventType.mutationError => (LucideIcons.circleX, const Color(0xFFEF4444)),
-        TimelineEventType.fetchStarted => (LucideIcons.arrowDownToLine, const Color(0xFF3B82F6)),
-        TimelineEventType.fetchSuccess => (LucideIcons.circleCheck, const Color(0xFF10B981)),
-        TimelineEventType.fetchError => (LucideIcons.cloudOff, const Color(0xFFEF4444)),
-        TimelineEventType.queryInvalidated => (LucideIcons.refreshCw, const Color(0xFFF59E0B)),
-        TimelineEventType.queryCreated => (LucideIcons.circlePlus, const Color(0xFF22C55E)),
-        TimelineEventType.cacheCleared => (LucideIcons.trash2, const Color(0xFF94A3B8)),
-        TimelineEventType.queryCancelled => (LucideIcons.ban, const Color(0xFFF97316)),
-      };
-
-  // EventStyle getEventStyle(EventType type) {
-  //   return switch (type) {
-  //     EventType.queryCreated => (icon: Icons.add, color: const Color(0xFF22D3EE)), // cyan-400
-  //     EventType.fetchStarted => (icon: Icons.play_arrow_rounded, color: const Color(0xFF60A5FA)), // blue-400
-  //     EventType.fetchSuccess => (icon: Icons.check_circle_outline, color: const Color(0xFF4ADE80)), // green-400
-  //     EventType.fetchError => (icon: Icons.cancel_outlined, color: const Color(0xFFF87171)), // red-400
-  //     EventType.invalidated => (icon: Icons.refresh_rounded, color: const Color(0xFFFACC15)), // yellow-400
-  //     EventType.garbageCollected => (icon: Icons.delete_outline, color: const Color(0xFFA1A1AA)), // zinc-400
-  //     EventType.mutationStarted => (icon: Icons.send_rounded, color: const Color(0xFFC084FC)), // purple-400
-  //     EventType.mutationSuccess => (icon: Icons.done_all_rounded, color: const Color(0xFF34D399)), // emerald-400
-  //     EventType.mutationError => (icon: Icons.warning_amber_rounded, color: const Color(0xFFFB923C)), // orange-400
-  //     EventType.optimisticUpdate => (icon: Icons.bolt_rounded, color: const Color(0xFFFBBF24)), // amber-400
-  //   };
-  // }
+  EventStyle _getEventStyle(TimelineEventType type) {
+    return switch (type) {
+      TimelineEventType.queryCreated => (icon: LucideIcons.plus, color: DevtoolsColors.cyan400),
+      TimelineEventType.fetchStarted => (icon: LucideIcons.play, color: DevtoolsColors.blue400),
+      TimelineEventType.fetchSuccess => (icon: LucideIcons.circleCheckBig, color: DevtoolsColors.green400),
+      TimelineEventType.fetchError => (icon: LucideIcons.cloudOff, color: DevtoolsColors.red400),
+      TimelineEventType.queryInvalidated => (icon: LucideIcons.refreshCcw, color: DevtoolsColors.yellow400),
+      TimelineEventType.queryCancelled => (icon: LucideIcons.ban, color: DevtoolsColors.zinc400),
+      TimelineEventType.cacheCleared => (icon: LucideIcons.trash2, color: const Color(0xFF94A3B8)),
+      TimelineEventType.queryRemoved => (icon: LucideIcons.trash, color: DevtoolsColors.red400),
+      TimelineEventType.queryMarkedStale => (icon: LucideIcons.clock, color: DevtoolsColors.yellow400),
+      TimelineEventType.mutationStarted => (icon: LucideIcons.send, color: DevtoolsColors.purple400),
+      TimelineEventType.mutationSuccess => (icon: LucideIcons.checkCheck, color: DevtoolsColors.emerald400),
+      TimelineEventType.mutationError => (icon: LucideIcons.circleX, color: DevtoolsColors.red400),
+      TimelineEventType.optimisticUpdate => (icon: LucideIcons.zap, color: DevtoolsColors.amber400),
+    };
+  }
 
   String _fmtTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}:'
