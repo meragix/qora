@@ -143,15 +143,28 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
 
 class _QoraMutationBuilderState<TData, TVariables, TContext>
     extends State<QoraMutationBuilder<TData, TVariables, TContext>> {
-  late MutationController<TData, TVariables, TContext> _controller;
+  MutationController<TData, TVariables, TContext>? _controller;
   StreamSubscription<MutationState<TData, TVariables>>? _subscription;
   MutationState<TData, TVariables> _state = const MutationIdle<Never, Never>() as MutationState<Never, Never>;
+  QoraClient? _client;
 
   @override
-  void initState() {
-    super.initState();
-    _createController();
-    _subscribe();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final client = QoraScope.maybeOf(context);
+    if (_controller == null) {
+      // First mount: create the controller now that inherited widgets are accessible.
+      _client = client;
+      _createController(client);
+      _subscribe();
+    } else if (client != _client) {
+      // The QoraScope client changed — rebuild the controller against the new client.
+      _client = client;
+      _controller!.dispose();
+      _subscription?.cancel();
+      _createController(client);
+      _subscribe();
+    }
   }
 
   @override
@@ -163,9 +176,9 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
     if (!identical(widget.mutator, oldWidget.mutator) ||
         !identical(widget.options, oldWidget.options) ||
         !identical(widget.metadata, oldWidget.metadata)) {
-      _controller.dispose();
+      _controller!.dispose();
       _subscription?.cancel();
-      _createController();
+      _createController(_client);
       _subscribe();
     }
   }
@@ -173,13 +186,11 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
   @override
   void dispose() {
     _subscription?.cancel();
-    _controller.dispose();
+    _controller!.dispose();
     super.dispose();
   }
 
-  void _createController() {
-    final client = QoraScope.maybeOf(context);
-
+  void _createController(QoraClient? client) {
     _controller = MutationController<TData, TVariables, TContext>(
       mutator: widget.mutator,
       options: widget.options,
@@ -189,11 +200,11 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       isOnline: client != null ? () => client.isOnline : null,
       offlineQueue: client?.offlineMutationQueue,
     );
-    _state = _controller.state;
+    _state = _controller!.state;
   }
 
   void _subscribe() {
-    _subscription = _controller.stream.listen(
+    _subscription = _controller!.stream.listen(
       (state) {
         if (!mounted) return;
         setState(() => _state = state);
@@ -205,7 +216,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
   }
 
   Future<TData?> _mutate(TVariables variables) {
-    return _controller.mutate(variables);
+    return _controller!.mutate(variables);
   }
 
   @override

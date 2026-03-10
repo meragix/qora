@@ -7,6 +7,7 @@ import 'dart:convert';
 ///
 /// Example: `['users', {'id': 1}]` → `'users › {"id":1}'`
 String formatQueryKey(dynamic key) {
+  if (key is String && key.isEmpty) return '';
   final list = key is String ? jsonDecode(key) : key;
 
   if (list is! Iterable) return list.toString();

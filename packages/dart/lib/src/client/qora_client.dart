@@ -1132,11 +1132,13 @@ class QoraClient implements MutationTracker {
 
     // Notify the tracker about mutation lifecycle transitions.
     if (state.isPending) {
-      _tracker.onMutationStarted(
-        id,
-        metadata?['queryKey'] as String? ?? '',
-        state.variablesOrNull,
-      );
+      final rawKey = metadata?['queryKey'];
+      final mutationKey = rawKey == null
+          ? ''
+          : rawKey is String
+              ? rawKey
+              : jsonEncode(rawKey);
+      _tracker.onMutationStarted(id, mutationKey, state.variablesOrNull);
     } else if (state.isSuccess || state.isError) {
       _tracker.onMutationSettled(
         id,
