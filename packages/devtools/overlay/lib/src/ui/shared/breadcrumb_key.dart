@@ -16,7 +16,6 @@ import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 class BreadcrumbKey extends StatelessWidget {
   final String queryKey;
   final TextStyle? style;
-  final Color 
 
   const BreadcrumbKey({super.key, required this.queryKey, this.style});
 
@@ -52,7 +51,7 @@ class BreadcrumbKey extends StatelessWidget {
             const Text(
               '›',
               style: TextStyle(
-                color:  DevtoolsColors.textMuted,
+                color: DevtoolsColors.textMuted,
                 fontSize: 10,
                 fontFamily: 'monospace',
               ),

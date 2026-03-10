@@ -239,7 +239,7 @@ class OverlayTracker implements QoraTracker {
       success
           ? TimelineEventType.mutationSuccess
           : TimelineEventType.mutationError,
-      null,
+      key.isEmpty ? null : key,
       id: id,
       duration: duration,
     );

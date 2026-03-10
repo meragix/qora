@@ -93,6 +93,21 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
 
+  /// Associates a query key with this mutation for DevTools observability.
+  ///
+  /// Accepts the same key shapes as [QoraClient.fetchQuery] — a [List] or
+  /// a [QoraKey]. When provided, the key is visible in the DevTools overlay
+  /// timeline alongside every mutation event (started, success, error).
+  ///
+  /// ```dart
+  /// QoraMutationBuilder(
+  ///   queryKey: ['users'],
+  ///   mutator: (vars) => api.updateUser(vars),
+  ///   builder: (context, state, mutate) { ... },
+  /// )
+  /// ```
+  final Object? queryKey;
+
   /// Arbitrary key-value pairs forwarded to every [MutationEvent] emitted by
   /// this controller.
   ///
@@ -132,6 +147,7 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
     super.key,
     required this.mutator,
     required this.builder,
+    this.queryKey,
     this.options,
     this.metadata,
   });
@@ -175,7 +191,8 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
     // Recreate the controller only if identity-relevant parameters changed.
     if (!identical(widget.mutator, oldWidget.mutator) ||
         !identical(widget.options, oldWidget.options) ||
-        !identical(widget.metadata, oldWidget.metadata)) {
+        !identical(widget.metadata, oldWidget.metadata) ||
+        !identical(widget.queryKey, oldWidget.queryKey)) {
       _controller!.dispose();
       _subscription?.cancel();
       _createController(_client);
@@ -195,12 +212,21 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       mutator: widget.mutator,
       options: widget.options,
       tracker: client,
-      metadata: widget.metadata,
+      metadata: _buildMetadata(),
       // Wire offline support when a QoraScope with connectivity is present.
       isOnline: client != null ? () => client.isOnline : null,
       offlineQueue: client?.offlineMutationQueue,
     );
     _state = _controller!.state;
+  }
+
+  Map<String, Object?>? _buildMetadata() {
+    final key = widget.queryKey;
+    if (key == null && widget.metadata == null) return null;
+    return {
+      if (widget.metadata != null) ...widget.metadata!,
+      if (key != null) 'queryKey': key,
+    };
   }
 
   void _subscribe() {

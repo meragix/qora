@@ -217,17 +217,16 @@ class TimelineEventRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  if (event.key != null)
-                    Text(
-                      formatQueryKey(event.key!),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                        color: DevtoolsColors.textDisabled,
-                      ),
+                  Text(
+                    event.key != null && event.key != '' ? formatQueryKey(event.key!) : event.mutationId ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: DevtoolsColors.textDisabled,
                     ),
+                  ),
                 ],
               ),
             ),

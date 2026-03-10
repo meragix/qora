@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:qora_devtools_overlay/src/ui/shared/breadcrumb_key.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/status_badge.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
+import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class MutationRow extends StatelessWidget {
@@ -25,9 +26,7 @@ class MutationRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive ? DevtoolsColors.rowSelected : Colors.transparent,
           border: Border(
-            left: isActive
-                ? const BorderSide(color: DevtoolsColors.accent, width: 2)
-                : BorderSide.none,
+            left: isActive ? const BorderSide(color: DevtoolsColors.accent, width: 2) : BorderSide.none,
           ),
         ),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
@@ -37,7 +36,11 @@ class MutationRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BreadcrumbKey(queryKey: mutation.key),
+                  //BreadcrumbKey(queryKey: mutation.key),
+                  Text(
+                    mutation.key != '' ? formatQueryKey(mutation.key) : mutation.id,
+                    style: DevtoolsTypography.queryKey,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     mutation.id,
