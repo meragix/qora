@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
@@ -8,10 +10,31 @@ import 'package:qora_devtools_overlay/src/ui/shared/panel_section.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
-class MutationsTab extends StatelessWidget {
+class MutationsTab extends StatefulWidget {
   final void Function(MutationEvent) onMutationTap;
 
   const MutationsTab({super.key, required this.onMutationTap});
+
+  @override
+  State<MutationsTab> createState() => _MutationsTabState();
+}
+
+class _MutationsTabState extends State<MutationsTab> {
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +57,8 @@ class MutationsTab extends StatelessWidget {
                 Divider(height: DevtoolsSpacing.borderWidth),
                 MutationRow(
                   mutation: mutations[i],
-                  isActive: selectedId == mutations[i].id,
-                  onTap: () => onMutationTap(mutations[i]),
+                  isSelected: selectedId == mutations[i].id,
+                  onTap: () => widget.onMutationTap(mutations[i]),
                 ),
                 if (i == mutations.length - 1) Divider(height: DevtoolsSpacing.borderWidth),
               ],

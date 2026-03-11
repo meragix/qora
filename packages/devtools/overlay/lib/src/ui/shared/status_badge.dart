@@ -8,8 +8,7 @@ import 'package:flutter/material.dart';
 /// |-------------|---------------------|---------------------|
 /// | `success`   | dark green          | green               |
 /// | `error`     | dark red            | red                 |
-/// | `pending`   | dark indigo         | purple              |
-/// | `loading`   | dark blue           | blue                |
+/// | `pending`   | dark blue           | blue                |
 /// | _(other)_   | slate               | slate               |
 class StatusBadge extends StatelessWidget {
   final String status;
@@ -21,8 +20,7 @@ class StatusBadge extends StatelessWidget {
     final (bg, fg) = switch (status) {
       'success' => (const Color(0xFF14532D), const Color(0xFF22C55E)),
       'error' => (const Color(0xFF450A0A), const Color(0xFFEF4444)),
-      'pending' => (const Color(0xFF1E1B4B), const Color(0xFF8B5CF6)),
-      'loading' => (const Color(0xFF1E3A5F), const Color(0xFF3B82F6)),
+      'pending' => (const Color(0xFF1E3A5F), const Color(0xFF3B82F6)),
       _ => (const Color(0xFF1E293B), const Color(0xFF64748B)),
     };
 

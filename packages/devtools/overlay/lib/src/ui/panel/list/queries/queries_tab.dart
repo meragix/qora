@@ -82,7 +82,7 @@ class _QueriesTabState extends State<QueriesTab> {
                   QueryRow(
                     query: query,
                     onTap: () => widget.onQueryTap(query),
-                    isActive: selectedKey == query.key,
+                    isSelected: selectedKey == query.key,
                   ),
                   if (i == filtered.length - 1) Divider(height: DevtoolsSpacing.borderWidth),
                 ],

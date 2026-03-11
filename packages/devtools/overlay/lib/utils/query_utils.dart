@@ -41,3 +41,11 @@ String fmtDateTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
     '${dt.minute.toString().padLeft(2, '0')}:'
     '${dt.second.toString().padLeft(2, '0')}.'
     '${dt.millisecond.toString().padLeft(3, '0')}';
+
+String formatTimeAgo(int timestamp) {
+  final seconds = (DateTime.now().millisecondsSinceEpoch - timestamp) ~/ 1000;
+  if (seconds < 60) return '${seconds}s ago';
+  final minutes = seconds ~/ 60;
+  if (minutes < 60) return '${minutes}m ago';
+  return '${minutes ~/ 60}h ago';
+}

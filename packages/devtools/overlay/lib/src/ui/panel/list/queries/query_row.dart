@@ -9,13 +9,13 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 class QueryRow extends StatelessWidget {
   final QueryEvent query;
   final VoidCallback onTap;
-  final bool isActive;
+  final bool isSelected;
 
   const QueryRow({
     super.key,
     required this.query,
     required this.onTap,
-    this.isActive = false,
+    this.isSelected = false,
   });
 
   @override
@@ -25,14 +25,9 @@ class QueryRow extends StatelessWidget {
       hoverColor: DevtoolsColors.rowHover,
       child: Container(
         decoration: BoxDecoration(
-          color: isActive ? DevtoolsColors.rowSelected : Colors.transparent,
+          color: isSelected ? DevtoolsColors.rowSelected : Colors.transparent,
           border: Border(
-            left: isActive
-                ? BorderSide(
-                    color: DevtoolsColors.accent,
-                    width: 2,
-                  )
-                : BorderSide.none,
+            left: isSelected ? BorderSide(color: DevtoolsColors.accent, width: 2) : BorderSide.none,
           ),
         ),
         padding: [8, 10].edgeInsetsVH,
@@ -47,6 +42,8 @@ class QueryRow extends StatelessWidget {
                 children: [
                   Text(
                     formatQueryKey(query.key),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: DevtoolsTypography.queryKey,
                   ),
                   const SizedBox(height: 4),
@@ -118,12 +115,8 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
     // staleTimeMs is a duration — remaining time = (fetchedAt + duration) - now
-    final staleTimeLeft = query.staleTimeMs != null
-        ? (query.timestampMs + query.staleTimeMs!) - now
-        : null;
-    final gcTimeLeft = query.gcTimeMs != null
-        ? (query.timestampMs + query.gcTimeMs!) - now
-        : null;
+    final staleTimeLeft = query.staleTimeMs != null ? (query.timestampMs + query.staleTimeMs!) - now : null;
+    final gcTimeLeft = query.gcTimeMs != null ? (query.timestampMs + query.gcTimeMs!) - now : null;
 
     return Wrap(
       spacing: 10,
