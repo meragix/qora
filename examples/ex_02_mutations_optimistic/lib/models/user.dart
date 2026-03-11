@@ -21,12 +21,7 @@ class User {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'avatar': avatar,
-    };
+    return {'id': id, 'name': name, 'email': email, 'avatar': avatar};
   }
 
   User copyWith({String? id, String? name, String? email, String? avatar}) {
@@ -41,9 +36,7 @@ class User {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is User &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is User && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

@@ -35,7 +35,11 @@ class UserDetailScreen extends StatelessWidget {
         options: const QoraOptions(staleTime: Duration(minutes: 5)),
         builder: (context, state, fetchStatus) {
           final offlineBanner = fetchStatus == FetchStatus.paused
-              ? const _Banner(icon: Icons.wifi_off, label: 'Offline — showing cached data', color: Colors.orange)
+              ? const _Banner(
+                  icon: Icons.wifi_off,
+                  label: 'Offline — showing cached data',
+                  color: Colors.orange,
+                )
               : null;
 
           if (fetchStatus == FetchStatus.paused && state.dataOrNull == null) {
@@ -55,7 +59,8 @@ class UserDetailScreen extends StatelessWidget {
                     FilledButton.icon(
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
-                      onPressed: () => context.qora.invalidate(['users', userId]),
+                      onPressed: () =>
+                          context.qora.invalidate(['users', userId]),
                     ),
                   ],
                 ),
@@ -65,7 +70,9 @@ class UserDetailScreen extends StatelessWidget {
 
           return switch (state) {
             // ── First load ────────────────────────────────────────────────
-            Initial() || Loading(previousData: null) => const Center(child: CircularProgressIndicator()),
+            Initial() || Loading(previousData: null) => const Center(
+              child: CircularProgressIndicator(),
+            ),
 
             // ── Hard error (no cache) ─────────────────────────────────────
             Failure(:final error, previousData: null) => Center(
@@ -74,7 +81,11 @@ class UserDetailScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load user\n$error',
@@ -85,7 +96,8 @@ class UserDetailScreen extends StatelessWidget {
                     FilledButton.icon(
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
-                      onPressed: () => context.qora.invalidate(['users', userId]),
+                      onPressed: () =>
+                          context.qora.invalidate(['users', userId]),
                     ),
                   ],
                 ),
@@ -104,7 +116,8 @@ class UserDetailScreen extends StatelessWidget {
                     color: Colors.red,
                   ),
                 // Subtle loading indicator during background revalidation
-                if (fetchStatus == FetchStatus.fetching) const LinearProgressIndicator(minHeight: 2),
+                if (fetchStatus == FetchStatus.fetching)
+                  const LinearProgressIndicator(minHeight: 2),
                 Expanded(
                   child: _UserDetailView(
                     user: state.dataOrNull!,
@@ -128,7 +141,11 @@ class _UserDetailView extends StatelessWidget {
   final DateTime? updatedAt;
   final bool isStale;
 
-  const _UserDetailView({required this.user, required this.updatedAt, required this.isStale});
+  const _UserDetailView({
+    required this.user,
+    required this.updatedAt,
+    required this.isStale,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -148,14 +165,23 @@ class _UserDetailView extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Name
-          Text(user.name, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            user.name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
 
           // Email
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.email_outlined, size: 16, color: theme.colorScheme.primary),
+              Icon(
+                Icons.email_outlined,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(width: 6),
               Text(user.email, style: theme.textTheme.bodyLarge),
             ],
@@ -163,7 +189,10 @@ class _UserDetailView extends StatelessWidget {
           const SizedBox(height: 8),
 
           // ID chip
-          Chip(label: Text('ID: ${user.id}'), avatar: const Icon(Icons.tag, size: 16)),
+          Chip(
+            label: Text('ID: ${user.id}'),
+            avatar: const Icon(Icons.tag, size: 16),
+          ),
 
           const SizedBox(height: 32),
           const Divider(),
@@ -174,7 +203,9 @@ class _UserDetailView extends StatelessWidget {
             icon: Icons.schedule,
             label: 'Last fetched',
             value: updatedAt != null ? _formatTime(updatedAt!) : 'Stale data',
-            valueColor: isStale ? Colors.orange.shade700 : Colors.green.shade700,
+            valueColor: isStale
+                ? Colors.orange.shade700
+                : Colors.green.shade700,
           ),
           const SizedBox(height: 8),
           _MetaTile(
@@ -214,7 +245,12 @@ class _MetaTile extends StatelessWidget {
   final String value;
   final Color valueColor;
 
-  const _MetaTile({required this.icon, required this.label, required this.value, required this.valueColor});
+  const _MetaTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -222,10 +258,18 @@ class _MetaTile extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Colors.grey.shade600),
         const SizedBox(width: 10),
-        Text('$label: ', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600)),
+        Text(
+          '$label: ',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+        ),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: valueColor, fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: valueColor,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -279,7 +323,10 @@ class _Banner extends StatelessWidget {
           Icon(icon, size: 14, color: color.shade700),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(label, style: TextStyle(fontSize: 12, color: color.shade700)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: color.shade700),
+            ),
           ),
         ],
       ),

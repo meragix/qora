@@ -31,11 +31,7 @@ class RenameUserSheet extends StatefulWidget {
   /// ensures the callbacks operate on the correct client instance.
   final QoraClient client;
 
-  const RenameUserSheet({
-    super.key,
-    required this.user,
-    required this.client,
-  });
+  const RenameUserSheet({super.key, required this.user, required this.client});
 
   @override
   State<RenameUserSheet> createState() => _RenameUserSheetState();
@@ -71,10 +67,10 @@ class _RenameUserSheetState extends State<RenameUserSheet> {
 
           // Apply the optimistic name change to the per-user detail cache.
           if (prevUser != null) {
-            client.setQueryData<User>(
-              ['users', vars.id],
-              prevUser.copyWith(name: vars.name),
-            );
+            client.setQueryData<User>([
+              'users',
+              vars.id,
+            ], prevUser.copyWith(name: vars.name));
           }
 
           // Apply the same change to the matching entry inside the list cache.
@@ -141,7 +137,8 @@ class _RenameUserSheetState extends State<RenameUserSheet> {
                 decoration: const InputDecoration(
                   labelText: 'New name',
                   border: OutlineInputBorder(),
-                  helperText: 'The list updates immediately — server confirms in ~2 s',
+                  helperText:
+                      'The list updates immediately — server confirms in ~2 s',
                 ),
                 autofocus: true,
                 textInputAction: TextInputAction.done,
@@ -152,15 +149,15 @@ class _RenameUserSheetState extends State<RenameUserSheet> {
               // Inline status feedback
               switch (state) {
                 MutationFailure(:final error) => _FeedbackBanner(
-                    icon: Icons.undo_rounded,
-                    message: 'Save failed — name restored. $error',
-                    color: Colors.red,
-                  ),
+                  icon: Icons.undo_rounded,
+                  message: 'Save failed — name restored. $error',
+                  color: Colors.red,
+                ),
                 MutationSuccess() => const _FeedbackBanner(
-                    icon: Icons.check_circle_outline,
-                    message: 'Saved. Cache updated from server.',
-                    color: Colors.green,
-                  ),
+                  icon: Icons.check_circle_outline,
+                  message: 'Saved. Cache updated from server.',
+                  color: Colors.green,
+                ),
                 _ => const SizedBox.shrink(),
               },
 
@@ -178,12 +175,16 @@ class _RenameUserSheetState extends State<RenameUserSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: state.isPending ? null : () => _submit(state, mutate),
+                      onPressed: state.isPending
+                          ? null
+                          : () => _submit(state, mutate),
                       child: state.isPending
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
                             )
                           : const Text('Save'),
                     ),

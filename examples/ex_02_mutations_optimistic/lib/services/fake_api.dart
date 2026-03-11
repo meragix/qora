@@ -15,11 +15,36 @@ class FakeApi {
   static final _random = Random();
 
   static final List<User> _users = [
-    const User(id: '1', name: 'Alice Johnson', email: 'alice@example.com', avatar: '👩‍💼'),
-    const User(id: '2', name: 'Bob Smith', email: 'bob@example.com', avatar: '👨‍💻'),
-    const User(id: '3', name: 'Charlie Brown', email: 'charlie@example.com', avatar: '👨‍🎨'),
-    const User(id: '4', name: 'Diana Prince', email: 'diana@example.com', avatar: '👩‍🚀'),
-    const User(id: '5', name: 'Eve Davis', email: 'eve@example.com', avatar: '👩‍🔬'),
+    const User(
+      id: '1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      avatar: '👩‍💼',
+    ),
+    const User(
+      id: '2',
+      name: 'Bob Smith',
+      email: 'bob@example.com',
+      avatar: '👨‍💻',
+    ),
+    const User(
+      id: '3',
+      name: 'Charlie Brown',
+      email: 'charlie@example.com',
+      avatar: '👨‍🎨',
+    ),
+    const User(
+      id: '4',
+      name: 'Diana Prince',
+      email: 'diana@example.com',
+      avatar: '👩‍🚀',
+    ),
+    const User(
+      id: '5',
+      name: 'Eve Davis',
+      email: 'eve@example.com',
+      avatar: '👩‍🔬',
+    ),
   ];
 
   /// Returns all users after a simulated network delay.
@@ -56,7 +81,9 @@ class FakeApi {
     await Future<void>.delayed(_delay);
 
     if (_random.nextDouble() < 0.3) {
-      debugPrint('❌ FakeApi.updateUser — simulated server error (30 % failure mode)');
+      debugPrint(
+        '❌ FakeApi.updateUser — simulated server error (30 % failure mode)',
+      );
       throw Exception('Server error: could not save changes.');
     }
 

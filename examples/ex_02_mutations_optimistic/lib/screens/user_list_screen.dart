@@ -18,8 +18,9 @@ class UserListScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Invalidate & refetch',
-            onPressed: () =>
-                context.qora.invalidateWhere((key) => key.firstOrNull == 'users'),
+            onPressed: () => context.qora.invalidateWhere(
+              (key) => key.firstOrNull == 'users',
+            ),
           ),
         ],
       ),
@@ -33,77 +34,82 @@ class UserListScreen extends StatelessWidget {
         builder: (context, state, fetchStatus) {
           final banner = switch (fetchStatus) {
             FetchStatus.fetching => const _StatusBanner(
-                icon: Icons.sync,
-                label: 'Updating…',
-                color: Colors.blue,
-              ),
+              icon: Icons.sync,
+              label: 'Updating…',
+              color: Colors.blue,
+            ),
             FetchStatus.paused => const _StatusBanner(
-                icon: Icons.wifi_off,
-                label: 'Offline — showing cached data',
-                color: Colors.orange,
-              ),
+              icon: Icons.wifi_off,
+              label: 'Offline — showing cached data',
+              color: Colors.orange,
+            ),
             FetchStatus.idle => const SizedBox.shrink(),
           };
 
           return switch (state) {
             // First load with no cache
             Initial() || Loading(previousData: null) => const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Loading users…'),
-                  ],
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading users…'),
+                ],
               ),
+            ),
 
             // Hard error with no cached data
             Failure(:final error, previousData: null) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Failed to load users\n$error',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load users\n$error',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      onPressed: () => context.qora.invalidateWhere(
+                        (key) => key.firstOrNull == 'users',
                       ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                        onPressed: () => context.qora
-                            .invalidateWhere((key) => key.firstOrNull == 'users'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
             // Data available: Success, Loading(data), or Failure(data)
             _ => Column(
-                children: [
-                  banner,
-                  if (state is Failure<List<User>>)
-                    _ErrorBanner(error: state.error),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: state.dataOrNull?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        final user = state.dataOrNull![index];
-                        return _UserTile(
-                          user: user,
-                          onEdit: () => _showRenameSheet(context, user),
-                        );
-                      },
-                    ),
+              children: [
+                banner,
+                if (state is Failure<List<User>>)
+                  _ErrorBanner(error: state.error),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: state.dataOrNull?.length ?? 0,
+                    itemBuilder: (context, index) {
+                      final user = state.dataOrNull![index];
+                      return _UserTile(
+                        user: user,
+                        onEdit: () => _showRenameSheet(context, user),
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
           };
         },
       ),
@@ -139,7 +145,10 @@ class _UserTile extends StatelessWidget {
         leading: CircleAvatar(
           child: Text(user.avatar, style: const TextStyle(fontSize: 22)),
         ),
-        title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          user.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(user.email),
         trailing: IconButton(
           icon: const Icon(Icons.edit_outlined),
@@ -191,7 +200,11 @@ class _ErrorBanner extends StatelessWidget {
       color: Colors.red.shade50,
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red.shade700),
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Colors.red.shade700,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

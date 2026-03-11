@@ -18,7 +18,9 @@ class UserListScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Invalidate & refetch',
-            onPressed: () => context.qora.invalidateWhere((key) => key.firstOrNull == 'users'),
+            onPressed: () => context.qora.invalidateWhere(
+              (key) => key.firstOrNull == 'users',
+            ),
           ),
         ],
       ),
@@ -26,12 +28,17 @@ class UserListScreen extends StatelessWidget {
         queryKey: const ['users'],
         fetcher: FakeApi.getUsers,
         options: const QoraOptions(
-          staleTime: Duration(minutes: 5), cacheTime: Duration(minutes: 10)
-          ),
+          staleTime: Duration(minutes: 5),
+          cacheTime: Duration(minutes: 10),
+        ),
         builder: (context, state, fetchStatus) {
           // Top banner: background refetch or offline indicator
           final banner = switch (fetchStatus) {
-            FetchStatus.fetching => const _StatusBanner(icon: Icons.sync, label: 'Updating…', color: Colors.blue),
+            FetchStatus.fetching => const _StatusBanner(
+              icon: Icons.sync,
+              label: 'Updating…',
+              color: Colors.blue,
+            ),
             FetchStatus.paused => const _StatusBanner(
               icon: Icons.wifi_off,
               label: 'Offline — showing cached data',
@@ -57,7 +64,9 @@ class UserListScreen extends StatelessWidget {
                     FilledButton.icon(
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
-                      onPressed: () => context.qora.invalidateWhere((key) => key.firstOrNull == 'users'),
+                      onPressed: () => context.qora.invalidateWhere(
+                        (key) => key.firstOrNull == 'users',
+                      ),
                     ),
                   ],
                 ),
@@ -70,7 +79,11 @@ class UserListScreen extends StatelessWidget {
             Initial() || Loading(previousData: null) => const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Loading users…')],
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading users…'),
+                ],
               ),
             ),
 
@@ -81,7 +94,11 @@ class UserListScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load users\n$error',
@@ -92,7 +109,9 @@ class UserListScreen extends StatelessWidget {
                     FilledButton.icon(
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
-                      onPressed: () => context.qora.invalidateWhere((key) => key.firstOrNull == 'users'),
+                      onPressed: () => context.qora.invalidateWhere(
+                        (key) => key.firstOrNull == 'users',
+                      ),
                     ),
                   ],
                 ),
@@ -104,12 +123,17 @@ class UserListScreen extends StatelessWidget {
               children: [
                 banner,
                 // Soft error banner when refresh fails but old data is still shown
-                if (state is Failure<List<User>>) _ErrorBanner(error: state.error),
+                if (state is Failure<List<User>>)
+                  _ErrorBanner(error: state.error),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async {
-                      context.qora.invalidateWhere((key) => key.firstOrNull == 'users');
-                      await Future<void>.delayed(const Duration(milliseconds: 300));
+                      context.qora.invalidateWhere(
+                        (key) => key.firstOrNull == 'users',
+                      );
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 300),
+                      );
                     },
                     child: ListView.builder(
                       itemCount: state.dataOrNull?.length ?? 0,
@@ -119,7 +143,9 @@ class UserListScreen extends StatelessWidget {
                           user: user,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute<void>(builder: (_) => UserDetailScreen(userId: user.id)),
+                            MaterialPageRoute<void>(
+                              builder: (_) => UserDetailScreen(userId: user.id),
+                            ),
                           ),
                         );
                       },
@@ -142,7 +168,11 @@ class _StatusBanner extends StatelessWidget {
   final String label;
   final MaterialColor color;
 
-  const _StatusBanner({required this.icon, required this.label, required this.color});
+  const _StatusBanner({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -172,10 +202,17 @@ class _ErrorBanner extends StatelessWidget {
       color: Colors.red.shade50,
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red.shade700),
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Colors.red.shade700,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('Refresh failed: $error', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+            child: Text(
+              'Refresh failed: $error',
+              style: TextStyle(fontSize: 12, color: Colors.red.shade700),
+            ),
           ),
         ],
       ),
@@ -194,8 +231,13 @@ class _UserTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
-        leading: CircleAvatar(child: Text(user.avatar, style: const TextStyle(fontSize: 22))),
-        title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        leading: CircleAvatar(
+          child: Text(user.avatar, style: const TextStyle(fontSize: 22)),
+        ),
+        title: Text(
+          user.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(user.email),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,

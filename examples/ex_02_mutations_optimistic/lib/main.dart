@@ -147,13 +147,15 @@ class _ExampleCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Text(description, style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),
@@ -182,16 +184,18 @@ class _InfoCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(item, style: Theme.of(context).textTheme.bodyMedium),
+                child: Text(
+                  item,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
             ),
           ],

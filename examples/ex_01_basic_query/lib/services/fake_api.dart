@@ -12,11 +12,36 @@ class FakeApi {
   static const _delay = Duration(seconds: 2);
 
   static final List<User> _users = [
-    const User(id: '1', name: 'Alice Johnson', email: 'alice@example.com', avatar: '👩‍💼'),
-    const User(id: '2', name: 'Bob Smith', email: 'bob@example.com', avatar: '👨‍💻'),
-    const User(id: '3', name: 'Charlie Brown', email: 'charlie@example.com', avatar: '👨‍🎨'),
-    const User(id: '4', name: 'Diana Prince', email: 'diana@example.com', avatar: '👩‍🚀'),
-    const User(id: '5', name: 'Eve Davis', email: 'eve@example.com', avatar: '👩‍🔬'),
+    const User(
+      id: '1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      avatar: '👩‍💼',
+    ),
+    const User(
+      id: '2',
+      name: 'Bob Smith',
+      email: 'bob@example.com',
+      avatar: '👨‍💻',
+    ),
+    const User(
+      id: '3',
+      name: 'Charlie Brown',
+      email: 'charlie@example.com',
+      avatar: '👨‍🎨',
+    ),
+    const User(
+      id: '4',
+      name: 'Diana Prince',
+      email: 'diana@example.com',
+      avatar: '👩‍🚀',
+    ),
+    const User(
+      id: '5',
+      name: 'Eve Davis',
+      email: 'eve@example.com',
+      avatar: '👩‍🔬',
+    ),
   ];
 
   /// Returns all users after a simulated network delay.

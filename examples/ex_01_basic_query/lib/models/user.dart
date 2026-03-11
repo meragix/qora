@@ -3,14 +3,14 @@ class User {
   final String name;
   final String email;
   final String avatar;
-  
+
   const User({
     required this.id,
     required this.name,
     required this.email,
     required this.avatar,
   });
-  
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
@@ -19,26 +19,19 @@ class User {
       avatar: json['avatar'] as String,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'avatar': avatar,
-    };
+    return {'id': id, 'name': name, 'email': email, 'avatar': avatar};
   }
-  
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is User &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
-  
+      other is User && runtimeType == other.runtimeType && id == other.id;
+
   @override
   int get hashCode => id.hashCode;
-  
+
   @override
   String toString() => 'User(id: $id, name: $name)';
 }
