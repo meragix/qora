@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-01
+
+### Changed
+
+- Updated dependency to `qora: ^0.8.0` — enables `PersistQoraClient`, `StorageAdapter`, `QoraSerializer`, and the full persistence layer introduced in core 0.8.0
+
 ## [0.7.0] - 2026-03-03
 
 ### Added

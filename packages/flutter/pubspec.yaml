@@ -2,7 +2,7 @@ name: qora_flutter
 description: >-
   A Flutter implementation for Qora, bringing powerful async state management, 
   automatic caching, and offline-first capabilities to the widget tree.
-version: 0.7.0
+version: 0.8.0
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora/tree/main/packages/flutter
 issue_tracker: https://github.com/meragix/qora/issues
