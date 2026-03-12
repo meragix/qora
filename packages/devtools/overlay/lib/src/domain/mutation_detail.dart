@@ -6,6 +6,9 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// the inspector panel renders directly — status badge, raw data for the
 /// JSON viewer, and metadata rows.
 class MutationDetail {
+  /// The serialised mutation key, e.g. `["createPost"]` or `["updateUser", "42"]`.
+  final String? key;
+
   /// Human-readable mutation status: `'pending'`, `'success'`, or `'error'`.
   final String status;
 
@@ -33,6 +36,7 @@ class MutationDetail {
   final int retryCount;
 
   const MutationDetail({
+    this.key,
     required this.status,
     this.variables,
     this.error,
@@ -56,6 +60,7 @@ class MutationDetail {
             : 'pending';
 
     return MutationDetail(
+      key: event.key,
       status: status,
       variables: event.variables,
       error: isError ? event.result : null,

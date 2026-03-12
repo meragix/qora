@@ -9,6 +9,7 @@ import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
+import 'package:qora_devtools_overlay/utils/query_utils.dart';
 
 /// Inspector detail view for a selected query.
 ///
@@ -56,9 +57,9 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
             isScrollable: true,
             indicatorSize: TabBarIndicatorSize.tab,
             padding: 12.edgeInsetsH,
-            labelPadding: 13.edgeInsetsH,
+            labelPadding: 12.edgeInsetsH,
             tabAlignment: TabAlignment.start,
-            tabs: const [Tab(text: 'Overview'), Tab(text: 'Data')],
+            tabs: const [Tab(text: 'OVERVIEW'), Tab(text: 'DATA')],
             labelStyle: DevtoolsTypography.tab,
           ),
         ),
@@ -82,7 +83,7 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                         borderRadius: 4.borderRadiusA,
                       ),
                       child: Text(
-                        _formatKey(detail.key),
+                        formatKey(detail.key),
                         style: DevtoolsTypography.code,
                       ),
                     ),
@@ -224,10 +225,5 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
         ),
       ],
     );
-  }
-
-  /// Formats the serialised key into a readable `[ "user", "42" ]` form.
-  String _formatKey(String key) {
-    return key.replaceAll(',', ', ').replaceAll('[', '[ ').replaceAll(']', ' ]');
   }
 }

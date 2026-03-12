@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/inspector_widgets.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/json_viewer.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/status_badge.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
+import 'package:qora_devtools_overlay/utils/query_utils.dart';
 
 /// Inspector detail view for a selected mutation.
 ///
@@ -20,8 +23,7 @@ class MutationInspector extends StatefulWidget {
   State<MutationInspector> createState() => _MutationInspectorState();
 }
 
-class _MutationInspectorState extends State<MutationInspector>
-    with SingleTickerProviderStateMixin {
+class _MutationInspectorState extends State<MutationInspector> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -54,11 +56,15 @@ class _MutationInspectorState extends State<MutationInspector>
       children: [
         // ── Tab bar ─────────────────────────────────────────────────────────
         SizedBox(
-         height: DevtoolsSpacing.tabHeight,
+          height: DevtoolsSpacing.tabHeight,
           child: TabBar(
             controller: _tabController,
+            isScrollable: true,
             indicatorSize: TabBarIndicatorSize.tab,
-            tabs: const [Tab(text: 'OVERVIEW'), Tab(text: 'DATA')],
+            padding: 12.edgeInsetsH,
+            labelPadding: 12.edgeInsetsH,
+            tabAlignment: TabAlignment.start,
+            tabs: const [Tab(text: 'OVERVIEW'), Tab(text: 'DETAILS')],
             labelStyle: DevtoolsTypography.tab,
           ),
         ),
@@ -72,6 +78,22 @@ class _MutationInspectorState extends State<MutationInspector>
               ListView(
                 padding: const EdgeInsets.all(12),
                 children: [
+                  // MUTATION KEY
+                  if (detail.key != null && detail.key!.isNotEmpty)
+                    InspectorSection(
+                      label: 'MUTATION KEY',
+                      child: Container(
+                        padding: [8, 10].edgeInsetsVH,
+                        decoration: BoxDecoration(
+                          color: DevtoolsColors.panelSecondaryBackground,
+                          borderRadius: 4.borderRadiusA,
+                        ),
+                        child: Text(
+                          formatKey(detail.key!),
+                          style: DevtoolsTypography.code,
+                        ),
+                      ),
+                    ),
                   // STATUS
                   InspectorSection(
                     label: 'STATUS',
@@ -84,8 +106,37 @@ class _MutationInspectorState extends State<MutationInspector>
                       label: 'ACTIONS',
                       child: InspectorActionButton(
                         label: 'Retry',
-                        icon: Icons.refresh_rounded,
+                        icon: LucideIcons.refreshCcw,
+                        accentColor: const Color(0xFF4F46E5),
                         onTap: () => notifier.retry(),
+                      ),
+                    ),
+                  if (detail.status == 'pending')
+                    InspectorSection(
+                      label: 'ACTIONS',
+                      child: Column(
+                        children: [
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              InspectorActionButton(
+                                // label: 'Pause/Resume',
+                                label: 'Pause',
+                                //icon: detail.isPaused ? LucideIcons.play : LucideIcons.pause,
+                                icon: LucideIcons.play,
+                                accentColor: DevtoolsColors.amber400,
+                                onTap: () => notifier.pauseResume(),
+                              ),
+                            ],
+                          ),
+                          InspectorActionButton(
+                            label: 'Cancel',
+                            icon: LucideIcons.circleX,
+                            accentColor: DevtoolsColors.red400,
+                            onTap: () => notifier.cancel(),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -95,14 +146,10 @@ class _MutationInspectorState extends State<MutationInspector>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InspectorMetaRow(
-                            'Created At', fmtDateTime(detail.createdAt)),
+                        InspectorMetaRow('Created At', fmtDateTime(detail.createdAt)),
                         if (detail.submittedAt != null)
-                          InspectorMetaRow(
-                              'Submitted At', fmtDateTime(detail.submittedAt!)),
-                        if (detail.updatedAt != null)
-                          InspectorMetaRow(
-                              'Updated At', fmtDateTime(detail.updatedAt!)),
+                          InspectorMetaRow('Submitted At', fmtDateTime(detail.submittedAt!)),
+                        if (detail.updatedAt != null) InspectorMetaRow('Updated At', fmtDateTime(detail.updatedAt!)),
                         InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),

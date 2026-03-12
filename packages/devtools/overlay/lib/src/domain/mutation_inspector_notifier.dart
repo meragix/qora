@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:qora/qora.dart' hide MutationEvent;
 import 'package:qora_devtools_overlay/src/data/overlay_tracker.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_detail.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
@@ -26,10 +27,9 @@ class MutationInspectorNotifier extends ChangeNotifier {
   /// View-model for the inspector panel, derived from [selected].
   ///
   /// `null` when [selected] is `null` — the panel renders a placeholder.
-  MutationDetail? get detail =>
-      _selected == null ? null : MutationDetail.fromEvent(_selected!);
+  MutationDetail? get detail => _selected == null ? null : MutationDetail.fromEvent(_selected!);
 
-  MutationInspectorNotifier(this._tracker) {
+  MutationInspectorNotifier(this._tracker, {QoraClient? client}) {
     _sub = _tracker.onMutation.listen((event) {
       // Auto-update if the selected mutation changes state (e.g. retry settled)
       if (_selected != null && event.id == _selected!.id) {
@@ -45,11 +45,26 @@ class MutationInspectorNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Actions ──────────────────────────────────────────────────────────────
+
   /// Retries the selected mutation.
   ///
   /// Not yet implemented — requires `QoraClient.retryMutation()` support.
-  // TODO(overlay): implement retry via QoraClient when the API is available.
-  Future<void> retry() async {}
+  // TODO(overlay): implement retry when the API is available.
+  void retry() async {}
+
+  /// Pauses or resumes the selected mutation.
+  ///
+  /// Not yet implemented — requires `QoraClient.pauseMutation()` and
+  /// `QoraClient.resumeMutation()` support.
+  // TODO(overlay): implement pause/resume when the API is available.
+  void pauseResume() async {}
+
+  /// Cancels the selected mutation.
+  ///
+  /// Not yet implemented — requires `QoraClient.cancelMutation()` support.
+  // TODO(overlay): implement cancel when the API is available.
+  void cancel() async {}
 
   @override
   void dispose() {

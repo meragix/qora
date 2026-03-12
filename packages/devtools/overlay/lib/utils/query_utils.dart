@@ -49,3 +49,14 @@ String formatTimeAgo(int timestamp) {
   if (minutes < 60) return '${minutes}m ago';
   return '${minutes ~/ 60}h ago';
 }
+
+/// Formats the serialised key into a readable `[ "user", "42" ]` form.
+String formatKey(String rawKey) {
+  try {
+    final decoded = jsonDecode(rawKey) as List<dynamic>;
+    final parts = decoded.map((e) => e is String ? '"$e"' : '$e').join(', ');
+    return '[ $parts ]';
+  } catch (_) {
+    return rawKey; // fallback if not valid JSON
+  }
+}

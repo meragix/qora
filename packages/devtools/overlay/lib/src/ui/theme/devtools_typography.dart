@@ -52,8 +52,9 @@ class DevtoolsTypography {
   );
 
   static const TextStyle tab = TextStyle(
-    fontSize: md,
-    fontWeight: FontWeight.w500,
+    fontSize: sm,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.8,
     color: DevtoolsColors.textSecondary,
   );
 
