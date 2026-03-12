@@ -163,8 +163,10 @@ class _DesktopLayout extends StatelessWidget {
         double effectiveSecondaryWidth = secondaryWidth;
         if (hasSecondary && hasInspector) {
           final dividers = _kDividerHitWidth * 2;
-          final available = constraints.maxWidth - listWidth - dividers - _kCenterMinWidth;
-          effectiveSecondaryWidth = effectiveSecondaryWidth.clamp(0.0, available.clamp(0.0, effectiveSecondaryWidth));
+          final available =
+              constraints.maxWidth - listWidth - dividers - _kCenterMinWidth;
+          effectiveSecondaryWidth = effectiveSecondaryWidth.clamp(
+              0.0, available.clamp(0.0, effectiveSecondaryWidth));
         }
 
         return Row(
@@ -185,7 +187,8 @@ class _DesktopLayout extends StatelessWidget {
               ),
 
             // ── Divider 2 ───────────────────────────────────────────────────
-            if (hasInspector && hasSecondary) _ResizeDivider(onDrag: onSecondaryDividerDrag),
+            if (hasInspector && hasSecondary)
+              _ResizeDivider(onDrag: onSecondaryDividerDrag),
 
             // ── Col 3 — secondary ───────────────────────────────────────────
             if (hasSecondary)
@@ -239,7 +242,9 @@ class _ResizeDividerState extends State<_ResizeDivider> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           width: _kDividerHitWidth,
-          color: _active ? DevtoolsColors.accent.withValues(alpha: .6) : DevtoolsColors.border,
+          color: _active
+              ? DevtoolsColors.accent.withValues(alpha: .6)
+              : DevtoolsColors.border,
         ),
       ),
     );
@@ -273,7 +278,8 @@ class _MobileLayout extends StatelessWidget {
         final screenIndex = _indexOf(currentScreen);
         final childIndex = _indexFromKey(child.key);
         final goingForward = childIndex >= screenIndex;
-        final begin = goingForward ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0);
+        final begin =
+            goingForward ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0);
         return SlideTransition(
           position: Tween(begin: begin, end: Offset.zero).animate(
             CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
@@ -293,7 +299,9 @@ class _MobileLayout extends StatelessWidget {
                 title: 'Inspector',
                 onBack: () => onNavigate(PanelScreen.list),
                 forwardLabel: secondaryColumn != null ? 'Timeline' : null,
-                onForward: secondaryColumn != null ? () => onNavigate(PanelScreen.secondary) : null,
+                onForward: secondaryColumn != null
+                    ? () => onNavigate(PanelScreen.secondary)
+                    : null,
               ),
               Expanded(child: inspectorColumn ?? const SizedBox()),
             ]),
@@ -350,8 +358,10 @@ class _MobileNavBar extends StatelessWidget {
         GestureDetector(
           onTap: onBack,
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.chevron_left_rounded, color: DevtoolsColors.accent, size: 20),
-            Text('Back', style: TextStyle(color: DevtoolsColors.accent, fontSize: 13)),
+            Icon(Icons.chevron_left_rounded,
+                color: DevtoolsColors.accent, size: 20),
+            Text('Back',
+                style: TextStyle(color: DevtoolsColors.accent, fontSize: 13)),
           ]),
         ),
         Expanded(
@@ -373,7 +383,8 @@ class _MobileNavBar extends StatelessWidget {
                 forwardLabel ?? 'Next',
                 style: TextStyle(color: DevtoolsColors.accent, fontSize: 13),
               ),
-              Icon(Icons.chevron_right_rounded, color: DevtoolsColors.accent, size: 20),
+              Icon(Icons.chevron_right_rounded,
+                  color: DevtoolsColors.accent, size: 20),
             ]),
           )
         else

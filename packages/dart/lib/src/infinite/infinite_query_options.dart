@@ -37,7 +37,8 @@ class InfiniteQueryOptions<TData, TPageParam> {
   /// // Cursor-based
   /// getNextPageParam: (lastPage, allPages) => lastPage.nextCursor,
   /// ```
-  final TPageParam? Function(TData lastPage, List<TData> allPages) getNextPageParam;
+  final TPageParam? Function(TData lastPage, List<TData> allPages)
+      getNextPageParam;
 
   /// Computes the parameter for the **previous** page.
   ///
@@ -55,7 +56,8 @@ class InfiniteQueryOptions<TData, TPageParam> {
   /// the param returned here, re-fetching the dropped page. Ensure your
   /// server supports random-access parameters (page numbers or stable
   /// cursors) for correct reconstruction.
-  final TPageParam? Function(TData firstPage, List<TData> allPages)? getPreviousPageParam;
+  final TPageParam? Function(TData firstPage, List<TData> allPages)?
+      getPreviousPageParam;
 
   /// Maximum number of pages to keep in memory at once (windowed paging).
   ///

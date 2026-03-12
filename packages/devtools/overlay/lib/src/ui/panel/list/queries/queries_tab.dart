@@ -45,7 +45,9 @@ class _QueriesTabState extends State<QueriesTab> {
 
   List<QueryEvent> _filtered(List<QueryEvent> queries) {
     if (_search.isEmpty) return queries;
-    return queries.where((q) => formatQueryKey(q.key).toLowerCase().contains(_search)).toList();
+    return queries
+        .where((q) => formatQueryKey(q.key).toLowerCase().contains(_search))
+        .toList();
   }
 
   @override
@@ -84,7 +86,8 @@ class _QueriesTabState extends State<QueriesTab> {
                     onTap: () => widget.onQueryTap(query),
                     isSelected: selectedKey == query.key,
                   ),
-                  if (i == filtered.length - 1) Divider(height: DevtoolsSpacing.borderWidth),
+                  if (i == filtered.length - 1)
+                    Divider(height: DevtoolsSpacing.borderWidth),
                 ],
               );
             },

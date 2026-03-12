@@ -238,9 +238,8 @@ class _RecentFetchTile extends StatelessWidget {
         : (const Color(0xFFDCFCE7), const Color(0xFF15803D));
     final durationLabel =
         record.durationMs != null ? '${record.durationMs} ms' : '—';
-    final sizeLabel = record.approxBytes != null
-        ? _formatBytes(record.approxBytes!)
-        : '';
+    final sizeLabel =
+        record.approxBytes != null ? _formatBytes(record.approxBytes!) : '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 4),

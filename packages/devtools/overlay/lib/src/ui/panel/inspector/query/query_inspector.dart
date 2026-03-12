@@ -23,7 +23,8 @@ class QueryInspector extends StatefulWidget {
   State<QueryInspector> createState() => _QueryInspectorState();
 }
 
-class _QueryInspectorState extends State<QueryInspector> with SingleTickerProviderStateMixin {
+class _QueryInspectorState extends State<QueryInspector>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -137,17 +138,25 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (detail.createdAt != null) InspectorMetaRow('Created At:', fmtDateTime(detail.createdAt!)),
-                        InspectorMetaRow('Updated At:', fmtDateTime(detail.updatedAt)),
-                        if (detail.staleAt != null) InspectorMetaRow('Stale At:', fmtDateTime(detail.staleAt!)),
+                        if (detail.createdAt != null)
+                          InspectorMetaRow(
+                              'Created At:', fmtDateTime(detail.createdAt!)),
+                        InspectorMetaRow(
+                            'Updated At:', fmtDateTime(detail.updatedAt)),
+                        if (detail.staleAt != null)
+                          InspectorMetaRow(
+                              'Stale At:', fmtDateTime(detail.staleAt!)),
                         if (detail.cacheTimeMs != null)
                           InspectorMetaRow(
                             'Cache Time:',
                             '${(detail.cacheTimeMs! / 1000).round()}s',
                           ),
                         if (detail.fetchDurationMs != null)
-                          InspectorMetaRow('Fetch Duration:', '${detail.fetchDurationMs}ms'),
-                        if (detail.retryCount != null) InspectorMetaRow('Retry Count:', '${detail.retryCount}'),
+                          InspectorMetaRow(
+                              'Fetch Duration:', '${detail.fetchDurationMs}ms'),
+                        if (detail.retryCount != null)
+                          InspectorMetaRow(
+                              'Retry Count:', '${detail.retryCount}'),
                       ],
                     ),
                   ),
@@ -161,7 +170,8 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                       children: [
                         Builder(builder: (context) {
                           final isFetching = detail.status == 'loading';
-                          final isStale = (detail.staleAt != null && DateTime.now().isAfter(detail.staleAt!)) ||
+                          final isStale = (detail.staleAt != null &&
+                                  DateTime.now().isAfter(detail.staleAt!)) ||
                               detail.status == 'stale';
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,18 +179,23 @@ class _QueryInspectorState extends State<QueryInspector> with SingleTickerProvid
                               InspectorMetaRow(
                                 'Is Fetching:',
                                 isFetching ? 'true' : 'false',
-                                valueColor: isFetching ? DevtoolsColors.blue400 : DevtoolsColors.textDisabled,
+                                valueColor: isFetching
+                                    ? DevtoolsColors.blue400
+                                    : DevtoolsColors.textDisabled,
                               ),
                               InspectorMetaRow(
                                 'Is Invalidated:',
                                 detail.isInvalidated ? 'true' : 'false',
-                                valueColor:
-                                    detail.isInvalidated ? DevtoolsColors.highlight : DevtoolsColors.textDisabled,
+                                valueColor: detail.isInvalidated
+                                    ? DevtoolsColors.highlight
+                                    : DevtoolsColors.textDisabled,
                               ),
                               InspectorMetaRow(
                                 'Is Stale:',
                                 isStale ? 'true' : 'false',
-                                valueColor: isStale ? DevtoolsColors.statusStale : DevtoolsColors.textDisabled,
+                                valueColor: isStale
+                                    ? DevtoolsColors.statusStale
+                                    : DevtoolsColors.textDisabled,
                               ),
                             ],
                           );

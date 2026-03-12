@@ -138,9 +138,7 @@ class _CacheInspectorScreenState extends State<CacheInspectorScreen> {
                   .where(
                     (q) =>
                         _filter.isEmpty ||
-                        q.key
-                            .toLowerCase()
-                            .contains(_filter.toLowerCase()),
+                        q.key.toLowerCase().contains(_filter.toLowerCase()),
                   )
                   .toList(growable: false);
 

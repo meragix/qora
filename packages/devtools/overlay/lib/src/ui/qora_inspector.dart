@@ -75,7 +75,8 @@ class _QoraInspectorState extends State<QoraInspector> {
     super.initState();
     if (!kDebugMode) return;
     _timelineNotifier = TimelineNotifier(widget.tracker);
-    _queryInspectorNotifier = QueryInspectorNotifier(widget.tracker, client: widget.client);
+    _queryInspectorNotifier =
+        QueryInspectorNotifier(widget.tracker, client: widget.client);
     _mutationInspectorNotifier = MutationInspectorNotifier(widget.tracker);
     _queriesNotifier = QueriesNotifier(widget.tracker);
     _mutationsNotifier = MutationsNotifier(widget.tracker);
@@ -113,8 +114,10 @@ class _QoraInspectorState extends State<QoraInspector> {
         child: Stack(
           children: [
             widget.child,
-            if (_panelOpen) QoraPanel(onClose: () => setState(() => _panelOpen = false)),
-            if (!_panelOpen) QoraFab(onTap: () => setState(() => _panelOpen = true)),
+            if (_panelOpen)
+              QoraPanel(onClose: () => setState(() => _panelOpen = false)),
+            if (!_panelOpen)
+              QoraFab(onTap: () => setState(() => _panelOpen = true)),
           ],
         ),
       ),

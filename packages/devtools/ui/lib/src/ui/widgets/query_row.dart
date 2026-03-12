@@ -88,19 +88,18 @@ class _QueryRowState extends State<QueryRow> {
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: <Widget>[
                   Icon(
-                    _expanded
-                        ? Icons.arrow_drop_down
-                        : Icons.arrow_right,
+                    _expanded ? Icons.arrow_drop_down : Icons.arrow_right,
                     size: 18,
                     color: Colors.grey,
                   ),
                   const SizedBox(width: 4),
-                  Expanded(child: _KeyBreadcrumb(key: ValueKey(q.key), queryKey: q.key)),
+                  Expanded(
+                      child: _KeyBreadcrumb(
+                          key: ValueKey(q.key), queryKey: q.key)),
                   const SizedBox(width: 8),
                   _StatusBadge(status: q.status),
                   const SizedBox(width: 8),

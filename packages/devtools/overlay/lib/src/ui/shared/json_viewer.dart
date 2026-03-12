@@ -38,7 +38,8 @@ class JsonViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final value = data is JsonValue ? data as JsonValue : JsonValue.fromDynamic(data);
+    final value =
+        data is JsonValue ? data as JsonValue : JsonValue.fromDynamic(data);
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
@@ -74,7 +75,8 @@ class _JsonNode extends StatelessWidget {
     return switch (value) {
       JsonNull() => const _PrimitiveChip(text: 'null', color: _C.null_),
       JsonBool v => _PrimitiveChip(text: v.value.toString(), color: _C.bool_),
-      JsonNumber v => _PrimitiveChip(text: v.value.toString(), color: _C.number_),
+      JsonNumber v =>
+        _PrimitiveChip(text: v.value.toString(), color: _C.number_),
       JsonString v => _PrimitiveChip(text: '"${v.value}"', color: _C.string_),
       JsonArray v => _ExpandableNode(
           value: v,
@@ -187,7 +189,8 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
               AnimatedRotation(
                 turns: _expanded ? 0.25 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: const Icon(LucideIcons.chevronRight, size: 14, color: _C.chevron_),
+                child: const Icon(LucideIcons.chevronRight,
+                    size: 14, color: _C.chevron_),
               ),
               const SizedBox(width: 4),
               Text(
@@ -197,7 +200,8 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
               if (!_expanded) ...[
                 Text(
                   ' $_length ${_isArray ? "items" : "keys"} ',
-                  style: DevtoolsTypography.code.copyWith(color: _C.bracket_, fontSize: 11),
+                  style: DevtoolsTypography.code
+                      .copyWith(color: _C.bracket_, fontSize: 11),
                 ),
                 Text(
                   _close,
@@ -235,7 +239,8 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
                             // Key
                             Text(
                               '${entry.key}: ',
-                              style: DevtoolsTypography.code.copyWith(color: _C.key_),
+                              style: DevtoolsTypography.code
+                                  .copyWith(color: _C.key_),
                             ),
                             // Value (recursive)
                             _JsonNode(
@@ -247,7 +252,8 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
                             if (i < _length - 1)
                               Text(
                                 ',',
-                                style: DevtoolsTypography.code.copyWith(color: _C.chevron_),
+                                style: DevtoolsTypography.code
+                                    .copyWith(color: _C.chevron_),
                               ),
                           ],
                         ),

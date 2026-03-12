@@ -37,7 +37,8 @@ class QueryInspectorNotifier extends ChangeNotifier {
   /// Whether action buttons should be enabled.
   bool get hasClient => _client != null;
 
-  QueryInspectorNotifier(this._tracker, {QoraClient? client}) : _client = client {
+  QueryInspectorNotifier(this._tracker, {QoraClient? client})
+      : _client = client {
     _sub = _tracker.onQuery.listen((event) {
       if (_selected == null || event.key != _selected!.key) return;
       if (event.type == QueryEventType.removed) {

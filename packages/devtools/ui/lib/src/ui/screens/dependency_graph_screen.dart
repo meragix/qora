@@ -119,8 +119,8 @@ class _DependencyGraphScreenState extends State<DependencyGraphScreen> {
                         ),
                         child: _GraphHitArea(
                           nodes: nodes,
-                          onTap: (id) =>
-                              setState(() => _selectedId = id == _selectedId ? null : id),
+                          onTap: (id) => setState(() =>
+                              _selectedId = id == _selectedId ? null : id),
                         ),
                       ),
                     ),
@@ -220,14 +220,13 @@ class _GraphPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     for (final edge in edges) {
-      final fromNode = nodes.where((n) => n.id == edge.fromMutationId).firstOrNull;
+      final fromNode =
+          nodes.where((n) => n.id == edge.fromMutationId).firstOrNull;
       final toNode = nodes.where((n) => n.id == edge.toQueryKey).firstOrNull;
       if (fromNode == null || toNode == null) continue;
 
-      final from = _nodeCenter(fromNode, nodes)
-          .translate(_kNodeWidth / 2, 0);
-      final to = _nodeCenter(toNode, nodes)
-          .translate(-_kNodeWidth / 2, 0);
+      final from = _nodeCenter(fromNode, nodes).translate(_kNodeWidth / 2, 0);
+      final to = _nodeCenter(toNode, nodes).translate(-_kNodeWidth / 2, 0);
 
       final cp1 = Offset(from.dx + 60, from.dy);
       final cp2 = Offset(to.dx - 60, to.dy);

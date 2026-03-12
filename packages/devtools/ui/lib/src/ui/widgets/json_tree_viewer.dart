@@ -110,9 +110,7 @@ class _JsonNodeState extends State<_JsonNode> {
           child: Row(
             children: <Widget>[
               Icon(
-                _expanded
-                    ? Icons.arrow_drop_down
-                    : Icons.arrow_right,
+                _expanded ? Icons.arrow_drop_down : Icons.arrow_right,
                 size: 16,
                 color: const Color(0xFF64748B),
               ),

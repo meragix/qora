@@ -138,10 +138,12 @@ class InfiniteQueryBuilder<TData, TPageParam> extends StatefulWidget {
   });
 
   @override
-  State<InfiniteQueryBuilder<TData, TPageParam>> createState() => _InfiniteQueryBuilderState<TData, TPageParam>();
+  State<InfiniteQueryBuilder<TData, TPageParam>> createState() =>
+      _InfiniteQueryBuilderState<TData, TPageParam>();
 }
 
-class _InfiniteQueryBuilderState<TData, TPageParam> extends State<InfiniteQueryBuilder<TData, TPageParam>> {
+class _InfiniteQueryBuilderState<TData, TPageParam>
+    extends State<InfiniteQueryBuilder<TData, TPageParam>> {
   QoraClient? _client;
   InfiniteQueryObserver<TData, TPageParam>? _observer;
   InfiniteQueryController<TData, TPageParam>? _controller;
@@ -227,5 +229,6 @@ class _InfiniteQueryBuilderState<TData, TPageParam> extends State<InfiniteQueryB
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, _state, _controller!);
+  Widget build(BuildContext context) =>
+      widget.builder(context, _state, _controller!);
 }

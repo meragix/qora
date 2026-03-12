@@ -60,7 +60,9 @@ class FeedApi {
   /// [cursor] is the ID of the last post on the previous page, or `''` to
   /// fetch from the beginning (most recent posts first).
   static Future<FeedPage> getFeed(String cursor) async {
-    debugPrint('FeedApi.getFeed(cursor: ${cursor.isEmpty ? '<start>' : cursor})');
+    debugPrint(
+      'FeedApi.getFeed(cursor: ${cursor.isEmpty ? '<start>' : cursor})',
+    );
     await Future<void>.delayed(_delay);
 
     final int startIndex;
@@ -70,7 +72,9 @@ class FeedApi {
       final idx = _posts.indexWhere((p) => p.id == cursor);
       if (idx == -1) {
         // Cursor not found — fall back to the beginning (graceful degradation).
-        debugPrint('FeedApi: cursor "$cursor" not found, falling back to start');
+        debugPrint(
+          'FeedApi: cursor "$cursor" not found, falling back to start',
+        );
         startIndex = 0;
       } else {
         startIndex = idx + 1;
@@ -81,7 +85,9 @@ class FeedApi {
     final pagePosts = _posts.sublist(startIndex, endIndex);
 
     // nextCursor: ID of the last item on this page, signals "more posts exist".
-    final String? nextCursor = endIndex < _posts.length ? pagePosts.last.id : null;
+    final String? nextCursor = endIndex < _posts.length
+        ? pagePosts.last.id
+        : null;
 
     // previousCursor: the cursor that re-fetches the page immediately before
     // this one. Used by maxPages windowed paging to recover evicted pages.
@@ -99,7 +105,11 @@ class FeedApi {
       '(nextCursor: $nextCursor, previousCursor: $previousCursor)',
     );
 
-    return FeedPage(posts: pagePosts, nextCursor: nextCursor, previousCursor: previousCursor);
+    return FeedPage(
+      posts: pagePosts,
+      nextCursor: nextCursor,
+      previousCursor: previousCursor,
+    );
   }
 
   /// Simulates creating a new post.
@@ -107,13 +117,20 @@ class FeedApi {
   /// Fails ~20 % of the time to demonstrate optimistic rollback.
   /// On success, inserts the post at [0] so that a subsequent [getFeed('')]
   /// call includes it at the top of the feed.
-  static Future<Post> createPost({required String content, required String author}) async {
+  static Future<Post> createPost({
+    required String content,
+    required String author,
+  }) async {
     debugPrint('FeedApi.createPost("$content") — sending…');
     await Future<void>.delayed(_delay);
 
     if (_random.nextDouble() < 0.2) {
-      debugPrint('FeedApi.createPost — simulated server error (20 % failure mode)');
-      throw Exception('Server error: failed to publish post. Please try again.');
+      debugPrint(
+        'FeedApi.createPost — simulated server error (20 % failure mode)',
+      );
+      throw Exception(
+        'Server error: failed to publish post. Please try again.',
+      );
     }
 
     final post = Post(

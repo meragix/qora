@@ -27,7 +27,8 @@ class MutationInspectorNotifier extends ChangeNotifier {
   /// View-model for the inspector panel, derived from [selected].
   ///
   /// `null` when [selected] is `null` — the panel renders a placeholder.
-  MutationDetail? get detail => _selected == null ? null : MutationDetail.fromEvent(_selected!);
+  MutationDetail? get detail =>
+      _selected == null ? null : MutationDetail.fromEvent(_selected!);
 
   MutationInspectorNotifier(this._tracker, {QoraClient? client}) {
     _sub = _tracker.onMutation.listen((event) {

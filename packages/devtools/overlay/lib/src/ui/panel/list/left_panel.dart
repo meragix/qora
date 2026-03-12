@@ -8,6 +8,7 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 class LeftPanel extends StatefulWidget {
   final void Function(QueryEvent) onQueryTap;
   final void Function(MutationEvent) onMutationTap;
+
   /// Called with `0` (queries) or `1` (mutations) when the tab changes.
   final void Function(int index) onTabChanged;
 
@@ -22,7 +23,8 @@ class LeftPanel extends StatefulWidget {
   State<LeftPanel> createState() => _LeftPanelState();
 }
 
-class _LeftPanelState extends State<LeftPanel> with SingleTickerProviderStateMixin {
+class _LeftPanelState extends State<LeftPanel>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override

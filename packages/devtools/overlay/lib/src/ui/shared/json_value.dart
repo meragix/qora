@@ -25,7 +25,11 @@ sealed class JsonValue {
   }
 
   /// Whether this value is a leaf (not expandable in the tree).
-  bool get isPrimitive => this is JsonNull || this is JsonBool || this is JsonNumber || this is JsonString;
+  bool get isPrimitive =>
+      this is JsonNull ||
+      this is JsonBool ||
+      this is JsonNumber ||
+      this is JsonString;
 }
 
 final class JsonNull extends JsonValue {

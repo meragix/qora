@@ -29,7 +29,7 @@ class QoraFab extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration:  BoxDecoration(
+                decoration: BoxDecoration(
                   color: DevtoolsColors.accent,
                   shape: BoxShape.circle,
                   boxShadow: DevtoolsShadows.fab,

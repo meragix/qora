@@ -46,7 +46,9 @@ class MutationRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    mutation.key != '' ? formatQueryKey(mutation.key) : mutation.id,
+                    mutation.key != ''
+                        ? formatQueryKey(mutation.key)
+                        : mutation.id,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DevtoolsTypography.queryKey,
@@ -56,11 +58,13 @@ class MutationRow extends StatelessWidget {
                       padding: 4.edgeInsetsT,
                       child: Row(
                         children: [
-                          Icon(LucideIcons.zap, size: 13, color: DevtoolsColors.amber400),
+                          Icon(LucideIcons.zap,
+                              size: 13, color: DevtoolsColors.amber400),
                           const SizedBox(width: 3),
                           Text(
                             'Optimistic',
-                            style: TextStyle(color: DevtoolsColors.amber400, fontSize: 11),
+                            style: TextStyle(
+                                color: DevtoolsColors.amber400, fontSize: 11),
                           ),
                         ],
                       ),
@@ -69,17 +73,20 @@ class MutationRow extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 13, color: DevtoolsColors.textDisabled),
+                        const Icon(Icons.access_time_rounded,
+                            size: 13, color: DevtoolsColors.textDisabled),
                         const SizedBox(width: 3),
                         Text(
                           formatTimeAgo(mutation.timestampMs),
-                          style: const TextStyle(fontSize: 10, color: DevtoolsColors.textDisabled),
+                          style: const TextStyle(
+                              fontSize: 10, color: DevtoolsColors.textDisabled),
                         ),
                         if (mutation.timestampMs > 0) ...[
                           const SizedBox(width: 12),
                           Text(
                             'Retries: 2',
-                            style: const TextStyle(fontSize: 10, color: DevtoolsColors.orange400),
+                            style: const TextStyle(
+                                fontSize: 10, color: DevtoolsColors.orange400),
                           ),
                         ],
                       ],
@@ -96,7 +103,9 @@ class MutationRow extends StatelessWidget {
 
   _MutationStatus _queryStatus(MutationEvent e) {
     if (e.type == MutationEventType.settled) {
-      return (e.success ?? false) ? _MutationStatus.success : _MutationStatus.error;
+      return (e.success ?? false)
+          ? _MutationStatus.success
+          : _MutationStatus.error;
     }
     return _MutationStatus.pending;
   }

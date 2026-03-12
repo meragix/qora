@@ -58,8 +58,7 @@ class PerformanceNotifier extends ChangeNotifier {
   Iterable<QueryStats> get allStats => _stats.values;
 
   /// Total completed fetch count across all queries.
-  int get totalFetches =>
-      _stats.values.fold(0, (sum, s) => sum + s.fetches);
+  int get totalFetches => _stats.values.fold(0, (sum, s) => sum + s.fetches);
 
   /// Overall average fetch duration across all queries in milliseconds.
   double get overallAvgDurationMs {
@@ -82,11 +81,10 @@ class PerformanceNotifier extends ChangeNotifier {
     list.sort((a, b) {
       return switch (field) {
         SortField.fetches => b.fetches.compareTo(a.fetches),
-        SortField.avgDuration =>
-          b.avgDurationMs.compareTo(a.avgDurationMs),
+        SortField.avgDuration => b.avgDurationMs.compareTo(a.avgDurationMs),
         SortField.errors => b.errors.compareTo(a.errors),
-        SortField.lastActive => (b.lastFetchedAtMs ?? 0)
-            .compareTo(a.lastFetchedAtMs ?? 0),
+        SortField.lastActive =>
+          (b.lastFetchedAtMs ?? 0).compareTo(a.lastFetchedAtMs ?? 0),
       };
     });
     return list;

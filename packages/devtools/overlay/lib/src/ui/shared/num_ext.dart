@@ -48,21 +48,29 @@ extension NumListEdgeInsetsExt on List<num> {
 }
 
 extension NumBorderRadiusExt on num {
-  BorderRadius get borderRadiusT => BorderRadius.vertical(top: Radius.circular(r));
+  BorderRadius get borderRadiusT =>
+      BorderRadius.vertical(top: Radius.circular(r));
 
-  BorderRadius get borderRadiusB => BorderRadius.vertical(bottom: Radius.circular(r));
+  BorderRadius get borderRadiusB =>
+      BorderRadius.vertical(bottom: Radius.circular(r));
 
-  BorderRadius get borderRadiusL => BorderRadius.horizontal(left: Radius.circular(r));
+  BorderRadius get borderRadiusL =>
+      BorderRadius.horizontal(left: Radius.circular(r));
 
-  BorderRadius get borderRadiusR => BorderRadius.horizontal(right: Radius.circular(r));
+  BorderRadius get borderRadiusR =>
+      BorderRadius.horizontal(right: Radius.circular(r));
 
-  BorderRadius get borderRadiusTL => BorderRadius.only(topLeft: Radius.circular(r));
+  BorderRadius get borderRadiusTL =>
+      BorderRadius.only(topLeft: Radius.circular(r));
 
-  BorderRadius get borderRadiusTR => BorderRadius.only(topRight: Radius.circular(r));
+  BorderRadius get borderRadiusTR =>
+      BorderRadius.only(topRight: Radius.circular(r));
 
-  BorderRadius get borderRadiusBL => BorderRadius.only(bottomLeft: Radius.circular(r));
+  BorderRadius get borderRadiusBL =>
+      BorderRadius.only(bottomLeft: Radius.circular(r));
 
-  BorderRadius get borderRadiusBR => BorderRadius.only(bottomRight: Radius.circular(r));
+  BorderRadius get borderRadiusBR =>
+      BorderRadius.only(bottomRight: Radius.circular(r));
 
   BorderRadius get borderRadiusA => BorderRadius.all(Radius.circular(r));
 

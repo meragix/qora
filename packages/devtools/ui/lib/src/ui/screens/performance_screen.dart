@@ -60,8 +60,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                   _SummaryCard(
                     label: 'Error Rate',
                     value: '${(n.overallErrorRate * 100).toStringAsFixed(1)}%',
-                    valueColor:
-                        n.overallErrorRate > 0.1 ? Colors.red : null,
+                    valueColor: n.overallErrorRate > 0.1 ? Colors.red : null,
                   ),
                   const SizedBox(width: 8),
                   _SummaryCard(
@@ -120,8 +119,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                             ),
                             DataColumn(
                               label: const Text('Last Active'),
-                              onSort: (_, __) =>
-                                  _setSort(SortField.lastActive),
+                              onSort: (_, __) => _setSort(SortField.lastActive),
                             ),
                           ],
                           rows: rows.map(_buildRow).toList(growable: false),
@@ -169,8 +167,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     );
   }
 
-  String _fmtTime(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
+  String _fmtTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}:'
       '${dt.second.toString().padLeft(2, '0')}';
 }

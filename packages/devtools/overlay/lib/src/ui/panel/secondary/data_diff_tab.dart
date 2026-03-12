@@ -63,9 +63,14 @@ class DataDiffTab extends StatelessWidget {
         // ── After column ────────────────────────────────────────────────
         Expanded(
           child: _DiffColumn(
-            label: isSettled ? (isSuccess ? 'AFTER (success)' : 'AFTER (error)') : 'AFTER (pending)',
-            labelColor:
-                isSettled ? (isSuccess ? const Color(0xFF22C55E) : const Color(0xFFEF4444)) : const Color(0xFF64748B),
+            label: isSettled
+                ? (isSuccess ? 'AFTER (success)' : 'AFTER (error)')
+                : 'AFTER (pending)',
+            labelColor: isSettled
+                ? (isSuccess
+                    ? const Color(0xFF22C55E)
+                    : const Color(0xFFEF4444))
+                : const Color(0xFF64748B),
             value: selected.result,
             emptyText: isSettled ? 'No result data' : 'Pending…',
           ),
@@ -213,7 +218,11 @@ class _JsonValueState extends State<_JsonValue> {
             padding: const EdgeInsets.only(left: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: list.asMap().entries.map((e) => _JsonValue(value: e.value)).toList(growable: false),
+              children: list
+                  .asMap()
+                  .entries
+                  .map((e) => _JsonValue(value: e.value))
+                  .toList(growable: false),
             ),
           ),
       ],

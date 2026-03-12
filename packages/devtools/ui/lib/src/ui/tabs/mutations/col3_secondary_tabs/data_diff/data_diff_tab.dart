@@ -67,9 +67,8 @@ class _DiffView extends StatelessWidget {
         Expanded(
           child: _DiffColumn(
             label: isSuccess ? 'AFTER (success)' : 'AFTER (error)',
-            labelColor: isSuccess
-                ? const Color(0xFF15803D)
-                : const Color(0xFFB91C1C),
+            labelColor:
+                isSuccess ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
             value: event.result,
             emptyText: isSuccess ? 'No result data' : 'No error details',
           ),

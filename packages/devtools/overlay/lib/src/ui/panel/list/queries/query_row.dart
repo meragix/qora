@@ -3,7 +3,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart' show formatQueryKey, formatQueryTime;
+import 'package:qora_devtools_overlay/utils/query_utils.dart'
+    show formatQueryKey, formatQueryTime;
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class QueryRow extends StatelessWidget {
@@ -27,7 +28,9 @@ class QueryRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? DevtoolsColors.rowSelected : Colors.transparent,
           border: Border(
-            left: isSelected ? BorderSide(color: DevtoolsColors.accent, width: 2) : BorderSide.none,
+            left: isSelected
+                ? BorderSide(color: DevtoolsColors.accent, width: 2)
+                : BorderSide.none,
           ),
         ),
         padding: [8, 10].edgeInsetsVH,
@@ -115,8 +118,12 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
     // staleTimeMs is a duration — remaining time = (fetchedAt + duration) - now
-    final staleTimeLeft = query.staleTimeMs != null ? (query.timestampMs + query.staleTimeMs!) - now : null;
-    final gcTimeLeft = query.gcTimeMs != null ? (query.timestampMs + query.gcTimeMs!) - now : null;
+    final staleTimeLeft = query.staleTimeMs != null
+        ? (query.timestampMs + query.staleTimeMs!) - now
+        : null;
+    final gcTimeLeft = query.gcTimeMs != null
+        ? (query.timestampMs + query.gcTimeMs!) - now
+        : null;
 
     return Wrap(
       spacing: 10,
@@ -131,13 +138,17 @@ class _MetaRow extends StatelessWidget {
           label: 'stale: ',
           value: staleTimeLeft != null ? formatQueryTime(staleTimeLeft) : '—',
           icon: LucideIcons.clock,
-          color: staleTimeLeft != null && staleTimeLeft <= 0 ? DevtoolsColors.orange400 : null,
+          color: staleTimeLeft != null && staleTimeLeft <= 0
+              ? DevtoolsColors.orange400
+              : null,
         ),
         _MetaChip(
           label: 'gc: ',
           value: gcTimeLeft != null ? formatQueryTime(gcTimeLeft) : '—',
           icon: LucideIcons.trash2,
-          color: gcTimeLeft != null && gcTimeLeft <= 0 ? DevtoolsColors.red400 : null,
+          color: gcTimeLeft != null && gcTimeLeft <= 0
+              ? DevtoolsColors.red400
+              : null,
         ),
       ],
     );

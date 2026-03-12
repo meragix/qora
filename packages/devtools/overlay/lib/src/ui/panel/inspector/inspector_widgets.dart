@@ -70,8 +70,8 @@ class InspectorMetaRow extends StatelessWidget {
             child: Text(
               value,
               style: valueColor != null
-                ? DevtoolsTypography.code.copyWith(color: valueColor)
-                : DevtoolsTypography.code,
+                  ? DevtoolsTypography.code.copyWith(color: valueColor)
+                  : DevtoolsTypography.code,
             ),
           ),
         ],
@@ -114,7 +114,9 @@ class _InspectorActionButtonState extends State<InspectorActionButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: _hovered ? widget.accentColor?.withValues(alpha: 0.8) : widget.accentColor,
+          color: _hovered
+              ? widget.accentColor?.withValues(alpha: 0.8)
+              : widget.accentColor,
           borderRadius: BorderRadius.circular(6),
         ),
         child: InkWell(

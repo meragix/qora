@@ -161,7 +161,8 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
     extends State<QoraMutationBuilder<TData, TVariables, TContext>> {
   MutationController<TData, TVariables, TContext>? _controller;
   StreamSubscription<MutationState<TData, TVariables>>? _subscription;
-  MutationState<TData, TVariables> _state = const MutationIdle<Never, Never>() as MutationState<Never, Never>;
+  MutationState<TData, TVariables> _state =
+      const MutationIdle<Never, Never>() as MutationState<Never, Never>;
   QoraClient? _client;
 
   @override

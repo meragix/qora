@@ -73,9 +73,11 @@ class QueryDetail {
   });
 
   /// Builds a [QueryDetail] from the latest [QueryEvent] snapshot.
-  factory QueryDetail.fromEvent(QueryEvent event, {bool isInvalidated = false}) {
+  factory QueryDetail.fromEvent(QueryEvent event,
+      {bool isInvalidated = false}) {
     final rawData = event.data;
-    final preview = rawData != null ? _truncate(rawData.toString(), max: 300) : null;
+    final preview =
+        rawData != null ? _truncate(rawData.toString(), max: 300) : null;
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(event.timestampMs);
     final staleAt = event.staleTimeMs != null && event.staleTimeMs! > 0
         ? updatedAt.add(Duration(milliseconds: event.staleTimeMs!))

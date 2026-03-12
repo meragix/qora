@@ -242,8 +242,8 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
             if (_result != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(_result!,
-                    style: const TextStyle(color: Colors.green)),
+                child:
+                    Text(_result!, style: const TextStyle(color: Colors.green)),
               ),
             FilledButton(
               onPressed: _pending ? null : _save,

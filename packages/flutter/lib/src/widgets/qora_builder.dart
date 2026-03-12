@@ -219,7 +219,9 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         //
         // If a fetch is already in-flight or paused, the client's
         // deduplication mechanism prevents duplicate requests.
-        if (widget.enabled && state is Loading<T> && state.previousData != null) {
+        if (widget.enabled &&
+            state is Loading<T> &&
+            state.previousData != null) {
           client
               .fetchQuery<T>(
                 key: widget.queryKey,
@@ -263,7 +265,8 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveState = widget.keepPreviousData ? _withPreviousData(_state) : _state;
+    final effectiveState =
+        widget.keepPreviousData ? _withPreviousData(_state) : _state;
     return widget.builder(context, effectiveState, _fetchStatus);
   }
 

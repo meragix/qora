@@ -116,7 +116,8 @@ class CacheEntry<T> {
     if (_forcedStale) return true;
     if (staleTime == null) return false;
     return switch (_state) {
-      Success(:final updatedAt) => DateTime.now().difference(updatedAt) > staleTime,
+      Success(:final updatedAt) =>
+        DateTime.now().difference(updatedAt) > staleTime,
       _ => true,
     };
   }
@@ -148,12 +149,14 @@ class CacheEntry<T> {
     final previous = state.dataOrNull;
     // Here, the compiler knows that we are in QueryEntry<T>,
     // therefore Loading is naturally instantiated as Loading<T>.
-    updateState(previous != null ? Loading<T>(previousData: previous) : Initial<T>());
+    updateState(
+        previous != null ? Loading<T>(previousData: previous) : Initial<T>());
   }
 
   /// Returns `true` when the entry has been idle (no access) longer than
   /// [cacheTime] and is safe to garbage-collect.
-  bool shouldEvict(Duration cacheTime) => DateTime.now().difference(lastAccessedAt) > cacheTime;
+  bool shouldEvict(Duration cacheTime) =>
+      DateTime.now().difference(lastAccessedAt) > cacheTime;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 

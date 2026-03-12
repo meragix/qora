@@ -7,7 +7,8 @@ import 'package:qora_devtools_ui/src/domain/usecases/observe_events.dart';
 /// A node in the dependency graph — either a mutation or a query.
 class GraphNode {
   /// Creates a graph node.
-  const GraphNode({required this.id, required this.label, required this.isMutation});
+  const GraphNode(
+      {required this.id, required this.label, required this.isMutation});
 
   /// Unique node identifier (mutation ID or query key).
   final String id;
@@ -33,7 +34,8 @@ class GraphEdge {
 
 /// Pending mutation record used for temporal correlation.
 class _PendingMutation {
-  _PendingMutation({required this.id, required this.key, required this.settledAtMs});
+  _PendingMutation(
+      {required this.id, required this.key, required this.settledAtMs});
 
   final String id;
   final String key;

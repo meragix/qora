@@ -23,7 +23,8 @@ class MutationInspector extends StatefulWidget {
   State<MutationInspector> createState() => _MutationInspectorState();
 }
 
-class _MutationInspectorState extends State<MutationInspector> with SingleTickerProviderStateMixin {
+class _MutationInspectorState extends State<MutationInspector>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -146,10 +147,14 @@ class _MutationInspectorState extends State<MutationInspector> with SingleTicker
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InspectorMetaRow('Created At', fmtDateTime(detail.createdAt)),
+                        InspectorMetaRow(
+                            'Created At', fmtDateTime(detail.createdAt)),
                         if (detail.submittedAt != null)
-                          InspectorMetaRow('Submitted At', fmtDateTime(detail.submittedAt!)),
-                        if (detail.updatedAt != null) InspectorMetaRow('Updated At', fmtDateTime(detail.updatedAt!)),
+                          InspectorMetaRow(
+                              'Submitted At', fmtDateTime(detail.submittedAt!)),
+                        if (detail.updatedAt != null)
+                          InspectorMetaRow(
+                              'Updated At', fmtDateTime(detail.updatedAt!)),
                         InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),

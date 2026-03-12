@@ -35,11 +35,13 @@ class QueriesNotifier extends ChangeNotifier {
 
   /// All observed queries, one entry per distinct key, newest first.
   List<QueryEvent> get queries {
-    return _queries.values.toList()..sort((a, b) => b.timestampMs.compareTo(a.timestampMs));
+    return _queries.values.toList()
+      ..sort((a, b) => b.timestampMs.compareTo(a.timestampMs));
   }
 
   /// Number of queries whose last known status is `'loading'`.
-  int get activeQueryCount => _queries.values.where((e) => e.status == 'loading').length;
+  int get activeQueryCount =>
+      _queries.values.where((e) => e.status == 'loading').length;
 
   @override
   void dispose() {

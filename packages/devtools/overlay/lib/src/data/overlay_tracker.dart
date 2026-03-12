@@ -288,7 +288,8 @@ class OverlayTracker implements QoraTracker {
   int _createdAt(String key, int now) =>
       _queryCreatedAt.putIfAbsent(key, () => now);
 
-  void _emitTimeline(TimelineEventType type, String? key, {String? id, int? duration}) {
+  void _emitTimeline(TimelineEventType type, String? key,
+      {String? id, int? duration}) {
     final event = TimelineEvent(
       type: type,
       key: key,

@@ -38,7 +38,8 @@ class _MutationsTabState extends State<MutationsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final mutations = context.watch<MutationsNotifier>().mutations.reversed.toList();
+    final mutations =
+        context.watch<MutationsNotifier>().mutations.reversed.toList();
     // Drive active highlight from the notifier so it survives tab switches.
     final selectedId = context.watch<MutationInspectorNotifier>().selected?.id;
 
@@ -60,7 +61,8 @@ class _MutationsTabState extends State<MutationsTab> {
                   isSelected: selectedId == mutations[i].id,
                   onTap: () => widget.onMutationTap(mutations[i]),
                 ),
-                if (i == mutations.length - 1) Divider(height: DevtoolsSpacing.borderWidth),
+                if (i == mutations.length - 1)
+                  Divider(height: DevtoolsSpacing.borderWidth),
               ],
             ),
           ),

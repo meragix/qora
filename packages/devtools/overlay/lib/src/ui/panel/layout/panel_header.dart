@@ -54,13 +54,16 @@ class PanelHeader extends StatelessWidget {
               ),
               child: Text(
                 '$activeCount ${activeCount == 1 ? 'query' : 'queries'} active',
-                style: DevtoolsTypography.smallMuted.copyWith(fontWeight: FontWeight.w500),
+                style: DevtoolsTypography.smallMuted
+                    .copyWith(fontWeight: FontWeight.w500),
               ),
             ),
           const Spacer(),
           // Expand
           IconButton(
-            icon: Icon(isExpanded ? LucideIcons.minimize2 : LucideIcons.maximize2, size: 16),
+            icon: Icon(
+                isExpanded ? LucideIcons.minimize2 : LucideIcons.maximize2,
+                size: 16),
             onPressed: onToggleExpand,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),

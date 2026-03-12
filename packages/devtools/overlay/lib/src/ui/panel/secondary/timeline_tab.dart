@@ -45,12 +45,14 @@ class _TimelineTabState extends State<TimelineTab> {
             builder: (context, constraints) {
               // Buttons: 2 × 26px + 1 gap × 4px = 56px; add 4px gap after filter = 60px fixed.
               // Give the filter field whatever remains (clamped 0–100), hide it below 40px.
-              final filterWidth = (constraints.maxWidth - 16 - 60).clamp(0.0, 100.0);
+              final filterWidth =
+                  (constraints.maxWidth - 16 - 60).clamp(0.0, 100.0);
               final showFilter = filterWidth >= 40;
               return Container(
                 padding: [6, 8].edgeInsetsVH,
                 decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: DevtoolsColors.border)),
+                  border:
+                      Border(bottom: BorderSide(color: DevtoolsColors.border)),
                 ),
                 child: Row(
                   children: [
@@ -88,7 +90,8 @@ class _TimelineTabState extends State<TimelineTab> {
                               size: 12,
                               color: DevtoolsColors.textDisabled,
                             ),
-                            prefixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
+                            prefixIconConstraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 0),
                             suffixIcon: notifier.filter.isNotEmpty
                                 ? GestureDetector(
                                     onTap: () {
@@ -102,20 +105,24 @@ class _TimelineTabState extends State<TimelineTab> {
                                     ),
                                   )
                                 : null,
-                            suffixIconConstraints: const BoxConstraints(minWidth: 28, minHeight: 0),
+                            suffixIconConstraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 0),
                             filled: true,
                             fillColor: DevtoolsColors.inputBackground,
                             border: OutlineInputBorder(
                               borderRadius: 4.borderRadiusA,
-                              borderSide: const BorderSide(color: DevtoolsColors.zinc700),
+                              borderSide: const BorderSide(
+                                  color: DevtoolsColors.zinc700),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: 4.borderRadiusA,
-                              borderSide: const BorderSide(color: Color(0xFF3F3F46)),
+                              borderSide:
+                                  const BorderSide(color: Color(0xFF3F3F46)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: 4.borderRadiusA,
-                              borderSide: const BorderSide(color: DevtoolsColors.zinc600),
+                              borderSide: const BorderSide(
+                                  color: DevtoolsColors.zinc600),
                             ),
                             contentPadding: 8.edgeInsetsH,
                           ),
@@ -124,8 +131,12 @@ class _TimelineTabState extends State<TimelineTab> {
                       const SizedBox(width: 4),
                     ],
                     _IconButton(
-                      icon: notifier.paused ? LucideIcons.pause : LucideIcons.play,
-                      tooltip: notifier.paused ? 'Resume timeline' : 'Pause timeline',
+                      icon: notifier.paused
+                          ? LucideIcons.pause
+                          : LucideIcons.play,
+                      tooltip: notifier.paused
+                          ? 'Resume timeline'
+                          : 'Pause timeline',
                       isActive: notifier.paused,
                       color: const Color(0xFFFBBF24),
                       onTap: notifier.togglePause,
@@ -149,7 +160,9 @@ class _TimelineTabState extends State<TimelineTab> {
               itemBuilder: (context, i) => Column(
                 children: [
                   TimelineEventRow(event: events[i]),
-                  const Divider(height: DevtoolsSpacing.borderWidth, color: DevtoolsColors.zinc800),
+                  const Divider(
+                      height: DevtoolsSpacing.borderWidth,
+                      color: DevtoolsColors.zinc800),
                 ],
               ),
             ),
@@ -218,7 +231,9 @@ class TimelineEventRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    event.key != null && event.key != '' ? formatQueryKey(event.key!) : event.mutationId ?? '',
+                    event.key != null && event.key != ''
+                        ? formatQueryKey(event.key!)
+                        : event.mutationId ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -246,19 +261,58 @@ class TimelineEventRow extends StatelessWidget {
 
   EventStyle _getEventStyle(TimelineEventType type) {
     return switch (type) {
-      TimelineEventType.queryCreated => (icon: LucideIcons.plus, color: DevtoolsColors.cyan400),
-      TimelineEventType.fetchStarted => (icon: LucideIcons.play, color: DevtoolsColors.blue400),
-      TimelineEventType.fetchSuccess => (icon: LucideIcons.circleCheckBig, color: DevtoolsColors.green400),
-      TimelineEventType.fetchError => (icon: LucideIcons.circleX, color: DevtoolsColors.red400),
-      TimelineEventType.queryInvalidated => (icon: LucideIcons.refreshCcw, color: DevtoolsColors.yellow400),
-      TimelineEventType.queryCancelled => (icon: LucideIcons.ban, color: DevtoolsColors.zinc400),
-      TimelineEventType.cacheCleared => (icon: LucideIcons.trash2, color: const Color(0xFF94A3B8)),
-      TimelineEventType.queryRemoved => (icon: LucideIcons.trash2, color: DevtoolsColors.red400),
-      TimelineEventType.queryMarkedStale => (icon: LucideIcons.clock, color: DevtoolsColors.yellow400),
-      TimelineEventType.mutationStarted => (icon: LucideIcons.send, color: DevtoolsColors.purple400),
-      TimelineEventType.mutationSuccess => (icon: LucideIcons.circleCheckBig, color: DevtoolsColors.emerald400),
-      TimelineEventType.mutationError => (icon: LucideIcons.circleX, color: DevtoolsColors.red400),
-      TimelineEventType.optimisticUpdate => (icon: LucideIcons.zap, color: DevtoolsColors.amber400),
+      TimelineEventType.queryCreated => (
+          icon: LucideIcons.plus,
+          color: DevtoolsColors.cyan400
+        ),
+      TimelineEventType.fetchStarted => (
+          icon: LucideIcons.play,
+          color: DevtoolsColors.blue400
+        ),
+      TimelineEventType.fetchSuccess => (
+          icon: LucideIcons.circleCheckBig,
+          color: DevtoolsColors.green400
+        ),
+      TimelineEventType.fetchError => (
+          icon: LucideIcons.circleX,
+          color: DevtoolsColors.red400
+        ),
+      TimelineEventType.queryInvalidated => (
+          icon: LucideIcons.refreshCcw,
+          color: DevtoolsColors.yellow400
+        ),
+      TimelineEventType.queryCancelled => (
+          icon: LucideIcons.ban,
+          color: DevtoolsColors.zinc400
+        ),
+      TimelineEventType.cacheCleared => (
+          icon: LucideIcons.trash2,
+          color: const Color(0xFF94A3B8)
+        ),
+      TimelineEventType.queryRemoved => (
+          icon: LucideIcons.trash2,
+          color: DevtoolsColors.red400
+        ),
+      TimelineEventType.queryMarkedStale => (
+          icon: LucideIcons.clock,
+          color: DevtoolsColors.yellow400
+        ),
+      TimelineEventType.mutationStarted => (
+          icon: LucideIcons.send,
+          color: DevtoolsColors.purple400
+        ),
+      TimelineEventType.mutationSuccess => (
+          icon: LucideIcons.circleCheckBig,
+          color: DevtoolsColors.emerald400
+        ),
+      TimelineEventType.mutationError => (
+          icon: LucideIcons.circleX,
+          color: DevtoolsColors.red400
+        ),
+      TimelineEventType.optimisticUpdate => (
+          icon: LucideIcons.zap,
+          color: DevtoolsColors.amber400
+        ),
     };
   }
 
@@ -315,7 +369,9 @@ class _IconButtonState extends State<_IconButton> {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(6),
-              border: widget.isActive ? Border.all(color: accent.withValues(alpha: 0.3), width: 1) : null,
+              border: widget.isActive
+                  ? Border.all(color: accent.withValues(alpha: 0.3), width: 1)
+                  : null,
             ),
             child: Icon(
               widget.icon,
