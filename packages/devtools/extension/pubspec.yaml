@@ -15,7 +15,7 @@ resolution: workspace
 
 dependencies:
   qora: ^0.8.0
-  qora_devtools_shared: ^0.1.0
+  qora_devtools_shared: ^0.2.0
 
 dev_dependencies:
   test: ^1.26.0

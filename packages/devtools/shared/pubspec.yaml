@@ -2,7 +2,7 @@ name: qora_devtools_shared
 description: >-
   Typed events, commands, models, and codecs — the protocol contract shared
   between qora_devtools_extension, qora_devtools_overlay, and the DevTools UI.
-version: 0.1.0
+version: 0.2.0
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
