@@ -3,7 +3,7 @@ description: >-
   In-app debug overlay for Qora. Injects a floating panel with Queries,
   Mutations, and Timeline tabs into the running Flutter app — zero overhead
   in release builds.
-version: 0.1.0
+version: 0.2.0
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora/tree/main/packages/devtools/overlay
 issue_tracker: https://github.com/meragix/qora/issues
