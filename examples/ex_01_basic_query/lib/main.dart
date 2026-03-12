@@ -1,30 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:qora_devtools_overlay/qora_devtools_overlay.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 import 'screens/user_detail_screen.dart';
 import 'screens/user_list_screen.dart';
 
 void main() {
-  final tracker = OverlayTracker();
   final qoraClient = QoraClient(
     config: const QoraClientConfig(
-      defaultOptions: QoraOptions(
-        staleTime: Duration(minutes: 5),
-        cacheTime: Duration(minutes: 10),
-      ),
+      defaultOptions: QoraOptions(staleTime: Duration(minutes: 5), cacheTime: Duration(minutes: 10)),
       debugMode: kDebugMode,
     ),
-    tracker: kDebugMode ? tracker : null,
   );
 
-  runApp(
-    QoraInspector(
-      tracker: tracker,
-      client: kDebugMode ? qoraClient : null,
-      child: MyApp(qoraClient: qoraClient),
-    ),
-  );
+  runApp(MyApp(qoraClient: qoraClient));
 }
 
 class MyApp extends StatelessWidget {
@@ -41,10 +29,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Qora Basic Query',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
+        theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple), useMaterial3: true),
         home: const HomeScreen(),
       ),
     );
@@ -66,26 +51,17 @@ class HomeScreen extends StatelessWidget {
         children: [
           _ExampleCard(
             title: 'User List',
-            description:
-                'Fetch a list with SWR caching, pull-to-refresh, and background revalidation.',
+            description: 'Fetch a list with SWR caching, pull-to-refresh, and background revalidation.',
             icon: Icons.people,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(builder: (_) => const UserListScreen()),
-            ),
+            onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const UserListScreen())),
           ),
           const SizedBox(height: 12),
           _ExampleCard(
             title: 'User Detail',
-            description:
-                'Per-item query — shows previousData during refresh and updatedAt timestamp.',
+            description: 'Per-item query — shows previousData during refresh and updatedAt timestamp.',
             icon: Icons.person,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const UserDetailScreen(userId: '1'),
-              ),
-            ),
+            onTap: () =>
+                Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const UserDetailScreen(userId: '1'))),
           ),
           const SizedBox(height: 20),
           const _InfoCard(
@@ -124,12 +100,7 @@ class _ExampleCard extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _ExampleCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.onTap,
-  });
+  const _ExampleCard({required this.title, required this.description, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -147,28 +118,16 @@ class _ExampleCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                child: Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text(description, style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -195,20 +154,12 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  item,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                child: Text(item, style: Theme.of(context).textTheme.bodyMedium),
               ),
             ),
           ],

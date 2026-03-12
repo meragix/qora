@@ -19,7 +19,7 @@ class PanelSection extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Text(
         label,
-        style: DevtoolsTypography.tab.copyWith(letterSpacing: 0.6),
+        style: DevtoolsTypography.tab,
       ),
     );
   }

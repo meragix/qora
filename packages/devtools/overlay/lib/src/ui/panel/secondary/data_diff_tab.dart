@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Data Diff tab — column 3, third tab of the Mutations panel.
@@ -20,20 +22,20 @@ class DataDiffTab extends StatelessWidget {
     final selected = notifier.selected;
 
     if (selected == null) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Icon(
-              Icons.difference_outlined,
-              color: Color(0xFF334155),
+              LucideIcons.fileDiff,
+              color: DevtoolsColors.textMuted,
               size: 32,
             ),
             SizedBox(height: 8),
             Text(
               'Select a mutation to compare data',
               style: TextStyle(
-                color: Color(0xFF475569),
+                color: DevtoolsColors.textMuted,
                 fontSize: 12,
               ),
             ),
@@ -61,14 +63,9 @@ class DataDiffTab extends StatelessWidget {
         // ── After column ────────────────────────────────────────────────
         Expanded(
           child: _DiffColumn(
-            label: isSettled
-                ? (isSuccess ? 'AFTER (success)' : 'AFTER (error)')
-                : 'AFTER (pending)',
-            labelColor: isSettled
-                ? (isSuccess
-                    ? const Color(0xFF22C55E)
-                    : const Color(0xFFEF4444))
-                : const Color(0xFF64748B),
+            label: isSettled ? (isSuccess ? 'AFTER (success)' : 'AFTER (error)') : 'AFTER (pending)',
+            labelColor:
+                isSettled ? (isSuccess ? const Color(0xFF22C55E) : const Color(0xFFEF4444)) : const Color(0xFF64748B),
             value: selected.result,
             emptyText: isSettled ? 'No result data' : 'Pending…',
           ),
@@ -216,11 +213,7 @@ class _JsonValueState extends State<_JsonValue> {
             padding: const EdgeInsets.only(left: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: list
-                  .asMap()
-                  .entries
-                  .map((e) => _JsonValue(value: e.value))
-                  .toList(growable: false),
+              children: list.asMap().entries.map((e) => _JsonValue(value: e.value)).toList(growable: false),
             ),
           ),
       ],
