@@ -138,25 +138,27 @@ class InfiniteQueryBuilder<TData, TPageParam> extends StatefulWidget {
   });
 
   @override
-  State<InfiniteQueryBuilder<TData, TPageParam>> createState() =>
-      _InfiniteQueryBuilderState<TData, TPageParam>();
+  State<InfiniteQueryBuilder<TData, TPageParam>> createState() => _InfiniteQueryBuilderState<TData, TPageParam>();
 }
 
-class _InfiniteQueryBuilderState<TData, TPageParam>
-    extends State<InfiniteQueryBuilder<TData, TPageParam>> {
-  late QoraClient _client;
-  late InfiniteQueryObserver<TData, TPageParam> _observer;
-  late InfiniteQueryController<TData, TPageParam> _controller;
+class _InfiniteQueryBuilderState<TData, TPageParam> extends State<InfiniteQueryBuilder<TData, TPageParam>> {
+  QoraClient? _client;
+  InfiniteQueryObserver<TData, TPageParam>? _observer;
+  InfiniteQueryController<TData, TPageParam>? _controller;
   StreamSubscription<InfiniteQueryState<TData, TPageParam>>? _subscription;
   InfiniteQueryState<TData, TPageParam> _state = const InfiniteInitial();
 
   @override
-  void initState() {
-    super.initState();
-    _initClient();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final newClient = widget.client ?? QoraScope.of(context);
+    if (_client == newClient && _observer != null) return;
+    _client = newClient;
+    _disposeObserver();
     _createObserver();
     _subscribe();
-    if (widget.enabled) unawaited(_observer.fetch());
+    if (widget.enabled) unawaited(_observer!.fetch());
   }
 
   @override
@@ -164,18 +166,18 @@ class _InfiniteQueryBuilderState<TData, TPageParam>
     super.didUpdateWidget(oldWidget);
 
     if (widget.client != oldWidget.client) {
-      _initClient();
+      _client = widget.client ?? QoraScope.of(context);
       _disposeObserver();
       _createObserver();
       _subscribe();
-      if (widget.enabled) unawaited(_observer.fetch());
+      if (widget.enabled) unawaited(_observer!.fetch());
     } else if (widget.queryKey != oldWidget.queryKey) {
       _disposeObserver();
       _createObserver();
       _subscribe();
-      if (widget.enabled) unawaited(_observer.fetch());
+      if (widget.enabled) unawaited(_observer!.fetch());
     } else if (widget.enabled && !oldWidget.enabled) {
-      unawaited(_observer.fetch());
+      unawaited(_observer!.fetch());
     }
   }
 
@@ -186,31 +188,27 @@ class _InfiniteQueryBuilderState<TData, TPageParam>
     super.dispose();
   }
 
-  void _initClient() {
-    _client = widget.client ?? QoraScope.of(context);
-  }
-
   void _createObserver() {
     _observer = InfiniteQueryObserver<TData, TPageParam>(
-      client: _client,
+      client: _client!,
       key: widget.queryKey,
       fetcher: widget.fetcher,
       options: widget.options,
     );
-    _controller = InfiniteQueryController._(_observer);
+    _controller = InfiniteQueryController._(_observer!);
   }
 
   void _disposeObserver() {
-    _observer.dispose();
+    _observer?.dispose();
   }
 
   void _subscribe() {
     _subscription?.cancel();
 
     // Seed local state from the cache before the stream emits.
-    _state = _observer.state;
+    _state = _observer!.state;
 
-    _subscription = _observer.stream.listen(
+    _subscription = _observer!.stream.listen(
       (state) {
         if (!mounted) return;
         setState(() => _state = state);
@@ -219,7 +217,7 @@ class _InfiniteQueryBuilderState<TData, TPageParam>
         // InfiniteInitial. Re-trigger the initial fetch so the UI never
         // stays blank waiting for a manual action.
         if (widget.enabled && state is InfiniteInitial<TData, TPageParam>) {
-          unawaited(_observer.fetch());
+          unawaited(_observer!.fetch());
         }
       },
       onError: (Object error) {
@@ -229,6 +227,5 @@ class _InfiniteQueryBuilderState<TData, TPageParam>
   }
 
   @override
-  Widget build(BuildContext context) =>
-      widget.builder(context, _state, _controller);
+  Widget build(BuildContext context) => widget.builder(context, _state, _controller!);
 }

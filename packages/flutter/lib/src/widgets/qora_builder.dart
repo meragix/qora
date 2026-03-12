@@ -159,7 +159,9 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    final prev = _client;
     _initClient();
+    if (_client == prev && prev != null) return;
     _subscribe();
     if (widget.enabled) unawaited(_executeFetch());
   }

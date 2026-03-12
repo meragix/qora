@@ -1,12 +1,14 @@
 # qora
 
-Pure Dart server state management. Zero Flutter dependency — works in Flutter apps, CLI tools, backend services, or shared packages.
+Pure Dart server state management, works in Flutter apps, CLI tools, backend services, or shared packages.
+
+For Flutter-specific features, see **[qora_flutter](https://pub.dev/packages/qora_flutter)**.
 
 ## Install
 
 ```yaml
 dependencies:
-  qora: ^0.4.0
+  qora: ^0.8.0
 ```
 
 ## Quick start
@@ -59,8 +61,8 @@ client.dispose();
 
 ```dart
 switch (state) {
-  case Initial():                        // Not yet fetched
-  case Loading(:final previousData):    // Fetching; previousData available during revalidation
+  case Initial(): // Not yet fetched
+  case Loading(:final previousData): // Fetching; previousData available during revalidation
   case Success(:final data, :final updatedAt): // Fresh data
   case Failure(:final error, :final previousData): // Error; previousData available for fallback
 }
