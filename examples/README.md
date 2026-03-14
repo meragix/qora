@@ -14,19 +14,19 @@ Learn Qora step-by-step with these examples.
 
 **What**: Create/Update/Delete with instant UI feedback  
 **Features**: Mutations, optimistic updates, rollback  
-📂 [View Code](./02_mutations_optimistic)
+📂 [View Code](./ex_02_mutations_optimistic)
 
 ### 03. Infinite Scroll
 
 **What**: Paginated feeds like Twitter  
 **Features**: InfiniteQueryBuilder, lazy loading  
-📂 [View Code](./03_infinite_scroll)
+📂 [View Code](./ex_03_infinite_scroll)
 
 ### 04. Offline First
 
 **What**: App that works without internet  
 **Features**: Persistence, Hive storage, hydration  
-📂 [View Code](./04_offline_first)
+📂 [View Code](./ex_04_offline_first)
 
 ### 05. Network Awareness
 
