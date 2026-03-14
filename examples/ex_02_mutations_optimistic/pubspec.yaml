@@ -16,6 +16,8 @@ dependencies:
     path: ../../packages/flutter
   qora_devtools_overlay:
     path: ../../packages/devtools/overlay
+  qora_devtools_extension: 
+    path: ../../packages/devtools/extension
 
 dev_dependencies:
   flutter_test:
