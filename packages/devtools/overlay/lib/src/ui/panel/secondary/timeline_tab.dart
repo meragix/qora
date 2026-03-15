@@ -5,7 +5,6 @@ import 'package:qora_devtools_overlay/src/domain/timeline_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 typedef EventStyle = ({IconData icon, Color color});
@@ -232,8 +231,8 @@ class TimelineEventRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     event.key != null && event.key != ''
-                        ? formatQueryKey(event.key!)
-                        : event.mutationId ?? '',
+                        ? event.key!.fmtQueryKey()
+                        : event.mutationId.orDefault(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

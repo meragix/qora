@@ -3,8 +3,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart'
-    show formatQueryKey, formatQueryTime;
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class QueryRow extends StatelessWidget {
@@ -44,7 +42,7 @@ class QueryRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    formatQueryKey(query.key),
+                    query.key.fmtQueryKey(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DevtoolsTypography.queryKey,
@@ -136,7 +134,7 @@ class _MetaRow extends StatelessWidget {
         ),
         _MetaChip(
           label: 'stale: ',
-          value: staleTimeLeft != null ? formatQueryTime(staleTimeLeft) : '—',
+          value: staleTimeLeft != null ? staleTimeLeft.fmtQueryTime() : '—',
           icon: LucideIcons.clock,
           color: staleTimeLeft != null && staleTimeLeft <= 0
               ? DevtoolsColors.orange400
@@ -144,7 +142,7 @@ class _MetaRow extends StatelessWidget {
         ),
         _MetaChip(
           label: 'gc: ',
-          value: gcTimeLeft != null ? formatQueryTime(gcTimeLeft) : '—',
+          value: gcTimeLeft != null ? gcTimeLeft.fmtQueryTime() : '—',
           icon: LucideIcons.trash2,
           color: gcTimeLeft != null && gcTimeLeft <= 0
               ? DevtoolsColors.red400

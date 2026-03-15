@@ -9,7 +9,7 @@ import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Inspector detail view for a selected query.
 ///
@@ -84,7 +84,7 @@ class _QueryInspectorState extends State<QueryInspector>
                         borderRadius: 4.borderRadiusA,
                       ),
                       child: Text(
-                        formatKey(detail.key),
+                        detail.key.fmtKey(),
                         style: DevtoolsTypography.code,
                       ),
                     ),
@@ -140,12 +140,12 @@ class _QueryInspectorState extends State<QueryInspector>
                       children: [
                         if (detail.createdAt != null)
                           InspectorMetaRow(
-                              'Created At:', fmtDateTime(detail.createdAt!)),
+                              'Created At:', detail.createdAt!.fmtDateTime()),
                         InspectorMetaRow(
-                            'Updated At:', fmtDateTime(detail.updatedAt)),
+                            'Updated At:', detail.updatedAt.fmtDateTime()),
                         if (detail.staleAt != null)
                           InspectorMetaRow(
-                              'Stale At:', fmtDateTime(detail.staleAt!)),
+                              'Stale At:', detail.staleAt!.fmtDateTime()),
                         if (detail.cacheTimeMs != null)
                           InspectorMetaRow(
                             'Cache Time:',

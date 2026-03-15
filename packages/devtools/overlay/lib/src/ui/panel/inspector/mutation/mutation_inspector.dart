@@ -9,7 +9,7 @@ import 'package:qora_devtools_overlay/src/ui/shared/status_badge.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Inspector detail view for a selected mutation.
 ///
@@ -90,7 +90,7 @@ class _MutationInspectorState extends State<MutationInspector>
                           borderRadius: 4.borderRadiusA,
                         ),
                         child: Text(
-                          formatKey(detail.key!),
+                          detail.key!.fmtKey(),
                           style: DevtoolsTypography.code,
                         ),
                       ),
@@ -148,13 +148,13 @@ class _MutationInspectorState extends State<MutationInspector>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InspectorMetaRow(
-                            'Created At', fmtDateTime(detail.createdAt)),
+                            'Created At', detail.createdAt.fmtDateTime()),
                         if (detail.submittedAt != null)
                           InspectorMetaRow(
-                              'Submitted At', fmtDateTime(detail.submittedAt!)),
+                              'Submitted At', detail.submittedAt!.fmtDateTime()),
                         if (detail.updatedAt != null)
                           InspectorMetaRow(
-                              'Updated At', fmtDateTime(detail.updatedAt!)),
+                              'Updated At', detail.updatedAt!.fmtDateTime()),
                         InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),

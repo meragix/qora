@@ -10,7 +10,6 @@ import 'package:qora_devtools_overlay/src/ui/shared/empty_state.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/panel_section.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class QueriesTab extends StatefulWidget {
@@ -46,7 +45,7 @@ class _QueriesTabState extends State<QueriesTab> {
   List<QueryEvent> _filtered(List<QueryEvent> queries) {
     if (_search.isEmpty) return queries;
     return queries
-        .where((q) => formatQueryKey(q.key).toLowerCase().contains(_search))
+        .where((q) => (q.key.fmtQueryKey()).toLowerCase().contains(_search))
         .toList();
   }
 
