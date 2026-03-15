@@ -88,3 +88,9 @@ export 'src/models/query_snapshot.dart';
 
 // Protocol
 export 'src/protocol/extension_methods.dart';
+
+// Extensions
+export 'src/extensions/bool_ext.dart';
+export 'src/extensions/datetime_ext.dart';
+export 'src/extensions/num_ext.dart';
+export 'src/extensions/string_ext.dart';
