@@ -72,6 +72,18 @@ final class MutationEvent extends QoraEvent {
   /// Only meaningful for [MutationEventType.settled]; `null` otherwise.
   final bool? success;
 
+  /// Whether this mutation carries an optimistic update.
+  ///
+  /// When `true`, the UI displays an amber ⚡ badge on the mutation row to
+  /// indicate that local state was updated before the server response arrived.
+  final bool isOptimistic;
+
+  /// Number of retries attempted so far for this mutation.
+  ///
+  /// Incremented on each [MutationEventType.updated] re-emission before final
+  /// settlement. Displayed as a "Retries: N" chip on the mutation row when > 0.
+  final int retryCount;
+
   /// Creates a mutation event.
   ///
   /// Prefer the named factories ([MutationEvent.started], [MutationEvent.settled])
@@ -85,6 +97,8 @@ final class MutationEvent extends QoraEvent {
     this.variables,
     this.result,
     this.success,
+    this.isOptimistic = false,
+    this.retryCount = 0,
   }) : super(kind: 'mutation.${type.name}');
 
   /// Helper constructor for `mutation.started`.
@@ -94,6 +108,7 @@ final class MutationEvent extends QoraEvent {
     required String id,
     required String key,
     Object? variables,
+    bool isOptimistic = false,
   }) {
     return MutationEvent(
       eventId: QoraEvent.generateId(),
@@ -102,6 +117,7 @@ final class MutationEvent extends QoraEvent {
       id: id,
       key: key,
       variables: variables,
+      isOptimistic: isOptimistic,
     );
   }
 
@@ -113,6 +129,8 @@ final class MutationEvent extends QoraEvent {
     required String key,
     required bool success,
     Object? result,
+    bool isOptimistic = false,
+    int retryCount = 0,
   }) {
     return MutationEvent(
       eventId: QoraEvent.generateId(),
@@ -122,6 +140,8 @@ final class MutationEvent extends QoraEvent {
       key: key,
       success: success,
       result: result,
+      isOptimistic: isOptimistic,
+      retryCount: retryCount,
     );
   }
 
@@ -150,6 +170,8 @@ final class MutationEvent extends QoraEvent {
       variables: json['variables'],
       result: json['result'],
       success: json['success'] as bool?,
+      isOptimistic: (json['isOptimistic'] as bool?) ?? false,
+      retryCount: (json['retryCount'] as int?) ?? 0,
     );
   }
 
@@ -163,5 +185,7 @@ final class MutationEvent extends QoraEvent {
         'variables': variables,
         'result': result,
         'success': success,
+        'isOptimistic': isOptimistic,
+        'retryCount': retryCount,
       };
 }

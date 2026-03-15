@@ -3,7 +3,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'package:qora_devtools_overlay/utils/query_utils.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 class MutationRow extends StatelessWidget {
@@ -47,13 +46,13 @@ class MutationRow extends StatelessWidget {
                 children: [
                   Text(
                     mutation.key != ''
-                        ? formatQueryKey(mutation.key)
+                        ?mutation.key.fmtQueryKey()
                         : mutation.id,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DevtoolsTypography.queryKey,
                   ),
-                  if (mutation.success ?? false)
+                  if (mutation.isOptimistic)
                     Padding(
                       padding: 4.edgeInsetsT,
                       child: Row(
@@ -77,14 +76,14 @@ class MutationRow extends StatelessWidget {
                             size: 13, color: DevtoolsColors.textDisabled),
                         const SizedBox(width: 3),
                         Text(
-                          formatTimeAgo(mutation.timestampMs),
+                      mutation.timestampMs.fmtTimeAgo(),
                           style: const TextStyle(
                               fontSize: 10, color: DevtoolsColors.textDisabled),
                         ),
-                        if (mutation.timestampMs > 0) ...[
+                        if (mutation.retryCount > 0) ...[
                           const SizedBox(width: 12),
                           Text(
-                            'Retries: 2',
+                            'Retries: ${mutation.retryCount}',
                             style: const TextStyle(
                                 fontSize: 10, color: DevtoolsColors.orange400),
                           ),

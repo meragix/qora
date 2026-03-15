@@ -76,8 +76,7 @@ class QueryDetail {
   factory QueryDetail.fromEvent(QueryEvent event,
       {bool isInvalidated = false}) {
     final rawData = event.data;
-    final preview =
-        rawData != null ? _truncate(rawData.toString(), max: 300) : null;
+    final preview = rawData?.toString().truncate(max: 300);
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(event.timestampMs);
     final staleAt = event.staleTimeMs != null && event.staleTimeMs! > 0
         ? updatedAt.add(Duration(milliseconds: event.staleTimeMs!))
@@ -85,14 +84,12 @@ class QueryDetail {
 
     return QueryDetail(
       key: event.key,
-      status: event.status ?? 'unknown',
+      status: event.status.orDefault('unknown'),
       data: rawData,
       dataPreview: preview,
       hasLargePayload: event.hasLargePayload,
       fetchDurationMs: event.fetchDurationMs,
-      createdAt: event.createdAtMs != null
-          ? DateTime.fromMillisecondsSinceEpoch(event.createdAtMs!)
-          : null,
+      createdAt: event.createdAtMs!.toNullOrDateTime(),
       updatedAt: updatedAt,
       staleAt: staleAt,
       cacheTimeMs: event.gcTimeMs,
@@ -102,7 +99,4 @@ class QueryDetail {
       isInvalidated: isInvalidated,
     );
   }
-
-  static String _truncate(String s, {required int max}) =>
-      s.length > max ? '${s.substring(0, max)}…' : s;
 }

@@ -32,7 +32,19 @@ class MutationDetail {
   /// Timestamp of the last state update (settle event), if any.
   final DateTime? updatedAt;
 
-  /// Number of retry attempts for this mutation (not yet tracked; always 0).
+  /// Whether this mutation carries an optimistic update.
+  ///
+  /// `true` when [QoraClient.setQueryData] was called for the associated key
+  /// before the server confirmed the result. In the overlay this is inferred
+  /// by correlating [OverlayTracker.onOptimisticUpdate] with the mutation start;
+  /// in the IDE extension it is read directly from the protocol JSON.
+  final bool isOptimistic;
+
+  /// Number of retry attempts for this mutation.
+  ///
+  /// In the overlay this stays `0` — the [QoraTracker] interface does not
+  /// expose a per-retry hook for mutations. In the IDE extension it is
+  /// populated from the protocol JSON field `retryCount`.
   final int retryCount;
 
   const MutationDetail({
@@ -44,6 +56,7 @@ class MutationDetail {
     required this.createdAt,
     this.submittedAt,
     this.updatedAt,
+    this.isOptimistic = false,
     this.retryCount = 0,
   });
 
@@ -64,10 +77,12 @@ class MutationDetail {
       status: status,
       variables: event.variables,
       error: isError ? event.result : null,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(event.timestampMs),
+      createdAt: event.timestampMs.toDateTime(),
       updatedAt: isSettled
-          ? DateTime.fromMillisecondsSinceEpoch(event.timestampMs)
+          ? event.timestampMs.toDateTime()
           : null,
+      isOptimistic: event.isOptimistic,
+      retryCount: event.retryCount,
     );
   }
 }

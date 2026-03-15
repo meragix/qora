@@ -63,6 +63,13 @@ class OverlayTracker implements QoraTracker {
   final _fetchStartMs = <String, int>{};
   final _mutationStartMs = <String, int>{};
 
+  // Keys that received an onOptimisticUpdate before a mutation started.
+  // Consumed (removed) in onMutationStarted to infer isOptimistic.
+  final _pendingOptimisticKeys = <String>{};
+
+  // Mutation IDs confirmed as optimistic, kept until settled.
+  final _optimisticMutationIds = <String>{};
+
   // First-seen timestamp per query key (ms since epoch).
   final _queryCreatedAt = <String, int>{};
 
@@ -215,7 +222,14 @@ class OverlayTracker implements QoraTracker {
     if (_disposed) return;
     _mutationKeys[id] = key;
     _mutationStartMs[id] = DateTime.now().millisecondsSinceEpoch;
-    final event = MutationEvent.started(id: id, key: key, variables: variables);
+    final isOptimistic = _pendingOptimisticKeys.remove(key);
+    if (isOptimistic) _optimisticMutationIds.add(id);
+    final event = MutationEvent.started(
+      id: id,
+      key: key,
+      variables: variables,
+      isOptimistic: isOptimistic,
+    );
     _push(_mutationHistory, _mutationController, event);
     _emitTimeline(TimelineEventType.mutationStarted, key, id: id);
   }
@@ -228,11 +242,13 @@ class OverlayTracker implements QoraTracker {
     final duration = startMs != null
         ? DateTime.now().millisecondsSinceEpoch - startMs
         : null;
+    final isOptimistic = _optimisticMutationIds.remove(id);
     final event = MutationEvent.settled(
       id: id,
       key: key,
       success: success,
       result: result,
+      isOptimistic: isOptimistic,
     );
     _push(_mutationHistory, _mutationController, event);
     _emitTimeline(
@@ -248,6 +264,9 @@ class OverlayTracker implements QoraTracker {
   @override
   void onOptimisticUpdate(String key, Object? optimisticData) {
     if (_disposed) return;
+    // Mark this key so the next onMutationStarted for the same key is flagged
+    // as optimistic. The entry is consumed (removed) in onMutationStarted.
+    _pendingOptimisticKeys.add(key);
     _optimisticController.add(OptimisticEvent(
       key: key,
       preview: _truncate(optimisticData),
@@ -261,6 +280,8 @@ class OverlayTracker implements QoraTracker {
     if (_disposed) return;
     _cacheState.clear();
     _mutationKeys.clear();
+    _pendingOptimisticKeys.clear();
+    _optimisticMutationIds.clear();
     _emitTimeline(TimelineEventType.cacheCleared, null);
   }
 
@@ -279,6 +300,8 @@ class OverlayTracker implements QoraTracker {
     _queryCreatedAt.clear();
     _fetchStartMs.clear();
     _mutationStartMs.clear();
+    _pendingOptimisticKeys.clear();
+    _optimisticMutationIds.clear();
   }
 
   // ── Internals ───────────────────────────────────────────────────────────────
