@@ -17,6 +17,7 @@ workspace:
   - packages/devtools/overlay
   - packages/devtools/shared
   - packages/devtools/ui
+  - examples/ex_06_hooks_integration
 
 melos:
   command:
