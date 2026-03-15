@@ -32,13 +32,13 @@ Learn Qora step-by-step with these examples.
 
 **What**: Auto-sync when connection returns  
 **Features**: Connectivity manager, offline queue  
-📂 [View Code](./05_network_aware)
+📂 [View Code](./ex_05_network_aware)
 
 ### 06. Hooks Integration
 
 **What**: Using Qora with flutter_hooks  
 **Features**: useQuery, useMutation  
-📂 [View Code](./06_hooks_integration)
+📂 [View Code](./ex_06_hooks_integration)
 
 ---
 
@@ -57,7 +57,7 @@ A production-ready Todo app demonstrating all features together.
 - ✅ Infinite scroll
 - ✅ Clean architecture
 
-📂 [View Code](./07_complete_todo_app)
+📂 [View Code](./ex_07_complete_todo_app)
 
 ---
 

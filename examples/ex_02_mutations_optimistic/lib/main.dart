@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_extension/qora_devtools_extension.dart';
 import 'package:qora_devtools_overlay/qora_devtools_overlay.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 
@@ -7,6 +8,7 @@ import 'screens/user_list_screen.dart';
 
 void main() {
   final tracker = OverlayTracker();
+  final tracker2 = VmTracker();
   final qoraClient = QoraClient(
     config: const QoraClientConfig(
       defaultOptions: QoraOptions(
@@ -15,7 +17,7 @@ void main() {
       ),
       debugMode: kDebugMode,
     ),
-    tracker: kDebugMode ? tracker : null,
+    tracker: kDebugMode ? tracker2 : null,
   );
 
   runApp(
