@@ -140,7 +140,7 @@ class _DefaultOfflineBanner extends StatelessWidget {
           children: [
             Icon(
               // Uses codepoint for wifi_off — no material dependency required.
-              IconData(0xe628, fontFamily: 'MaterialIcons'),
+              IconData(0xe6eb, fontFamily: 'MaterialIcons'),
               color: Color(0xFFFFFFFF),
               size: 16,
             ),
