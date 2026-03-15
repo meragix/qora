@@ -10,12 +10,7 @@ import 'shared/widgets/app_progress_bar.dart';
 
 void main() {
   final client = QoraClient();
-  runApp(
-    QoraScope(
-      client: client,
-      child: const MyApp(),
-    ),
-  );
+  runApp(QoraScope(client: client, child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -26,10 +21,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hooks Integration',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
       home: const _HomeScreen(),
     );
   }
@@ -67,8 +59,9 @@ class _HomeScreen extends HookWidget {
         selectedIndex: selectedIndex.value,
         // Disable tab switching while a mutation is pending to avoid
         // navigating away mid-save.
-        onDestinationSelected:
-            isMutating ? null : (i) => selectedIndex.value = i,
+        onDestinationSelected: isMutating
+            ? null
+            : (i) => selectedIndex.value = i,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.person_outline),

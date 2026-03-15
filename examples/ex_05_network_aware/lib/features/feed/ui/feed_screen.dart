@@ -32,7 +32,8 @@ class FeedScreen extends StatelessWidget {
       builder: (context, state, fetchStatus) {
         // ── Offline + no cached data ─────────────────────────────────────
         // Guard matches both Initial (never loaded) and Loading with no prev data.
-        final hasNoData = state is Initial ||
+        final hasNoData =
+            state is Initial ||
             (state is Loading<List<Post>> && state.previousData == null);
 
         if (hasNoData && fetchStatus == FetchStatus.paused) {
@@ -164,8 +165,9 @@ class _PostCard extends StatelessWidget {
               post.content,
               style: TextStyle(
                 color: post.isOptimistic ? Colors.grey.shade600 : null,
-                fontStyle:
-                    post.isOptimistic ? FontStyle.italic : FontStyle.normal,
+                fontStyle: post.isOptimistic
+                    ? FontStyle.italic
+                    : FontStyle.normal,
               ),
             ),
           ],
@@ -173,7 +175,6 @@ class _PostCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // ── NetworkMode.always demo ──────────────────────────────────────────────────
@@ -192,7 +193,8 @@ class _SettingsTile extends StatelessWidget {
       queryKey: const ['settings'],
       fetcher: _localFetcher,
       options: const QoraOptions(
-        networkMode: NetworkMode.always, // never pauses, never waits for connectivity
+        networkMode:
+            NetworkMode.always, // never pauses, never waits for connectivity
         staleTime: Duration(hours: 1),
       ),
       builder: (context, state, _) {
@@ -202,9 +204,7 @@ class _SettingsTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             border: Border(
-              top: BorderSide(
-                color: Theme.of(context).dividerColor,
-              ),
+              top: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
           child: Row(

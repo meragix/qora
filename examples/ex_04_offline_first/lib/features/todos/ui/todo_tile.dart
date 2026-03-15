@@ -41,17 +41,22 @@ class TodoTile extends StatelessWidget {
           color: todo.isPending
               ? Colors.grey.shade500
               : todo.completed
-                  ? Colors.grey.shade600
-                  : null,
+              ? Colors.grey.shade600
+              : null,
           fontStyle: todo.isPending ? FontStyle.italic : FontStyle.normal,
-          decoration:
-              !todo.isPending && todo.completed ? TextDecoration.lineThrough : null,
+          decoration: !todo.isPending && todo.completed
+              ? TextDecoration.lineThrough
+              : null,
         ),
       ),
       trailing: todo.isPending
           ? Tooltip(
               message: 'Will sync when online',
-              child: Icon(Icons.cloud_off, size: 16, color: Colors.grey.shade400),
+              child: Icon(
+                Icons.cloud_off,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
             )
           : IconButton(
               icon: const Icon(Icons.delete_outline),

@@ -34,11 +34,7 @@ class TodoApi {
 
   Future<Todo> createTodo(CreateTodoInput input) async {
     await _simulateLatency();
-    final todo = Todo(
-      id: '${_nextId++}',
-      title: input.title,
-      completed: false,
-    );
+    final todo = Todo(id: '${_nextId++}', title: input.title, completed: false);
     _store.add(todo);
     return todo;
   }

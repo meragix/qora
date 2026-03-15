@@ -41,8 +41,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
         // Provides an immediate local result while the mutation waits offline.
         optimisticResponse: (content) => Post.optimistic(content: content),
         // onSuccess only runs for real server success (isOptimistic: false).
-        onSuccess: (_, _, _) async =>
-            context.qora.invalidate(const ['posts']),
+        onSuccess: (_, _, _) async => context.qora.invalidate(const ['posts']),
       ),
       builder: (context, state, mutate) {
         final isQueued =
@@ -58,8 +57,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
               if (isQueued)
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -67,8 +68,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.schedule,
-                          size: 16, color: Colors.orange.shade700),
+                      Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: Colors.orange.shade700,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -119,8 +123,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   isPending
                       ? 'Sending…'
                       : isQueued
-                          ? 'Queued'
-                          : 'Post',
+                      ? 'Queued'
+                      : 'Post',
                 ),
               ),
 
@@ -154,10 +158,9 @@ class _ExplanationPanel extends StatelessWidget {
         children: [
           Text(
             'How it works',
-            style: Theme.of(context)
-                .textTheme
-                .labelMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _Bullet(
@@ -189,7 +192,11 @@ class _Bullet extends StatelessWidget {
   final String text;
   final bool highlight;
 
-  const _Bullet({required this.icon, required this.text, this.highlight = false});
+  const _Bullet({
+    required this.icon,
+    required this.text,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,8 +221,7 @@ class _Bullet extends StatelessWidget {
                 color: highlight
                     ? Colors.orange.shade700
                     : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight:
-                    highlight ? FontWeight.w500 : FontWeight.normal,
+                fontWeight: highlight ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
           ),

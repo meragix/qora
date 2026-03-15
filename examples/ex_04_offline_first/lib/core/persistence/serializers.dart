@@ -13,8 +13,7 @@ void registerAllSerializers(PersistQoraClient client) {
   client.registerSerializer<List<Todo>>(
     QoraSerializer(
       toJson: (list) => list.map((t) => t.toJson()).toList(),
-      fromJson: (json) =>
-          (json as List).map((e) => Todo.fromJson(e)).toList(),
+      fromJson: (json) => (json as List).map((e) => Todo.fromJson(e)).toList(),
     ),
     name: 'List<Todo>',
   );

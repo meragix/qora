@@ -8,8 +8,8 @@
 /// offline and not yet confirmed by the server.
 class Post {
   final String id;
-  final String author;   // "User {userId}"
-  final String content;  // body field from JSONPlaceholder
+  final String author; // "User {userId}"
+  final String content; // body field from JSONPlaceholder
 
   /// `true` while this post only exists locally (enqueued offline).
   final bool isOptimistic;
@@ -23,18 +23,18 @@ class Post {
 
   /// Constructs a temporary optimistic post shown immediately while offline.
   factory Post.optimistic({required String content}) => Post(
-        id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-        author: 'You',
-        content: content,
-        isOptimistic: true,
-      );
+    id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+    author: 'You',
+    content: content,
+    isOptimistic: true,
+  );
 
   /// Parses a JSONPlaceholder post object.
   factory Post.fromJson(Map<String, dynamic> json) => Post(
-        id: '${json['id']}',
-        author: 'User ${json['userId']}',
-        content: (json['body'] as String).replaceAll('\n', ' '),
-      );
+    id: '${json['id']}',
+    author: 'User ${json['userId']}',
+    content: (json['body'] as String).replaceAll('\n', ' '),
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -57,8 +57,5 @@ class AppSettings {
   final bool notificationsEnabled;
   final String theme;
 
-  const AppSettings({
-    this.notificationsEnabled = true,
-    this.theme = 'system',
-  });
+  const AppSettings({this.notificationsEnabled = true, this.theme = 'system'});
 }

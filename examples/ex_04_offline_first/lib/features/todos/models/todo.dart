@@ -24,20 +24,19 @@ class Todo {
     String? title,
     bool? completed,
     bool? isPending,
-  }) =>
-      Todo(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        completed: completed ?? this.completed,
-        isPending: isPending ?? this.isPending,
-      );
+  }) => Todo(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    completed: completed ?? this.completed,
+    isPending: isPending ?? this.isPending,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'completed': completed,
-        // isPending is never persisted — it is always false on disk.
-      };
+    'id': id,
+    'title': title,
+    'completed': completed,
+    // isPending is never persisted — it is always false on disk.
+  };
 
   factory Todo.fromJson(dynamic json) {
     final map = json as Map<String, dynamic>;

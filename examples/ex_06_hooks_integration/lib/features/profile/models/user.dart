@@ -13,16 +13,16 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        id: '${json['id']}',
-        name: json['name'] as String,
-        username: json['username'] as String,
-        email: json['email'] as String,
-      );
+    id: '${json['id']}',
+    name: json['name'] as String,
+    username: json['username'] as String,
+    email: json['email'] as String,
+  );
 
   User copyWith({String? name, String? username}) => User(
-        id: id,
-        name: name ?? this.name,
-        username: username ?? this.username,
-        email: email,
-      );
+    id: id,
+    name: name ?? this.name,
+    username: username ?? this.username,
+    email: email,
+  );
 }

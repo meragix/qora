@@ -13,11 +13,11 @@ class PostItem {
   });
 
   factory PostItem.fromJson(Map<String, dynamic> json) => PostItem(
-        id: '${json['id']}',
-        title: json['title'] as String,
-        body: (json['body'] as String).replaceAll('\n', ' '),
-        userId: '${json['userId']}',
-      );
+    id: '${json['id']}',
+    title: json['title'] as String,
+    body: (json['body'] as String).replaceAll('\n', ' '),
+    userId: '${json['userId']}',
+  );
 }
 
 /// One page of posts returned by [JsonPlaceholderApi.getPosts].

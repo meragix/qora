@@ -43,35 +43,36 @@ class TodoScreen extends StatelessWidget {
 
         return switch (state) {
           // ── No data yet ─────────────────────────────────────────────────
-          Initial() || Loading(previousData: null) =>
-            const Center(child: CircularProgressIndicator()),
+          Initial() || Loading(previousData: null) => const Center(
+            child: CircularProgressIndicator(),
+          ),
 
           Failure(:final error, previousData: null) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text('$error', textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: () => context.qora.invalidate(const ['todos']),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 12),
+                  Text('$error', textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => context.qora.invalidate(const ['todos']),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
             ),
+          ),
 
           // ── Data available (Success, or Loading/Failure with stale data) ─
           _ => _TodoList(
-              todos: state.dataOrNull ?? [],
-              isRefreshing: fetchStatus == FetchStatus.fetching,
-              isOffline: fetchStatus == FetchStatus.paused,
-              api: api,
-            ),
+            todos: state.dataOrNull ?? [],
+            isRefreshing: fetchStatus == FetchStatus.fetching,
+            isOffline: fetchStatus == FetchStatus.paused,
+            api: api,
+          ),
         };
       },
     );
@@ -100,8 +101,7 @@ class _TodoList extends StatelessWidget {
         Column(
           children: [
             // ── Stale-data revalidation indicator ─────────────────────────
-            if (isRefreshing)
-              const LinearProgressIndicator(minHeight: 2),
+            if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
 
             // ── Offline + cached data hint ────────────────────────────────
             if (isOffline)
@@ -141,10 +141,7 @@ class _TodoList extends StatelessWidget {
                       separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final todo = todos[index];
-                        return _TodoTileWithMutations(
-                          todo: todo,
-                          api: api,
-                        );
+                        return _TodoTileWithMutations(todo: todo, api: api);
                       },
                     ),
             ),
@@ -152,11 +149,7 @@ class _TodoList extends StatelessWidget {
         ),
 
         // ── FAB: add todo (with offline queue) ────────────────────────────
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: _AddTodoFab(api: api),
-        ),
+        Positioned(bottom: 16, right: 16, child: _AddTodoFab(api: api)),
       ],
     );
   }
@@ -177,12 +170,9 @@ class _TodoTileWithMutations extends StatelessWidget {
       mutator: api.toggleTodo,
       options: MutationOptions(
         offlineQueue: true,
-        optimisticResponse: (input) => todo.copyWith(
-          completed: input.completed,
-          isPending: true,
-        ),
-        onSuccess: (_, _, _) async =>
-            context.qora.invalidate(const ['todos']),
+        optimisticResponse: (input) =>
+            todo.copyWith(completed: input.completed, isPending: true),
+        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
       ),
       builder: (context, toggleState, toggle) {
         return QoraMutationBuilder<void, DeleteTodoInput, void>(
@@ -196,7 +186,8 @@ class _TodoTileWithMutations extends StatelessWidget {
           builder: (context, deleteState, delete) {
             // If a toggle optimistic result exists use that, otherwise the
             // canonical todo from the query.
-            final displayTodo = (toggleState is MutationSuccess<Todo, ToggleTodoInput> &&
+            final displayTodo =
+                (toggleState is MutationSuccess<Todo, ToggleTodoInput> &&
                     toggleState.isOptimistic)
                 ? toggleState.data
                 : todo;
@@ -236,20 +227,18 @@ class _AddTodoFab extends StatelessWidget {
         ),
         // onSuccess only fires for REAL server success (isOptimistic: false).
         // Replace the temp entry by invalidating the query.
-        onSuccess: (_, _, _) async =>
-            context.qora.invalidate(const ['todos']),
+        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
       ),
       builder: (context, state, mutate) {
-        final isQueued = state is MutationSuccess<Todo, CreateTodoInput> &&
+        final isQueued =
+            state is MutationSuccess<Todo, CreateTodoInput> &&
             state.isOptimistic;
 
         return FloatingActionButton.extended(
           onPressed: state.isPending
               ? null
               : () => _showAddDialog(context, mutate),
-          icon: isQueued
-              ? const Icon(Icons.schedule)
-              : const Icon(Icons.add),
+          icon: isQueued ? const Icon(Icons.schedule) : const Icon(Icons.add),
           label: Text(isQueued ? 'Queued — syncing soon' : 'Add Todo'),
         );
       },

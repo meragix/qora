@@ -23,7 +23,8 @@ class PostsScreen extends HookWidget {
     final query = useInfiniteQuery<PostsPage, int>(
       key: const ['posts'],
       fetcher: (page) => api.getPosts(page: page),
-      getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : null,
+      getNextPageParam: (lastPage) =>
+          lastPage.hasMore ? lastPage.page + 1 : null,
       initialPageParam: 1,
     );
 
@@ -113,10 +114,7 @@ class _PostTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              post.body,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(post.body, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),

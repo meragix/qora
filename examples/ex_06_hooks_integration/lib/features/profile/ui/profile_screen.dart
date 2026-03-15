@@ -36,8 +36,7 @@ class ProfileScreen extends HookWidget {
     final updateMutation = useMutation<User, UpdateUserInput>(
       mutator: api.updateUser,
       options: MutationOptions(
-        onSuccess: (_, _, _) async =>
-            client.invalidate(['users', userId]),
+        onSuccess: (_, _, _) async => client.invalidate(['users', userId]),
       ),
     );
 
@@ -55,18 +54,21 @@ class ProfileScreen extends HookWidget {
         ],
       ),
       body: switch (userQuery) {
-        Initial() || Loading(previousData: null) =>
-          const Center(child: CircularProgressIndicator()),
-        Failure(:final error, previousData: null) =>
-          _ErrorView(error: error, onRetry: () => client.invalidate(['users', userId])),
+        Initial() || Loading(previousData: null) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        Failure(:final error, previousData: null) => _ErrorView(
+          error: error,
+          onRetry: () => client.invalidate(['users', userId]),
+        ),
         _ => _ProfileBody(
-            user: userQuery.dataOrNull!,
-            isSaving: updateMutation.isPending,
-            saveError: updateMutation.error,
-            onSave: (name, username) => updateMutation.mutate(
-              UpdateUserInput(id: userId, name: name, username: username),
-            ),
+          user: userQuery.dataOrNull!,
+          isSaving: updateMutation.isPending,
+          saveError: updateMutation.error,
+          onSave: (name, username) => updateMutation.mutate(
+            UpdateUserInput(id: userId, name: name, username: username),
           ),
+        ),
       },
     );
   }
@@ -191,8 +193,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
           'Note: JSONPlaceholder is a fake API — saves are reflected locally '
           'but not persisted on the server.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+            color: Theme.of(context).colorScheme.outline,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -220,10 +222,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 12),
             Text('$error', textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

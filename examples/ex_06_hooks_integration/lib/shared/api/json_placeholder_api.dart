@@ -21,9 +21,7 @@ class JsonPlaceholderApi {
   Future<User> getUser(String id) async {
     final response = await _client.get(Uri.https(_base, '/users/$id'));
     _checkStatus(response);
-    return User.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
+    return User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   /// Updates a user's display name.  Returns the (fake) updated user.
@@ -42,11 +40,7 @@ class JsonPlaceholderApi {
   /// Fetches a page of posts.  [page] is 1-based.
   Future<PostsPage> getPosts({required int page}) async {
     final response = await _client.get(
-      Uri.https(
-        _base,
-        '/posts',
-        {'_page': '$page', '_limit': '$_pageSize'},
-      ),
+      Uri.https(_base, '/posts', {'_page': '$page', '_limit': '$_pageSize'}),
     );
     _checkStatus(response);
     final items = (jsonDecode(response.body) as List)
