@@ -168,7 +168,13 @@ class _QoraScopeState extends State<QoraScope> {
   @override
   void initState() {
     super.initState();
-    widget.lifecycleManager?.start();
+
+    if (widget.lifecycleManager != null) {
+      widget.lifecycleManager!.start();
+      // Wire refetchOnWindowFocus: QoraClient listens to lifecycleStream and
+      // invalidates stale active queries whenever the app resumes.
+      widget.client.attachLifecycleManager(widget.lifecycleManager!);
+    }
 
     if (widget.connectivityManager != null) {
       // Start the manager, then attach it to the client.

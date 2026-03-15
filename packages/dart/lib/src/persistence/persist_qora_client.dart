@@ -174,6 +174,21 @@ class PersistQoraClient extends QoraClient {
     QoraSerializer<T> serializer, {
     String? name,
   }) {
+    // IMPORTANT: T.toString() is not stable under --obfuscate or Flutter Web
+    // (dart2js). In those build modes the compiler replaces class names with
+    // single-letter identifiers, so a type discriminator of "User" becomes "a"
+    // and hydrate() can no longer find the serializer.
+    //
+    // This assert fires in debug builds whenever name is omitted, catching the
+    // mistake during development before it silently corrupts persisted data in
+    // a release build.
+    assert(
+      name != null,
+      'registerSerializer<$T>() called without an explicit "name".\n'
+      'T.toString() ("${T.toString()}") is not stable under --obfuscate or '
+      'Flutter Web and will cause hydrate() to silently skip this type.\n'
+      'Fix: registerSerializer<$T>(serializer, name: \'${T.toString()}\').',
+    );
     final typeName = name ?? T.toString();
     _serializersByName[typeName] = serializer as QoraSerializer<dynamic>;
     _typeNames[T] = typeName;

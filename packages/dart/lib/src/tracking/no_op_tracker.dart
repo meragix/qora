@@ -45,6 +45,11 @@ final class NoOpTracker implements QoraTracker {
   /// multiple [QoraClient] instances without any shared mutable state.
   const NoOpTracker();
 
+  /// Always `false` — [NoOpTracker] discards all data, so [QoraClient] skips
+  /// the JSON serialization step entirely, saving CPU in production builds.
+  @override
+  bool get needsSerialization => false;
+
   @override
   void onQueryFetching(String key) {}
 

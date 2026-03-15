@@ -27,11 +27,37 @@ class QueryCache {
 
   /// Returns the cache entry for [key], refreshing [CacheEntry.lastAccessedAt]
   /// (LRU touch). Returns `null` if not found.
+  ///
+  /// Throws a [StateError] when the entry exists but was originally registered
+  /// under a different type parameter [T]. This indicates that two call sites
+  /// are using the same query key with mismatched types — a programming error
+  /// that would otherwise silently corrupt data or throw a ClassCastException
+  /// deep inside a stream listener.
+  ///
+  /// **Example of the bug this catches:**
+  /// ```dart
+  /// client.fetchQuery<User>(key: ['user', 1], fetcher: fetchUser);
+  /// // Later, in a different widget:
+  /// client.watchState<AdminUser>(key: ['user', 1]); // ← throws StateError
+  /// ```
   CacheEntry<T>? get<T>(Object key) {
     final normalized = normalizeKey(key);
-    final entry = _cache.get(normalized) as CacheEntry<T>?;
-    entry?.touch();
-    return entry;
+    final raw = _cache.get(normalized);
+    if (raw == null) return null;
+
+    if (raw is! CacheEntry<T>) {
+      throw StateError(
+        'QueryCache type conflict for key $normalized:\n'
+        '  Registered type : ${raw.runtimeType}\n'
+        '  Requested type  : CacheEntry<$T>\n'
+        'The same query key was used with two different type parameters. '
+        'Use a unique key for each distinct data type, or ensure all call '
+        'sites for this key use the same <T>.',
+      );
+    }
+
+    raw.touch();
+    return raw;
   }
 
   /// Returns the cache entry for [key] **without** updating

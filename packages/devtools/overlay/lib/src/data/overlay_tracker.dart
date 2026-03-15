@@ -93,6 +93,11 @@ class OverlayTracker implements QoraTracker {
 
   // ── QoraTracker ─────────────────────────────────────────────────────────────
 
+  /// Always `true` — [OverlayTracker] uses the serialized data to populate
+  /// the in-app overlay panel's Query Inspector and JSON tree viewer.
+  @override
+  bool get needsSerialization => true;
+
   @override
   void onQueryFetching(String key) {
     if (_disposed) return;

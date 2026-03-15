@@ -41,6 +41,17 @@
 /// All hooks are called **synchronously** on the Flutter/Dart main isolate.
 /// Implementations do not need to guard against concurrent access.
 abstract interface class QoraTracker {
+  /// Whether this tracker requires query data to be serialized before
+  /// [onQueryFetched] is called.
+  ///
+  /// [QoraClient] skips the (potentially expensive) [_serializeForTracker]
+  /// call when this returns `false`, which is the case for [NoOpTracker].
+  /// DevTools trackers ([VmTracker], [OverlayTracker]) return `true` because
+  /// they need a JSON-safe representation of the data for display.
+  ///
+  /// This flag separates serialization concerns from the core fetch path:
+  /// production apps using [NoOpTracker] never pay the serialization cost.
+  bool get needsSerialization;
   /// Called when a fetch transitions to the [Loading] state — immediately
   /// before the async fetcher is invoked.
   ///

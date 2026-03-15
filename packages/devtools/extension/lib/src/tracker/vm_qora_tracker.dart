@@ -96,6 +96,12 @@ class VmTracker implements QoraTracker {
     _pusher.push(event);
   }
 
+  /// Always `true` — [VmTracker] serializes data into the lazy-payload store
+  /// and emits it to the DevTools UI. Skipping serialization would leave
+  /// the Query Inspector with no data to display.
+  @override
+  bool get needsSerialization => true;
+
   @override
   void onQueryFetching(String key) {
     if (_disposed) return;

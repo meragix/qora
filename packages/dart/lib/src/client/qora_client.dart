@@ -14,6 +14,7 @@ import 'package:qora/src/infinite/infinite_query_state.dart';
 import 'package:qora/src/key/key_cache_map.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
+import 'package:qora/src/managers/lifecycle_manager.dart';
 import 'package:qora/src/mutation/mutation.dart';
 import 'package:qora/src/network/fetch_status.dart';
 import 'package:qora/src/network/network_mode.dart';
@@ -169,6 +170,8 @@ class QoraClient implements MutationTracker {
   StreamSubscription<NetworkStatus>? _connectivitySubscription;
   NetworkStatus _networkStatus = NetworkStatus.unknown;
 
+  StreamSubscription<LifecycleState>? _lifecycleSubscription;
+
   /// Replay closures for queries paused while offline.
   ///
   /// Keyed by [_stringKey]. When a query is paused (offline +
@@ -292,6 +295,29 @@ class QoraClient implements MutationTracker {
       onError: (Object e) => _log('ConnectivityManager error: $e'),
     );
     _log('ConnectivityManager attached (status: $_networkStatus)');
+  }
+
+  /// Attaches a [LifecycleManager] and wires `refetchOnWindowFocus` behaviour.
+  ///
+  /// When the app resumes ([LifecycleState.resumed]), every active query whose
+  /// [QoraOptions.refetchOnWindowFocus] is `true` **and** whose data is stale
+  /// is transitioned to `Loading(previousData: ...)`. This causes any mounted
+  /// [QoraBuilder] (which listens via [watchState]) to call [fetchQuery] and
+  /// trigger a background revalidation — exactly the SWR on-focus pattern.
+  ///
+  /// Called by [QoraScope] after [LifecycleManager.start]. Re-attaching a new
+  /// manager is safe — the previous subscription is cancelled first.
+  ///
+  /// ```dart
+  /// // Done automatically by QoraScope when lifecycleManager is provided.
+  /// client.attachLifecycleManager(FlutterLifecycleManager());
+  /// ```
+  void attachLifecycleManager(LifecycleManager manager) {
+    _lifecycleSubscription?.cancel();
+    _lifecycleSubscription = manager.lifecycleStream.listen((state) {
+      if (state == LifecycleState.resumed) _onAppResumed();
+    });
+    _log('LifecycleManager attached');
   }
 
   /// Returns a stream of [FetchStatus] changes for [key].
@@ -503,6 +529,20 @@ class QoraClient implements MutationTracker {
     // Dependency subscription — cancelled in finally.
     StreamSubscription<QoraState<dynamic>>? depSub;
 
+    // Local polling timer — owned exclusively by this watcher instance.
+    //
+    // Previously this was stored on `entry.refetchTimer` (shared mutable
+    // field). When two callers subscribed to the same key concurrently, the
+    // second setup cancelled the first caller's timer and replaced it with its
+    // own. When the first caller's stream was cancelled, its finally-block then
+    // cancelled the second caller's timer — leaving the second caller without
+    // polling for the rest of its lifetime.
+    //
+    // By keeping the timer local, each watcher independently manages its own
+    // polling lifecycle. Duplicate fetches are harmless because _doFetch()
+    // deduplicates concurrent requests via _pendingRequests.
+    Timer? localRefetchTimer;
+
     try {
       if (opts.enabled) {
         // Decide whether to fetch on mount.
@@ -555,10 +595,10 @@ class QoraClient implements MutationTracker {
           }
         }
 
-        // Setup polling interval.
+        // Setup polling interval — stored in a local variable, not on the
+        // shared entry, to prevent cross-watcher timer cancellation.
         if (opts.refetchInterval != null) {
-          entry.refetchTimer?.cancel();
-          entry.refetchTimer = Timer.periodic(opts.refetchInterval!, (_) {
+          localRefetchTimer = Timer.periodic(opts.refetchInterval!, (_) {
             if (!_isDisposed && entry.isActive) {
               unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
             }
@@ -570,8 +610,8 @@ class QoraClient implements MutationTracker {
       yield* entry.stream;
     } finally {
       depSub?.cancel();
+      localRefetchTimer?.cancel();
       entry.removeSubscriber();
-      entry.refetchTimer?.cancel();
       _scheduleGC(normalized);
     }
   }
@@ -1000,6 +1040,10 @@ class QoraClient implements MutationTracker {
     _pendingRequests.remove(sk);
     _emitFetchingCount();
     _pausedFetches.remove(sk);
+    // Close the broadcast controller for this key so that any active
+    // watchFetchStatus() subscriber receives an onDone event instead of
+    // silently leaking the StreamController.
+    _fetchStatusBus.remove(sk)?.close();
     _tracker.onQueryRemoved(sk);
     _log('Removed: $normalized');
   }
@@ -1325,6 +1369,8 @@ class QoraClient implements MutationTracker {
     _evictionTimer = null;
     _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    _lifecycleSubscription?.cancel();
+    _lifecycleSubscription = null;
     _cache.clear();
     for (final entry in _infiniteCache.values) {
       entry.dispose();
@@ -1350,6 +1396,26 @@ class QoraClient implements MutationTracker {
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── Network callbacks ─────────────────────────────────────────────────────
+
+  void _onAppResumed() {
+    _log('App resumed — checking stale queries for refetchOnWindowFocus');
+    for (final mapEntry in _cache.entries) {
+      final entry = mapEntry.value;
+      final opts = entry.lastOptions;
+      // Only act on queries that are currently observed, have been fetched at
+      // least once (lastOptions != null), opted into focus-refetch, and are
+      // stale according to their configured staleTime.
+      if (!entry.isActive) continue;
+      if (opts?.refetchOnWindowFocus != true) continue;
+      if (!entry.isStale(opts?.staleTime)) continue;
+      // Transitioning to Loading(previousData: ...) is the signal that
+      // QoraBuilder._subscribe() watches for: it calls _executeFetch() which
+      // invokes fetchQuery with the watcher's fetcher closure, completing the
+      // SWR on-focus revalidation cycle.
+      entry.invalidate();
+      _log('refetchOnWindowFocus: invalidated ${mapEntry.key}');
+    }
+  }
 
   void _onNetworkStatusChanged(NetworkStatus status) {
     final wasOffline = _networkStatus == NetworkStatus.offline;
@@ -1538,7 +1604,10 @@ class QoraClient implements MutationTracker {
         entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
         _tracker.onQueryFetched(
           _stringKey(key),
-          _serializeForTracker(data, opts),
+          // Serialization is skipped for NoOpTracker (production default) so
+          // the JSON walk never runs in release builds. DevTools trackers
+          // declare needsSerialization = true and receive the full payload.
+          _tracker.needsSerialization ? _serializeForTracker(data, opts) : null,
           'success',
           staleTimeMs: opts.staleTime.inMilliseconds,
           gcTimeMs: opts.cacheTime.inMilliseconds,
@@ -1802,7 +1871,9 @@ class QoraClient implements MutationTracker {
   /// 1. [opts.toJson] — explicit serializer, always wins.
   /// 2. Recursively walks `List` and `Map` — serializes each element.
   /// 3. Dynamic `toJson()` call — works for `json_serializable`/`freezed` models.
-  /// 4. `.toString()` fallback — never throws.
+  /// 4. Structured fallback — never throws; always returns a diagnostic map.
+  ///
+  /// Only called when [QoraTracker.needsSerialization] is `true`.
   Object? _serializeForTracker(Object? data, QoraOptions opts) {
     if (opts.toJson != null) return opts.toJson!(data);
     return _toJsonSafe(data);
@@ -1818,10 +1889,38 @@ class QoraClient implements MutationTracker {
     if (data is Map) {
       return data.map((k, v) => MapEntry(k.toString(), _toJsonSafe(v)));
     }
+
+    // Attempt dynamic dispatch to toJson() — the standard contract for
+    // json_serializable / freezed / built_value generated models.
     try {
-      return (data as dynamic).toJson();
-    } catch (_) {
-      return data.toString();
+      final result = (data as dynamic).toJson();
+      // Validate the return type: toJson() must produce a Map or List.
+      // If it returns a primitive (e.g. a mis-implemented toJson that returns
+      // toString()), wrap it in a diagnostic envelope so DevTools shows
+      // something meaningful rather than silently dropping the data.
+      if (result is Map || result is List) return result;
+      return {
+        '__type': data.runtimeType.toString(),
+        '__value': result?.toString() ?? 'null',
+        '__warning': 'toJson() returned ${result.runtimeType} instead of Map/List',
+      };
+    } catch (e) {
+      if (e is NoSuchMethodError) {
+        // Model has no toJson() — structured fallback, not a crash.
+        return {
+          '__type': data.runtimeType.toString(),
+          '__value': data.toString(),
+          '__hint': 'Add toJson() or pass QoraOptions(toJson: (d) => d.toJson())',
+        };
+      }
+      // toJson() exists but threw — surface the error in DevTools instead of
+      // silently discarding it. This makes serialization failures visible and
+      // actionable without crashing the app.
+      _log('_toJsonSafe: toJson() threw for ${data.runtimeType}: $e');
+      return {
+        '__type': data.runtimeType.toString(),
+        '__serializationError': e.toString(),
+      };
     }
   }
 
