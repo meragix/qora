@@ -46,7 +46,7 @@ class MutationRow extends StatelessWidget {
                 children: [
                   Text(
                     mutation.key != ''
-                        ?mutation.key.fmtQueryKey()
+                        ? mutation.key.fmtQueryKey()
                         : mutation.id,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -76,7 +76,7 @@ class MutationRow extends StatelessWidget {
                             size: 13, color: DevtoolsColors.textDisabled),
                         const SizedBox(width: 3),
                         Text(
-                      mutation.timestampMs.fmtTimeAgo(),
+                          mutation.timestampMs.fmtTimeAgo(),
                           style: const TextStyle(
                               fontSize: 10, color: DevtoolsColors.textDisabled),
                         ),

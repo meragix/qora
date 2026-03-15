@@ -74,10 +74,7 @@ class _App extends StatelessWidget {
     return MaterialApp(
       title: 'Qora Todos',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
       home: ValueListenableBuilder<AuthUser?>(
         valueListenable: auth,
         builder: (context, user, _) {

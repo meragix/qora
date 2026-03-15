@@ -14,12 +14,7 @@ class TodoTile extends StatelessWidget {
   final VoidCallback? onToggle;
   final VoidCallback? onDelete;
 
-  const TodoTile({
-    super.key,
-    required this.todo,
-    this.onToggle,
-    this.onDelete,
-  });
+  const TodoTile({super.key, required this.todo, this.onToggle, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +24,7 @@ class TodoTile extends StatelessWidget {
       leading: todo.isOptimistic
           ? Tooltip(
               message: 'Queued — will sync on reconnect',
-              child: Icon(
-                Icons.schedule,
-                color: Colors.orange.shade400,
-              ),
+              child: Icon(Icons.schedule, color: Colors.orange.shade400),
             )
           : Checkbox(
               value: todo.completed,
@@ -44,12 +36,10 @@ class TodoTile extends StatelessWidget {
           color: todo.isOptimistic
               ? theme.colorScheme.outline
               : todo.completed
-                  ? theme.colorScheme.outline
-                  : null,
-          fontStyle:
-              todo.isOptimistic ? FontStyle.italic : FontStyle.normal,
-          decoration:
-              todo.completed ? TextDecoration.lineThrough : null,
+              ? theme.colorScheme.outline
+              : null,
+          fontStyle: todo.isOptimistic ? FontStyle.italic : FontStyle.normal,
+          decoration: todo.completed ? TextDecoration.lineThrough : null,
           decorationColor: theme.colorScheme.outline,
         ),
       ),

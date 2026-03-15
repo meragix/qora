@@ -78,9 +78,7 @@ class MutationDetail {
       variables: event.variables,
       error: isError ? event.result : null,
       createdAt: event.timestampMs.toDateTime(),
-      updatedAt: isSettled
-          ? event.timestampMs.toDateTime()
-          : null,
+      updatedAt: isSettled ? event.timestampMs.toDateTime() : null,
       isOptimistic: event.isOptimistic,
       retryCount: event.retryCount,
     );

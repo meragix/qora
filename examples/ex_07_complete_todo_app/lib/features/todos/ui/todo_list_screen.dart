@@ -43,33 +43,35 @@ class _TodoListScreenState extends State<TodoListScreen> {
   String get _userId => widget.authService.value!.id;
   Object get _queryKey => ['todos', _userId];
 
-  MutationOptions<Todo, CreateTodoInput, List<Todo>> get _createOptions =>
-      MutationOptions(
-        offlineQueue: true,
-        optimisticResponse: (input) =>
-            Todo.optimistic(title: input.title, userId: input.userId),
-        onMutate: (input) async {
-          // Add optimistic entry immediately — visible before network response.
-          final optimistic =
-              Todo.optimistic(title: input.title, userId: input.userId);
-          setState(() => _pendingTodos.add(optimistic));
-          return [..._pendingTodos]; // snapshot for rollback
-        },
-        onSuccess: (_, _, _) async {
-          setState(() => _pendingTodos.clear());
-          context.qora.invalidate(_queryKey);
-        },
-        onError: (_, _, snapshot) async {
-          // Rollback: restore the pending list to the snapshot taken in onMutate.
-          if (snapshot != null) {
-            setState(() {
-              _pendingTodos
-                ..clear()
-                ..addAll(snapshot);
-            });
-          }
-        },
+  MutationOptions<Todo, CreateTodoInput, List<Todo>>
+  get _createOptions => MutationOptions(
+    offlineQueue: true,
+    optimisticResponse: (input) =>
+        Todo.optimistic(title: input.title, userId: input.userId),
+    onMutate: (input) async {
+      // Add optimistic entry immediately — visible before network response.
+      final optimistic = Todo.optimistic(
+        title: input.title,
+        userId: input.userId,
       );
+      setState(() => _pendingTodos.add(optimistic));
+      return [..._pendingTodos]; // snapshot for rollback
+    },
+    onSuccess: (_, _, _) async {
+      setState(() => _pendingTodos.clear());
+      context.qora.invalidate(_queryKey);
+    },
+    onError: (_, _, snapshot) async {
+      // Rollback: restore the pending list to the snapshot taken in onMutate.
+      if (snapshot != null) {
+        setState(() {
+          _pendingTodos
+            ..clear()
+            ..addAll(snapshot);
+        });
+      }
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +116,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               initialPageParam: 1,
               getNextPageParam: (last, all) =>
                   last.hasMore ? all.length + 1 : null,
-              baseOptions: const QoraOptions(
-                staleTime: Duration(minutes: 5),
-              ),
+              baseOptions: const QoraOptions(staleTime: Duration(minutes: 5)),
             ),
             builder: (context, state, controller) {
               // ── First load ───────────────────────────────────────────────
@@ -134,18 +134,19 @@ class _TodoListScreenState extends State<TodoListScreen> {
               }
 
               // ── Success or failure with stale data ───────────────────────
-              final successState =
-                  state is InfiniteSuccess<TodosPage, int> ? state : null;
-              final failureState =
-                  state is InfiniteFailure<TodosPage, int> ? state : null;
+              final successState = state is InfiniteSuccess<TodosPage, int>
+                  ? state
+                  : null;
+              final failureState = state is InfiniteFailure<TodosPage, int>
+                  ? state
+                  : null;
               final data = successState?.data ?? failureState!.previousData!;
 
               return _buildList(
                 context: context,
                 todos: data.flatten((p) => p.todos),
                 hasNextPage: successState?.hasNextPage ?? false,
-                isFetchingNextPage:
-                    successState?.isFetchingNextPage ?? false,
+                isFetchingNextPage: successState?.isFetchingNextPage ?? false,
                 controller: controller,
                 errorBanner: failureState != null
                     ? '${failureState.error}'
@@ -244,9 +245,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'What needs to be done?',
-          ),
+          decoration: const InputDecoration(hintText: 'What needs to be done?'),
           textCapitalization: TextCapitalization.sentences,
           onSubmitted: (_) => _submitCreate(dialogCtx, ctrl, createTodo),
         ),
@@ -314,11 +313,8 @@ class _MutableTodoTile extends StatelessWidget {
               onToggle: toggleState.isPending
                   ? null
                   : () => toggle(
-                        ToggleTodoInput(
-                          id: todo.id,
-                          completed: !todo.completed,
-                        ),
-                      ),
+                      ToggleTodoInput(id: todo.id, completed: !todo.completed),
+                    ),
               onDelete: deleteState.isPending ? null : () => delete(todo.id),
             );
           },

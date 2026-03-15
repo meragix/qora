@@ -17,5 +17,6 @@ extension DateTimeExt on DateTime {
 
 extension NullableDateTimeExt on DateTime? {
   /// Falls back to [fallback] (or [DateTime.now] when omitted) when null.
-  DateTime orDefault([DateTime? fallback]) => this ?? fallback ?? DateTime.now();
+  DateTime orDefault([DateTime? fallback]) =>
+      this ?? fallback ?? DateTime.now();
 }

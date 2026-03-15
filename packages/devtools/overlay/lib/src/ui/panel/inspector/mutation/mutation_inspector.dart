@@ -150,8 +150,8 @@ class _MutationInspectorState extends State<MutationInspector>
                         InspectorMetaRow(
                             'Created At', detail.createdAt.fmtDateTime()),
                         if (detail.submittedAt != null)
-                          InspectorMetaRow(
-                              'Submitted At', detail.submittedAt!.fmtDateTime()),
+                          InspectorMetaRow('Submitted At',
+                              detail.submittedAt!.fmtDateTime()),
                         if (detail.updatedAt != null)
                           InspectorMetaRow(
                               'Updated At', detail.updatedAt!.fmtDateTime()),
