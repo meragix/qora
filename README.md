@@ -77,21 +77,32 @@ dependencies:
 ```
 
 ```yaml
-# DevTools overlay — add to dev_dependencies, never ships in production
+# DevTools extension (IDE) — in dependencies; tree-shaken from release builds
+dependencies:
+  qora_devtools_extension: ^0.3.0
+```
+
+```yaml
+# DevTools overlay (in-app panel) — in dev_dependencies; not included in release builds
 dev_dependencies:
   qora_devtools_overlay: ^1.0.0
 ```
 
-Then wrap your app — that's it:
+Setup:
 
 ```dart
 void main() {
-  final tracker = OverlayTracker();
-  final client = QoraClient(tracker: kDebugMode ? tracker : null);
+  final overlay = OverlayTracker();
+  final client = QoraClient();
+
+  if (kDebugMode) {
+    QoraDevtools.setup(client, additionalTrackers: [overlay]);
+  }
 
   runApp(
-    QoraInspector(        // stripped automatically in release builds
-      tracker: tracker,
+    QoraInspector(
+      tracker: overlay,
+      client: kDebugMode ? client : null,
       child: MyApp(client: client),
     ),
   );
