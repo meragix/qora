@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
-import 'json_value.dart';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 // ─────────────────────────────────────────────
 // Colour palette)
@@ -23,7 +26,7 @@ class _C {
 // Entry point — accepts raw dynamic
 // ─────────────────────────────────────────────
 
-class JsonViewer extends StatelessWidget {
+class JsonViewer extends StatefulWidget {
   /// Any value: Map, List, String, num, bool, null — or a pre-built [JsonValue].
   final dynamic data;
 
@@ -37,19 +40,74 @@ class JsonViewer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final value =
-        data is JsonValue ? data as JsonValue : JsonValue.fromDynamic(data);
+  State<JsonViewer> createState() => _JsonViewerState();
+}
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: _JsonNode(
-          value: value,
-          depth: 0,
-          autoExpandDepth: autoExpandDepth,
-        ),
+class _JsonViewerState extends State<JsonViewer> {
+  bool _hovered = false;
+
+  static const _encoder = JsonEncoder.withIndent('  ');
+
+  void _copy(JsonValue jsonValue) {
+    final text = _encoder.convert(_toObject(jsonValue));
+    Clipboard.setData(ClipboardData(text: text));
+  }
+
+  Object? _toObject(JsonValue value) => switch (value) {
+        JsonNull() => null,
+        JsonBool v => v.value,
+        JsonNumber v => v.value,
+        JsonString v => v.value,
+        JsonArray v => v.items.map(_toObject).toList(),
+        JsonObject v => v.fields.map((k, val) => MapEntry(k, _toObject(val))),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final value = widget.data is JsonValue
+        ? widget.data as JsonValue
+        : JsonValue.fromDynamic(widget.data);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _JsonNode(
+                value: value,
+                depth: 0,
+                autoExpandDepth: widget.autoExpandDepth,
+              ),
+            ),
+          ),
+
+          // ── Copy button — appears on hover ──────────────────────────────
+          if (_hovered)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: () => _copy(value),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: DevtoolsColors.zinc800,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: DevtoolsColors.zinc700),
+                  ),
+                  child: const Icon(
+                    LucideIcons.copy,
+                    size: 12,
+                    color: DevtoolsColors.textMuted,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -1,12 +1,17 @@
 /// Type-safe representation of any JSON value.
 ///
-/// Internal model — consumers never instantiate these directly.
-/// Use [JsonValue.fromDynamic] to parse raw `dynamic` data.
+/// Used by both the in-app overlay and the IDE extension to drive their
+/// respective JSON viewers without depending on `vm_service` or Flutter.
+///
+/// Use [JsonValue.fromDynamic] to parse any value that came out of
+/// `dart:convert jsonDecode`, a `Map`, a `List`, or any Dart primitive.
 sealed class JsonValue {
   const JsonValue();
 
-  /// Converts any [raw] dynamic value (from `jsonDecode`, maps, lists…)
-  /// into a fully-typed [JsonValue] tree.
+  /// Converts any [raw] dynamic value into a fully-typed [JsonValue] tree.
+  ///
+  /// Handles: `null`, [bool], [num], [String], [List], [Map].
+  /// Anything else is coerced to [JsonString] via `.toString()`.
   factory JsonValue.fromDynamic(dynamic raw) {
     if (raw == null) return const JsonNull();
     if (raw is bool) return JsonBool(raw);
@@ -20,11 +25,10 @@ sealed class JsonValue {
         raw.map((k, v) => MapEntry(k.toString(), JsonValue.fromDynamic(v))),
       );
     }
-    // Fallback: toString() anything unknown (DateTime, custom objects…)
     return JsonString(raw.toString());
   }
 
-  /// Whether this value is a leaf (not expandable in the tree).
+  /// Whether this value has no children (cannot be expanded in a tree).
   bool get isPrimitive =>
       this is JsonNull ||
       this is JsonBool ||

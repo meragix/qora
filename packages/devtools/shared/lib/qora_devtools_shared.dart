@@ -83,6 +83,7 @@ export 'src/events/timeline_event.dart';
 
 // Models
 export 'src/models/cache_snapshot.dart';
+export 'src/models/json_value.dart';
 export 'src/models/mutation_snapshot.dart';
 export 'src/models/query_snapshot.dart';
 
