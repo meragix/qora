@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:qora_devtools_ui/src/ui/theme/devtools_colors.dart';
-import 'package:qora_devtools_ui/src/ui/theme/devtools_spacing.dart';
 
 /// Header displayed at the top of the DevTools extension shell.
 class DevtoolsHeader extends StatelessWidget {
@@ -15,53 +14,44 @@ class DevtoolsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: <Widget>[
-        // Logo mark
+        // Logo mark — accent purple, always visible regardless of host theme
         Container(
-          width: 22,
-          height: 22,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: DevtoolsColors.accent,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
           ),
           alignment: Alignment.center,
           child: const Text(
             'Q',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w900,
-              color: DevtoolsColors.zinc950,
+              color: Colors.white,
               height: 1,
             ),
           ),
         ),
-        const SizedBox(width: DevtoolsSpacing.sm),
-        const Text(
-          'Qora DevTools',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: DevtoolsColors.textPrimary,
-          ),
-        ),
-        const SizedBox(width: DevtoolsSpacing.md),
+        const SizedBox(width: 8),
+        Text('Qora DevTools', style: theme.textTheme.titleSmall),
+        const SizedBox(width: 10),
         if (activeQueryCount > 0)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
             decoration: BoxDecoration(
-              color: DevtoolsColors.accent.withValues(alpha: .15),
+              color: theme.colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: DevtoolsColors.accent.withValues(alpha: .3),
-              ),
             ),
             child: Text(
               '$activeQueryCount active',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: DevtoolsColors.accent,
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
           ),
@@ -69,11 +59,7 @@ class DevtoolsHeader extends StatelessWidget {
         IconButton(
           tooltip: 'Expand',
           onPressed: () {},
-          icon: const Icon(Icons.open_in_full, size: 16),
-          color: DevtoolsColors.textMuted,
-          hoverColor: DevtoolsColors.rowHover,
-          padding: const EdgeInsets.all(6),
-          constraints: const BoxConstraints(),
+          icon: const Icon(Icons.open_in_full, size: 14),
         ),
       ],
     );

@@ -14,11 +14,15 @@ import 'package:qora_devtools_ui/src/domain/usecases/refetch_query.dart';
 import 'package:qora_devtools_ui/src/ui/shell/app_shell.dart';
 import 'package:qora_devtools_ui/src/ui/state/cache_controller.dart';
 import 'package:qora_devtools_ui/src/ui/state/timeline_controller.dart';
-import 'package:qora_devtools_ui/src/ui/theme/devtools_theme.dart';
 
-/// Root Material application for the Qora DevTools extension.
+/// Root widget for the Qora DevTools extension.
+///
+/// Does NOT provide its own [MaterialApp] — theming is handled by the
+/// enclosing [DevToolsExtension] widget (from `devtools_extensions`), which
+/// applies [themeFor] with [lightColorScheme] / [darkColorScheme] and
+/// respects the IDE's background colour.
 class QoraDevToolsApp extends StatefulWidget {
-  /// Creates the root DevTools application.
+  /// Creates the root DevTools widget.
   const QoraDevToolsApp({super.key});
 
   @override
@@ -80,22 +84,16 @@ class _QoraDevToolsAppState extends State<QoraDevToolsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: DevtoolsTheme.dark,
-      darkTheme: DevtoolsTheme.dark,
-      themeMode: ThemeMode.dark,
-      home: AppShell(
-        timelineController: _timelineController,
-        cacheController: _cacheController,
-        queriesNotifier: _queriesNotifier,
-        networkNotifier: _networkNotifier,
-        performanceNotifier: _performanceNotifier,
-        dependencyNotifier: _dependencyNotifier,
-        refetch: RefetchQueryUseCase(_eventRepository),
-        fetchLargePayload: FetchLargePayloadUseCase(_eventRepository),
-        repository: _eventRepository,
-      ),
+    return AppShell(
+      timelineController: _timelineController,
+      cacheController: _cacheController,
+      queriesNotifier: _queriesNotifier,
+      networkNotifier: _networkNotifier,
+      performanceNotifier: _performanceNotifier,
+      dependencyNotifier: _dependencyNotifier,
+      refetch: RefetchQueryUseCase(_eventRepository),
+      fetchLargePayload: FetchLargePayloadUseCase(_eventRepository),
+      repository: _eventRepository,
     );
   }
 }
