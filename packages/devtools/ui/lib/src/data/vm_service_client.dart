@@ -47,7 +47,35 @@ class VmServiceClient {
   String? _isolateId;
   StreamSubscription<Event>? _extensionEventsSub;
 
+  /// Protocol version reported by the connected runtime.
+  ///
+  /// `null` before [connect] completes, or when the runtime is too old to
+  /// implement `ext.qora.getVersion` (pre-versioning builds).
+  String? _remoteProtocolVersion;
+
   VmServiceClient();
+
+  /// Protocol version string as reported by the connected runtime, e.g. `"1.0.0"`.
+  ///
+  /// `null` until [connect] has completed its version handshake.
+  String? get remoteProtocolVersion => _remoteProtocolVersion;
+
+  /// Whether the connected runtime's **major** protocol version matches the UI.
+  ///
+  /// Returns `true` when both sides share the same major version, or when the
+  /// runtime did not respond to `ext.qora.getVersion` (legacy — optimistic).
+  ///
+  /// When `false`, the UI should surface a compatibility banner so developers
+  /// know they need to align their `qora_devtools_extension` package version.
+  bool get isProtocolCompatible {
+    final remote = _remoteProtocolVersion;
+    if (remote == null) return true; // unknown → optimistic, no false alarms
+    final localMajor =
+        int.tryParse(QoraExtensionMethods.protocolVersion.split('.').first);
+    final remoteMajor = int.tryParse(remote.split('.').first);
+    if (localMajor == null || remoteMajor == null) return true;
+    return localMajor == remoteMajor;
+  }
 
   /// Broadcast stream of decoded [QoraEvent] instances.
   ///
@@ -75,6 +103,21 @@ class VmServiceClient {
 
     await service.streamListen(EventStreams.kExtension);
     _extensionEventsSub = service.onExtensionEvent.listen(_onExtensionEvent);
+
+    // Protocol version handshake — fire-and-forget; failure is non-fatal.
+    // If the runtime is too old to implement ext.qora.getVersion, the RPC
+    // throws; we leave _remoteProtocolVersion null (optimistic compatibility).
+    try {
+      final response = await service.callServiceExtension(
+        QoraExtensionMethods.getVersion,
+        isolateId: isolateId,
+      );
+      _remoteProtocolVersion =
+          response.json?['version'] as String?;
+    } catch (_) {
+      // Pre-versioning runtime — no banner needed, treat as compatible.
+      _remoteProtocolVersion = null;
+    }
   }
 
   /// Ingests a raw VM service [event] and publishes it to [events] if it is a

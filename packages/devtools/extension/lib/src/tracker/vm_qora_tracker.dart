@@ -117,6 +117,7 @@ class VmTracker implements QoraTracker {
     int? gcTimeMs,
     int observerCount = 0,
     int? retryCount,
+    String? dependsOnKey,
   }) {
     final lazy = _lazy.store(data);
     final summary = _summarizeData(data);
@@ -139,6 +140,7 @@ class VmTracker implements QoraTracker {
         gcTimeMs: gcTimeMs,
         observerCount: observerCount,
         retryCount: retryCount,
+        dependsOnKey: dependsOnKey,
       ),
     );
   }

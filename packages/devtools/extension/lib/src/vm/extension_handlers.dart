@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:qora_devtools_extension/src/lazy/lazy_payload_manager.dart';
 import 'package:qora_devtools_extension/src/tracker/tracking_gateway.dart';
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Request handlers backing all `ext.qora.*` VM service extension methods.
 ///
@@ -50,6 +51,21 @@ class ExtensionHandlers {
     required LazyPayloadManager lazyPayloadManager,
   })  : _gateway = gateway,
         _lazy = lazyPayloadManager;
+
+  /// Handles `ext.qora.getVersion`.
+  ///
+  /// Returns the wire protocol version so the DevTools UI can detect
+  /// mismatches and surface a compatibility banner when the runtime and UI
+  /// packages are out of sync.
+  ///
+  /// Response: `{ "version": "1.0.0" }` — always succeeds, no params.
+  Future<developer.ServiceExtensionResponse> versionResponse(
+    Map<String, String> params,
+  ) async {
+    return _ok(<String, Object?>{
+      'version': QoraExtensionMethods.protocolVersion,
+    });
+  }
 
   /// Handles `ext.qora.refetch`.
   Future<developer.ServiceExtensionResponse> refetchResponse(

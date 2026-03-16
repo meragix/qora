@@ -76,6 +76,11 @@ abstract interface class QoraTracker {
   ///   milliseconds.
   /// - [observerCount] — number of active stream subscribers at the moment
   ///   the fetch settled.
+  /// - [dependsOnKey] — string-serialised key of the [QoraOptions.dependsOn]
+  ///   dependency, or `null` when this query has no declarative dependency.
+  ///   [VmTracker] and [OverlayTracker] embed this in the [QueryEvent] so the
+  ///   DevTools dependency graph can draw real Query→Query edges instead of
+  ///   relying on temporal heuristics.
   void onQueryFetched(
     String key,
     Object? data,
@@ -84,6 +89,7 @@ abstract interface class QoraTracker {
     int? gcTimeMs,
     int observerCount = 0,
     int? retryCount,
+    String? dependsOnKey,
   });
 
   /// Called when a fetch was cancelled via [CancelToken] — either before the

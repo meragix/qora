@@ -39,6 +39,12 @@ class ExtensionRegistrar {
   /// Also registers the legacy [QoraExtensionMethods.getPayload] alias for
   /// backward compatibility with older DevTools UI builds.
   void registerAll() {
+    // Always register getVersion first — the UI calls it immediately on connect
+    // to verify protocol compatibility before issuing any other command.
+    developer.registerExtension(
+      QoraExtensionMethods.getVersion,
+      _handleVersion,
+    );
     developer.registerExtension(
       QoraExtensionMethods.refetch,
       _handleRefetch,
@@ -65,6 +71,13 @@ class ExtensionRegistrar {
       QoraExtensionMethods.getPayload,
       _handlePayloadChunk,
     );
+  }
+
+  Future<developer.ServiceExtensionResponse> _handleVersion(
+    String method,
+    Map<String, String> params,
+  ) {
+    return handlers.versionResponse(params);
   }
 
   Future<developer.ServiceExtensionResponse> _handleRefetch(

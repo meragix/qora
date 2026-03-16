@@ -123,6 +123,15 @@ final class QueryEvent extends QoraEvent {
   /// or `removed`). Used by DevTools to display the retry policy per query.
   final int? retryCount;
 
+  /// String-serialised key of the [QoraOptions.dependsOn] dependency query,
+  /// or `null` when this query has no declarative dependency.
+  ///
+  /// When set, the DevTools dependency graph draws a **real** Query→Query
+  /// directed edge from [dependsOnKey] (dependency) → [key] (dependent),
+  /// replacing the 500 ms temporal-correlation heuristic with authoritative
+  /// data from [QoraOptions].
+  final String? dependsOnKey;
+
   /// Creates a query event.
   ///
   /// Prefer the named factories ([QueryEvent.fetched], [QueryEvent.invalidated])
@@ -144,6 +153,7 @@ final class QueryEvent extends QoraEvent {
     this.observerCount = 0,
     this.createdAtMs,
     this.retryCount,
+    this.dependsOnKey,
   }) : super(kind: 'query.${type.name}');
 
   /// Helper constructor for `query.fetched`.
@@ -163,6 +173,7 @@ final class QueryEvent extends QoraEvent {
     int observerCount = 0,
     int? createdAtMs,
     int? retryCount,
+    String? dependsOnKey,
   }) {
     return QueryEvent(
       eventId: QoraEvent.generateId(),
@@ -181,6 +192,7 @@ final class QueryEvent extends QoraEvent {
       observerCount: observerCount,
       createdAtMs: createdAtMs,
       retryCount: retryCount,
+      dependsOnKey: dependsOnKey,
     );
   }
 
@@ -231,6 +243,7 @@ final class QueryEvent extends QoraEvent {
       observerCount: (json['observerCount'] as int?) ?? 0,
       createdAtMs: json['createdAtMs'] as int?,
       retryCount: json['retryCount'] as int?,
+      dependsOnKey: json['dependsOnKey'] as String?,
     );
   }
 
@@ -252,5 +265,6 @@ final class QueryEvent extends QoraEvent {
         'observerCount': observerCount,
         'createdAtMs': createdAtMs,
         'retryCount': retryCount,
+        'dependsOnKey': dependsOnKey,
       };
 }

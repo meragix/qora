@@ -1613,6 +1613,11 @@ class QoraClient implements MutationTracker {
           gcTimeMs: opts.cacheTime.inMilliseconds,
           observerCount: entry.subscriberCount,
           retryCount: result.attempts,
+          // Propagate the declarative dependency key so DevTools trackers can
+          // build real Query→Query edges without temporal heuristics.
+          dependsOnKey: opts.dependsOn != null
+              ? _stringKey(normalizeKey(opts.dependsOn!))
+              : null,
         );
         onFetchSuccess<T>(key, data);
         _pendingRequests.remove(sk);
@@ -1825,25 +1830,75 @@ class QoraClient implements MutationTracker {
     });
   }
 
-  /// Start the background timer that periodically sweeps expired entries.
+  /// Start the background eviction cycle.
+  ///
+  /// Schedules a one-shot [Timer] that fires exactly when the
+  /// earliest-expiring inactive entry is due, then reschedules itself after
+  /// each tick. Falls back to a 1-minute heartbeat when no inactive entries
+  /// exist, acting as a safety net for orphaned entries.
+  ///
+  /// Benefits over `Timer.periodic(1 minute)`:
+  /// - Zero allocation in the common case (nothing to evict).
+  /// - Entries are collected as promptly as their `cacheTime` allows.
+  /// - The event loop is not loaded at a fixed cadence regardless of need.
   void _startEvictionTimer() {
-    _evictionTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (_isDisposed) return;
-      _evictExpiredEntries();
-    });
+    _scheduleNextEviction();
+  }
+
+  /// Compute the delay to the earliest pending expiry and arm a one-shot timer.
+  void _scheduleNextEviction() {
+    if (_isDisposed) return;
+
+    final cacheTime = config.defaultOptions.cacheTime;
+    DateTime? earliest;
+
+    for (final entry in _cache.entries) {
+      final e = entry.value;
+      if (e.isActive) continue;
+      final expiry = e.lastAccessedAt.add(cacheTime);
+      if (earliest == null || expiry.isBefore(earliest)) {
+        earliest = expiry;
+      }
+    }
+
+    Duration delay;
+    if (earliest == null) {
+      // No inactive entries — safety-net heartbeat.
+      delay = const Duration(minutes: 1);
+    } else {
+      final d = earliest.difference(DateTime.now());
+      delay = d.isNegative ? Duration.zero : d;
+    }
+
+    _evictionTimer = Timer(delay, _evictionTick);
+  }
+
+  void _evictionTick() {
+    if (_isDisposed) return;
+    _evictExpiredEntries();
+    _scheduleNextEviction();
   }
 
   /// Remove all inactive entries that have exceeded their cache time.
+  ///
+  /// Zero-allocation fast path: the removal list is only allocated when at
+  /// least one expired entry is found.
   void _evictExpiredEntries() {
     final cacheTime = config.defaultOptions.cacheTime;
-    final expired = _cache.entries
-        .where((e) => !e.value.isActive && e.value.shouldEvict(cacheTime))
-        .map((e) => e.key)
-        .toList();
+    List<List<dynamic>>? toRemove;
 
-    for (final key in expired) {
-      _cache.remove(key);
-      _log('Evicted: $key');
+    for (final entry in _cache.entries) {
+      final e = entry.value;
+      if (!e.isActive && e.shouldEvict(cacheTime)) {
+        (toRemove ??= []).add(entry.key);
+      }
+    }
+
+    if (toRemove != null) {
+      for (final key in toRemove) {
+        _cache.remove(key);
+        _log('Evicted: $key');
+      }
     }
   }
 

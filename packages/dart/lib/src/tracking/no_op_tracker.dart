@@ -62,6 +62,7 @@ final class NoOpTracker implements QoraTracker {
     int? gcTimeMs,
     int observerCount = 0,
     int? retryCount,
+    String? dependsOnKey,
   }) {}
 
   @override

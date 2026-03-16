@@ -21,6 +21,8 @@ class GraphNode {
 }
 
 /// A directed edge from a mutation node to a query node.
+///
+/// Inferred via temporal correlation — see [DependencyNotifier].
 class GraphEdge {
   /// Creates a graph edge.
   const GraphEdge({required this.fromMutationId, required this.toQueryKey});
@@ -30,6 +32,24 @@ class GraphEdge {
 
   /// Destination query node key.
   final String toQueryKey;
+}
+
+/// A directed edge from a dependency query node to a dependent query node.
+///
+/// Created from authoritative [QueryEvent.dependsOnKey] data — no heuristic
+/// involved. Corresponds to `QoraOptions.dependsOn` declared in the app.
+class DependsOnEdge {
+  /// Creates a query→query dependency edge.
+  const DependsOnEdge({
+    required this.dependencyKey,
+    required this.dependentKey,
+  });
+
+  /// The query that must resolve first (the dependency).
+  final String dependencyKey;
+
+  /// The query that declared [dependencyKey] as its `dependsOn`.
+  final String dependentKey;
 }
 
 /// Pending mutation record used for temporal correlation.
@@ -82,13 +102,19 @@ class DependencyNotifier extends ChangeNotifier {
 
   final Map<String, GraphNode> _nodes = <String, GraphNode>{};
   final List<GraphEdge> _edges = <GraphEdge>[];
+  final List<DependsOnEdge> _dependsOnEdges = <DependsOnEdge>[];
   final List<_PendingMutation> _pendingMutations = <_PendingMutation>[];
 
   /// All graph nodes (mutations + queries that have appeared in events).
   List<GraphNode> get nodes => List<GraphNode>.unmodifiable(_nodes.values);
 
-  /// All inferred dependency edges.
+  /// All inferred mutation→query dependency edges (temporal heuristic).
   List<GraphEdge> get edges => List<GraphEdge>.unmodifiable(_edges);
+
+  /// All authoritative query→query dependency edges sourced from
+  /// [QueryEvent.dependsOnKey] (set via `QoraOptions.dependsOn` in the app).
+  List<DependsOnEdge> get dependsOnEdges =>
+      List<DependsOnEdge>.unmodifiable(_dependsOnEdges);
 
   void _onEvent(QoraEvent event) {
     if (event is MutationEvent) {
@@ -111,6 +137,31 @@ class DependencyNotifier extends ChangeNotifier {
           _pendingMutations.removeAt(0);
         }
         notifyListeners();
+      }
+      return;
+    }
+
+    if (event is QueryEvent && event.type == QueryEventType.fetched) {
+      final depKey = event.dependsOnKey;
+      if (depKey != null && depKey.isNotEmpty) {
+        // Ensure both nodes exist.
+        _nodes.putIfAbsent(
+          depKey,
+          () => GraphNode(id: depKey, label: depKey, isMutation: false),
+        );
+        _nodes.putIfAbsent(
+          event.key,
+          () => GraphNode(id: event.key, label: event.key, isMutation: false),
+        );
+        final exists = _dependsOnEdges.any(
+          (e) => e.dependencyKey == depKey && e.dependentKey == event.key,
+        );
+        if (!exists) {
+          _dependsOnEdges.add(
+            DependsOnEdge(dependencyKey: depKey, dependentKey: event.key),
+          );
+          notifyListeners();
+        }
       }
       return;
     }
@@ -146,10 +197,11 @@ class DependencyNotifier extends ChangeNotifier {
     }
   }
 
-  /// Clears all nodes and edges.
+  /// Clears all nodes and edges (both heuristic and authoritative).
   void clear() {
     _nodes.clear();
     _edges.clear();
+    _dependsOnEdges.clear();
     _pendingMutations.clear();
     notifyListeners();
   }

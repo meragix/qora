@@ -129,6 +129,7 @@ class OverlayTracker implements QoraTracker {
     int? gcTimeMs,
     int observerCount = 0,
     int? retryCount,
+    String? dependsOnKey, // unused — dependency graph lives in the IDE extension
   }) {
     if (_disposed) return;
     final now = DateTime.now().millisecondsSinceEpoch;
