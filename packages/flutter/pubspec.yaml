@@ -16,9 +16,9 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  qora: ^0.8.0
-  # qora:
-  #   path: ../dart
+  # qora: ^0.8.0
+  qora:
+    path: ../dart
   connectivity_plus: ^7.0.0
 
 dev_dependencies:

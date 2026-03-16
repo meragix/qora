@@ -138,9 +138,9 @@ class QoraClient implements MutationTracker {
 
   /// Observability hook called on query and mutation lifecycle events.
   ///
-  /// Defaults to [NoOpTracker] (zero overhead).  Pass a `VmTracker` in
-  /// debug/profile builds to enable DevTools reporting.
-  final QoraTracker _tracker;
+  /// Defaults to [NoOpTracker] (zero overhead).  Replaced by [setTracker]
+  /// in debug/profile builds to enable DevTools reporting.
+  QoraTracker _tracker;
 
   final QueryCache _cache;
 
@@ -318,6 +318,34 @@ class QoraClient implements MutationTracker {
       if (state == LifecycleState.resumed) _onAppResumed();
     });
     _log('LifecycleManager attached');
+  }
+
+  /// Replaces the active tracker with [tracker].
+  ///
+  /// Must be called **once**, before any query is issued, and only when the
+  /// client was constructed without an explicit tracker (i.e. the default
+  /// [NoOpTracker] is still in place).
+  ///
+  /// Calling this when a non-default tracker is already installed is a
+  /// programming error — it asserts in debug mode to surface the mistake early.
+  /// Reassigning trackers at runtime leads to lost events (the first tracker
+  /// stops receiving hooks silently).
+  ///
+  /// Prefer the [QoraDevtools.setup] helper from `qora_devtools_extension`,
+  /// which calls this method internally:
+  ///
+  /// ```dart
+  /// final client = QoraClient(config: ...);
+  /// if (kDebugMode) QoraDevtools.setup(client);
+  /// ```
+  void setTracker(QoraTracker tracker) {
+    assert(
+      _tracker is NoOpTracker,
+      'QoraClient.setTracker() called when a non-default tracker is already '
+      'installed ($_tracker). '
+      'Configure the tracker once, before any queries are issued.',
+    );
+    _tracker = tracker;
   }
 
   /// Returns a stream of [FetchStatus] changes for [key].

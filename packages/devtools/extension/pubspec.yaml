@@ -14,8 +14,12 @@ environment:
 resolution: workspace
 
 dependencies:
-  qora: ^0.8.0
-  qora_devtools_shared: ^0.2.0
+  # qora: ^0.8.0
+  qora:
+    path: ../../dart
+  # qora_devtools_shared: ^0.2.0
+  qora_devtools_shared:
+    path: ../../devtools/shared
 
 dev_dependencies:
   test: ^1.26.0

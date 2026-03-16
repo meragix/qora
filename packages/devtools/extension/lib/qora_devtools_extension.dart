@@ -67,6 +67,7 @@
 library;
 
 export 'src/lazy/lazy_payload_manager.dart';
+export 'src/qora_devtools.dart';
 export 'src/lazy/payload_chunker.dart';
 export 'src/lazy/payload_store.dart';
 export 'src/tracker/qora_client_tracking_gateway.dart';

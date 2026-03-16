@@ -71,6 +71,7 @@ export 'src/persistence/qora_serializer.dart';
 export 'src/persistence/storage_adapter.dart';
 export 'src/ssr/ssr_hydrator.dart';
 export 'src/state/state.dart';
+export 'src/tracking/multi_tracker.dart';
 export 'src/tracking/qora_tracker.dart';
 export 'src/utils/qora_exception.dart';
 export 'src/utils/query_function.dart';
