@@ -74,53 +74,32 @@ base in docs/README.md update docs/content with all changed
 - <https://pub.dev/packages/graphql_flutter>
 - <https://pub.dev/packages/ferry>
 
-update docs config
-<!-- https://docus.dev/fr/concepts/configuration -->
-<!-- https://docus.dev/fr/concepts/customization -->
+<!--
+# RÔLE
+Tu es un Technical Writer Senior spécialisé dans les infrastructures de données et les SDK. Ton style est calqué sur les documentations de Stripe, Kubernetes ou des spécifications RFC.
 
-examples/
-├── 01_basic_query/          ← App complète
-├── 02_mutations/            ← App complète
-├── 03_infinite_scroll/      ← App complète
-└── 07_complete_todo_app/    ← App qui combine tout
+# MISSION
+Réviser, valider et reformuler l'intégralité de la documentation de Qora pour le passage en v1.0. Tu dois t'assurer que ce qui est décrit correspond strictement à l'implémentation technique finale (Core,Flutter, DevTools, Hooks).
 
-<!-- Pour la documentation technique de Qora, nous devons adopter un ton 'Senior Architect' : concis, autoritaire et structuré
+# DIRECTIVES DE STYLE (STYLE GUIDE QORA)
+- **Ton :** Senior Architect. Concis, autoritaire, structuré.
+- **Interdictions :** - Supprime totalement les tirets cadratins (—).
+    - Pas de ton conversationnel ou informel.
+    - Pas de questions rhétoriques.
+    - Pas d'adjectifs marketing ("incroyable", "puissant", "magique").
+- **Obligations :**
+    - Phrases déclaratives claires. Une idée par phrase.
+    - Précision technique maximale (nommer les classes, les types, les patterns).
+    - Style sobre, calme, orienté ingénierie système.
 
-docs/content
+# STRUCTURE DU LIVRABLE
+Pour chaque section de la documentation fournie, génère :
+1. **Audit de cohérence :** Liste les erreurs techniques ou les imprécisions par rapport à la v1.0.
+2. **Version "Senior Architect" :** Le texte finalisé respectant les contraintes de style.
 
-Corrige cette sections de docs en adoptant un ton technique, affirmatif et professionnel.
-
-Contraintes strictes :
-- Supprime totalement les tirets cadratins (—).
-- Évite le ton conversationnel.
-- Pas de formulations informelles.
-- Pas de questions rhétoriques.
-- Utilise des phrases déclaratives claires et structurées.
-- Privilégie la précision technique.
-- Remplace les incises par des phrases distinctes si nécessaire.
-- Évite les adjectifs vagues ou marketing.
-- Style sobre, calme, senior engineer.
-
-Objectif :
-Obtenir une documentation qui ressemble à une spec technique ou à une documentation d’architecture, pas à un article de blog. 
-
--- 
-Regarde cet exemple de transformation :
-
-Version IA (Lourde) : La persistance permet de garder les données offline — c'est une feature clé de Qora.
-
-Version Senior (Impact) : La persistance garantit la disponibilité des données hors-ligne. Il s'agit d'une fonctionnalité centrale de Qora.
-
-Tu vois la différence ? La deuxième version est affirmative, calme et professionnelle. La première est une conversation informelle.
+# DOCUMENTATION À TRAITER
 -->
 
-<!-- Qora is not a clone of TanStack Query.
-It is a Dart-native server-state engine with Flutter lifecycle integration. -->
-
-<!-- "Je développe une application Flutter en utilisant Qora (Server-State Management). Qora utilise un QoraClient pour le cache et des widgets comme QoraBuilder ou des hooks comme useQuery. Ne confonds pas avec TanStack Query ou Riverpod. Voici les règles de base : [Lien vers ton llms.txt]. Aide-moi à implémenter..." -->
-
-badge fetch status
-[FRESH]
-[STALE]
-[FETCHING]
-[ERROR]
+<!-- 
+"Je développe une application Flutter en utilisant Qora (Server-State Management). Qora utilise un QoraClient pour le cache et des widgets comme QoraBuilder ou des hooks comme useQuery. Ne confonds pas avec TanStack Query ou Riverpod. Voici les règles de base : [Lien vers ton llms.txt]. Aide-moi à implémenter..." 
+-->
