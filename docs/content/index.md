@@ -144,7 +144,7 @@ Everything server state needs. Nothing it does not.
   #title
   [Built-in DevTools]{.text-primary}
   #description
-  Inspect every cache entry, replay the event timeline, and trigger refetch or invalidate commands from a floating in-app panel or the dedicated Flutter DevTools IDE extension. One line of setup.
+  Inspect every cache entry, replay the event timeline, and trigger refetch or invalidate commands from a floating in-app panel. One line of setup. A dedicated Flutter DevTools IDE extension is in development.
   :::
 
   :::u-page-feature
