@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-16
+
+### Added
+
+- `QoraExtensionMethods.protocolVersion` — `'1.0.0'` wire-protocol version constant; bump policy: major on breaking schema changes, minor on additive changes, patch on fixes.
+- `QoraExtensionMethods.getVersion` — `'ext.qora.getVersion'` constant for the version-handshake extension method.
+- `QueryEvent.dependsOnKey` — nullable `String?` field on `QueryEvent.fetched` events carrying the JSON-encoded key of the `QoraOptions.dependsOn` dependency; enables DevTools to draw authoritative query→query edges without temporal heuristics.
+
 ## [0.2.0] - 2026-03-12
 
 ### Added

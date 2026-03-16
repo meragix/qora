@@ -49,7 +49,7 @@ abstract interface class MutationTracker {
   ///   entry is purged automatically.
   ///
   /// [metadata] contains arbitrary key-value pairs from
-  /// [MutationController.metadata], forwarded verbatim to [MutationEvent].
+  /// [MutationController.metadata], forwarded verbatim to [MutationUpdate].
   void trackMutation<TData, TVariables>(
     String id,
     MutationState<TData, TVariables> state, {

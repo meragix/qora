@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
-// Hide core MutationEvent — the overlay uses the shared protocol MutationEvent.
-import 'package:qora/qora.dart' hide MutationEvent;
+import 'package:qora/qora.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 /// Lightweight value object for an optimistic cache write recorded by the overlay.
@@ -129,7 +128,8 @@ class OverlayTracker implements QoraTracker {
     int? gcTimeMs,
     int observerCount = 0,
     int? retryCount,
-    String? dependsOnKey, // unused — dependency graph lives in the IDE extension
+    String?
+        dependsOnKey, // unused — dependency graph lives in the IDE extension
   }) {
     if (_disposed) return;
     final now = DateTime.now().millisecondsSinceEpoch;

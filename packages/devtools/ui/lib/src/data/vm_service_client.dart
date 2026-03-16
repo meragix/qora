@@ -112,8 +112,7 @@ class VmServiceClient {
         QoraExtensionMethods.getVersion,
         isolateId: isolateId,
       );
-      _remoteProtocolVersion =
-          response.json?['version'] as String?;
+      _remoteProtocolVersion = response.json?['version'] as String?;
     } catch (_) {
       // Pre-versioning runtime — no banner needed, treat as compatible.
       _remoteProtocolVersion = null;

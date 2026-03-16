@@ -108,7 +108,7 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// ```
   final Object? queryKey;
 
-  /// Arbitrary key-value pairs forwarded to every [MutationEvent] emitted by
+  /// Arbitrary key-value pairs forwarded to every [MutationUpdate] emitted by
   /// this controller.
   ///
   /// Use this to label mutations with domain context visible in DevTools:

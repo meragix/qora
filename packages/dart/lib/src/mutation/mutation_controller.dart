@@ -90,7 +90,7 @@ class MutationController<TData, TVariables, TContext> {
   /// Unique identifier for this controller instance.
   ///
   /// Format: `mutation_N` (monotonically increasing).
-  /// Used as the key in [QoraClient.activeMutations] and [MutationEvent.mutatorId].
+  /// Used as the key in [QoraClient.activeMutations] and [MutationUpdate.mutatorId].
   final String id = 'mutation_${++_counter}';
 
   /// The async function that performs the mutation.
@@ -109,7 +109,7 @@ class MutationController<TData, TVariables, TContext> {
   /// [QoraScope.maybeOf], so it is safe to use without a [QoraScope] ancestor.
   final MutationTracker? tracker;
 
-  /// Arbitrary key-value pairs forwarded to every [MutationEvent] emitted by
+  /// Arbitrary key-value pairs forwarded to every [MutationUpdate] emitted by
   /// this controller.
   ///
   /// Use this to attach domain context that survives up to the DevTools

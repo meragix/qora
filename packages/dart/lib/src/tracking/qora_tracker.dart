@@ -52,6 +52,7 @@ abstract interface class QoraTracker {
   /// This flag separates serialization concerns from the core fetch path:
   /// production apps using [NoOpTracker] never pay the serialization cost.
   bool get needsSerialization;
+
   /// Called when a fetch transitions to the [Loading] state — immediately
   /// before the async fetcher is invoked.
   ///

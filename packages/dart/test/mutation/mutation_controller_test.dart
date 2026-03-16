@@ -463,7 +463,7 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 
@@ -486,7 +486,7 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 
@@ -537,7 +537,7 @@ void main() {
       // Already purged on success.
       expect(client.activeMutations, isEmpty);
 
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 
@@ -567,7 +567,7 @@ void main() {
       expect(client.activeMutations, contains(controller.id));
 
       // Dispose removes the entry silently (no idle event emitted).
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 
@@ -620,12 +620,12 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       // DevTools connects late: snapshot shows the running mutation.
-      final snapshot = Map<String, MutationEvent>.from(client.activeMutations);
+      final snapshot = Map<String, MutationUpdate>.from(client.activeMutations);
       expect(snapshot, contains(controller.id));
       expect(snapshot[controller.id]!.isPending, isTrue);
 
       // Subscribe to the stream for real-time updates.
-      final futureEvents = <MutationEvent>[];
+      final futureEvents = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(futureEvents.add);
       addTearDown(sub.cancel);
 
@@ -641,7 +641,7 @@ void main() {
 
     // ── metadata ─────────────────────────────────────────────────────────
 
-    test('metadata is forwarded to MutationEvent', () async {
+    test('metadata is forwarded to MutationUpdate', () async {
       final client = QoraClient();
       addTearDown(client.dispose);
 
@@ -652,7 +652,7 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 
@@ -674,7 +674,7 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      final events = <MutationEvent>[];
+      final events = <MutationUpdate>[];
       final sub = client.mutationEvents.listen(events.add);
       addTearDown(sub.cancel);
 

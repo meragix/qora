@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:qora/qora.dart' hide MutationEvent;
+import 'package:qora/qora.dart';
 import 'package:qora_devtools_overlay/src/data/overlay_tracker.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_detail.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';

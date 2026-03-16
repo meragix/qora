@@ -204,10 +204,10 @@ class QoraClient implements MutationTracker {
   /// Designed for DevTools: read [activeMutations] on connect to see what is
   /// currently running, then subscribe to [mutationEvents] for real-time
   /// updates (including completed events that have already left the snapshot).
-  final Map<String, MutationEvent> _activeMutations = {};
+  final Map<String, MutationUpdate> _activeMutations = {};
 
-  final StreamController<MutationEvent> _mutationBus =
-      StreamController<MutationEvent>.broadcast();
+  final StreamController<MutationUpdate> _mutationBus =
+      StreamController<MutationUpdate>.broadcast();
 
   /// Broadcast stream that emits the number of in-flight query requests each
   /// time that count changes.  Derive a boolean from `count > 0`.
@@ -1121,7 +1121,7 @@ class QoraClient implements MutationTracker {
   /// Real-time stream of all mutation state changes from tracked
   /// [MutationController]s.
   ///
-  /// Emits a [MutationEvent] on every state transition — including reset to
+  /// Emits a [MutationUpdate] on every state transition — including reset to
   /// [MutationIdle]. For the current snapshot on initial connect, read
   /// [activeMutations] first.
   ///
@@ -1130,7 +1130,7 @@ class QoraClient implements MutationTracker {
   ///   if (event.isError) showToast('Error: ${event.error}');
   /// });
   /// ```
-  Stream<MutationEvent> get mutationEvents => _mutationBus.stream;
+  Stream<MutationUpdate> get mutationEvents => _mutationBus.stream;
 
   /// Snapshot of all **currently running** (pending) mutations, keyed by
   /// controller ID.
@@ -1151,7 +1151,7 @@ class QoraClient implements MutationTracker {
   /// final pending = client.activeMutations;
   /// client.mutationEvents.listen((event) { ... });
   /// ```
-  Map<String, MutationEvent> get activeMutations =>
+  Map<String, MutationUpdate> get activeMutations =>
       Map.unmodifiable(_activeMutations);
 
   /// A snapshot of all mutations currently waiting in the offline queue.
@@ -1177,7 +1177,7 @@ class QoraClient implements MutationTracker {
     final isOptimistic =
         state is MutationSuccess<TData, TVariables> && state.isOptimistic;
 
-    final event = MutationEvent(
+    final event = MutationUpdate(
       mutatorId: id,
       status: state.status,
       data: state.dataOrNull,
@@ -1957,7 +1957,8 @@ class QoraClient implements MutationTracker {
       return {
         '__type': data.runtimeType.toString(),
         '__value': result?.toString() ?? 'null',
-        '__warning': 'toJson() returned ${result.runtimeType} instead of Map/List',
+        '__warning':
+            'toJson() returned ${result.runtimeType} instead of Map/List',
       };
     } catch (e) {
       if (e is NoSuchMethodError) {
@@ -1965,7 +1966,8 @@ class QoraClient implements MutationTracker {
         return {
           '__type': data.runtimeType.toString(),
           '__value': data.toString(),
-          '__hint': 'Add toJson() or pass QoraOptions(toJson: (d) => d.toJson())',
+          '__hint':
+              'Add toJson() or pass QoraOptions(toJson: (d) => d.toJson())',
         };
       }
       // toJson() exists but threw — surface the error in DevTools instead of

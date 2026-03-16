@@ -8,9 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-16
+
 ### Added
 
+- `QoraTracker.needsSerialization` — `bool` getter on the tracker interface; `QoraClient` skips `_serializeForTracker` entirely when `false`, eliminating JSON serialization overhead for `NoOpTracker` in production builds.
+- `NoOpTracker.needsSerialization` — returns `false`; zero-cost guard so production apps never pay the serialization cost.
+- `QoraClient.attachLifecycleManager(LifecycleManager)` — wires a lifecycle manager post-construction; `QoraScope` now calls this so `refetchOnWindowFocus` actually triggers background revalidation on app resume.
+- Smart eviction timer — replaced `Timer.periodic(1 min)` with a self-scheduling one-shot `Timer` that fires exactly when the earliest inactive entry expires; reduces idle wakeups to zero for long cache-time configurations.
+
+### Changed
+
+- **`MutationEvent` → `MutationUpdate`** *(breaking)* — eliminates the name collision with the `MutationEvent` wire-protocol type in `qora_devtools_shared`. Affected public APIs: `QoraClient.mutationEvents → Stream<MutationUpdate>`, `QoraClient.activeMutations → Map<String, MutationUpdate>`.
+- `QoraTracker.onQueryFetched` — added `String? dependsOnKey` named parameter (forwarded from `QoraOptions.dependsOn`); allows DevTools to draw real query→query dependency edges. Existing custom trackers must add the nullable parameter (ignored by `NoOpTracker`).
+
 ### Fixed
+
+- `QueryCache.get<T>` — replaced silent `as CacheEntry<T>?` cast with an `is!` check that throws a descriptive `StateError` naming both the registered and requested types; catches key/type conflicts at the misuse site, not deep in a stream listener.
+- `QoraClient.removeQuery` — was leaking a `StreamController` in `_fetchStatusBus`; now calls `_fetchStatusBus.remove(sk)?.close()` on eviction.
+- `QoraClient.watchQuery` polling timer — two concurrent subscriptions on the same key could cancel each other's `refetchInterval` timers via shared `entry.refetchTimer`; timer is now local to each generator invocation, cancelled in its own `finally` block.
+- `QoraClient._toJsonSafe` — `on NoSuchMethodError` was incorrect (`Error`, not `Exception`); restructured to a single `catch (e)` with an `is NoSuchMethodError` guard inside.
+- `QoraScope` lifecycle wiring — `initState` called `lifecycleManager.start()` but never passed the manager to `QoraClient`; `refetchOnWindowFocus` was dead code; fixed by calling `client.attachLifecycleManager()`.
+- `PersistQoraClient.registerSerializer<T>` — added `assert(name != null)` guard with a descriptive message for obfuscated builds where `T.toString()` produces mangled identifiers.
+- `_evictExpiredEntries` — replaced unconditional `.toList()` with a lazy `List?` only allocated when entries need removal.
 
 ## [0.8.0] - 2026-03-12
 

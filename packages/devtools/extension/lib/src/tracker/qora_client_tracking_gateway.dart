@@ -1,10 +1,7 @@
 import 'dart:convert';
 
 import 'package:qora/qora.dart';
-// Hide the protocol MutationEvent — this file uses the core qora MutationEvent
-// (from QoraClient.activeMutations) which has different fields.
-import 'package:qora_devtools_shared/qora_devtools_shared.dart'
-    hide MutationEvent;
+import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 import 'tracking_gateway.dart';
 
@@ -103,8 +100,7 @@ class QoraClientTrackingGateway implements TrackingGateway {
     // activeMutations only contains currently pending (in-flight) entries.
     // The map key equals event.mutatorId; the query key lives in metadata.
     final mutations = _client.activeMutations.values.map((event) {
-      final mutationKey =
-          (event.metadata?['queryKey'] as String?) ?? '';
+      final mutationKey = (event.metadata?['queryKey'] as String?) ?? '';
       return MutationSnapshot(
         id: event.mutatorId,
         key: mutationKey,

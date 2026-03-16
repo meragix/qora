@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-16
+
+### Added
+
+- `QoraClientTrackingGateway` — default `TrackingGateway` implementation backed by `QoraClient`; eliminates the boilerplate of writing a custom gateway for the common single-client setup. Covers `refetch`, `invalidate`, `rollbackOptimistic`, and a real `getCacheSnapshot` that walks `cachedKeys` and `activeMutations`. An escape hatch (`implements TrackingGateway`) remains for multi-client or audit-logging scenarios.
+- `ext.qora.getVersion` handler — `ExtensionHandlers.versionResponse` returns `{"version": "1.0.0"}`; registered first in `ExtensionRegistrar.registerAll` so the DevTools UI can verify protocol compatibility on connect.
+- `VmTracker.needsSerialization` — returns `true`; satisfies the new `QoraTracker` interface getter added in `qora 0.9.0`.
+- `VmTracker.onQueryFetched` — now forwards `dependsOnKey` to `QueryEvent.fetched` (requires `qora_devtools_shared 0.3.0`).
+
+### Changed
+
+- `VmTracker` no longer requires callers to `hide MutationEvent` from `qora` — the core type is now `MutationUpdate`; `activeMutations` values are read via `mutatorId`, `variables`, and `timestamp` fields.
+
 ## [0.2.0] - 2026-03-12
 
 ### Added

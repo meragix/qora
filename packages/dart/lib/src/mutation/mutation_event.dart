@@ -20,7 +20,7 @@ import 'mutation_state_extensions.dart';
 /// });
 /// ```
 @immutable
-class MutationEvent {
+class MutationUpdate {
   /// Unique identifier of the [MutationController] that emitted this event.
   ///
   /// Format: `mutation_N` where N is a monotonically increasing counter.
@@ -56,7 +56,7 @@ class MutationEvent {
   /// a "pending sync" indicator.
   final bool isOptimistic;
 
-  const MutationEvent({
+  const MutationUpdate({
     required this.mutatorId,
     required this.status,
     required this.timestamp,
@@ -83,6 +83,6 @@ class MutationEvent {
 
   @override
   String toString() =>
-      'MutationEvent(id: $mutatorId, status: $status, isOptimistic: $isOptimistic, '
+      'MutationUpdate(id: $mutatorId, status: $status, isOptimistic: $isOptimistic, '
       'at: $timestamp)';
 }

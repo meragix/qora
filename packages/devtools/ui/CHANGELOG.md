@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-16
+
+### Added
+
+- `VmServiceClient` protocol handshake — on `connect()`, calls `ext.qora.getVersion` and stores the result in `remoteProtocolVersion`; `isProtocolCompatible` returns `false` when the remote major version differs from the UI's expected major version, enabling a compatibility warning banner. Gracefully falls back to `null` / compatible for legacy runtimes that pre-date `0.3.0`.
+- `DependencyNotifier.dependsOnEdges` — `List<DependsOnEdge>` of authoritative query→query dependency edges sourced from `QueryEvent.dependsOnKey`; populated in a new `_onEvent` branch for `QueryEvent.fetched` events that carry a non-null `dependsOnKey`. No temporal heuristic involved.
+- `DependsOnEdge` — value class with `dependencyKey` (the upstream query) and `dependentKey` (the downstream query); distinct from `GraphEdge` (mutation→query heuristic).
+
+### Changed
+
+- `DependencyNotifier` retains the existing 500 ms mutation→query heuristic (`GraphEdge`) for edges not expressed via `dependsOn`; `dependsOnEdges` is the authoritative complement, not a replacement.
+- `DependencyNotifier.clear()` now also clears `_dependsOnEdges`.
+
 ## [0.2.0] - 2026-03-02
 
 ### Added
