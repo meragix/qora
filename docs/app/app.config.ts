@@ -5,4 +5,8 @@ export default defineAppConfig({
       neutral: 'zinc'
     }
   },
+  socials: {
+    discord: 'https://discord.gg/meragix',
+    x : 'https://x.com/meragix',
+  },
 })

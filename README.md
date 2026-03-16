@@ -56,9 +56,10 @@ QoraBuilder<User>(
 | ------- | -- | ----- | --------- | -------- |
 | [![qora](https://img.shields.io/pub/v/qora.svg?label=qora)](https://pub.dev/packages/qora) | [![build](https://github.com/meragix/qora/actions/workflows/dart.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/dart.yml) | [![likes](https://img.shields.io/pub/likes/qora)](https://pub.dev/packages/qora/score) | [![dm](https://img.shields.io/pub/dm/qora)](https://pub.dev/packages/qora/score) | [![pub points](https://img.shields.io/pub/points/qora)](https://pub.dev/packages/qora/score) |
 | [![qora_flutter](https://img.shields.io/pub/v/qora_flutter.svg?label=qora_flutter)](https://pub.dev/packages/qora_flutter) | [![build](https://github.com/meragix/qora/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/flutter.yml) | [![likes](https://img.shields.io/pub/likes/qora_flutter)](https://pub.dev/packages/qora_flutter/score) | [![dm](https://img.shields.io/pub/dm/qora_flutter)](https://pub.dev/packages/qora_flutter/score) | [![pub points](https://img.shields.io/pub/points/qora_flutter)](https://pub.dev/packages/qora_flutter/score) |
-| [![qora_hooks](https://img.shields.io/pub/v/qora_hooks.svg?label=qora_hooks)](https://pub.dev/packages/qora_hooks) | [![build](https://github.com/meragix/qora/actions/workflows/hooks.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/hooks.yml) | [![likes](https://img.shields.io/pub/likes/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![dm](https://img.shields.io/pub/dm/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![pub points](https://img.shields.io/pub/points/qora_hooks)](https://pub.dev/packages/qora_hooks/score) |
-| [![qora_devtools_extension](https://img.shields.io/pub/v/qora_devtools_extension.svg?label=qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension) | [![build](https://github.com/meragix/qora/actions/workflows/extension.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/extension.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) |
+| [![qora_hooks](https://img.shields.io/pub/v/qora_hooks.svg?label=qora_hooks)](https://pub.dev/packages/qora_hooks) | [![build](https://github.com/meragix/qora/actions/workflows/hooks.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/hooks.yml) | [![likes](https://img.shields.io/pub/likes/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![dm](https://img.shields.io/pub/dm/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![pub points](https://img.shields.io/pub/points/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | 
 | [![qora_devtools_overlay](https://img.shields.io/pub/v/qora_devtools_overlay.svg?label=qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay) | [![build](https://github.com/meragix/qora/actions/workflows/overlay.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/overlay.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) |
+
+<!-- | [![qora_devtools_extension](https://img.shields.io/pub/v/qora_devtools_extension.svg?label=qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension) | [![build](https://github.com/meragix/qora/actions/workflows/extension.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/extension.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | -->
 
 ---
 
@@ -92,16 +93,12 @@ Setup:
 
 ```dart
 void main() {
-  final overlay = OverlayTracker();
+  final tracker = OverlayTracker();
   final client = QoraClient();
-
-  if (kDebugMode) {
-    QoraDevtools.setup(client, additionalTrackers: [overlay]);
-  }
 
   runApp(
     QoraInspector(
-      tracker: overlay,
+      tracker: kDebugMode ? tracker : null,
       client: kDebugMode ? client : null,
       child: MyApp(client: client),
     ),
