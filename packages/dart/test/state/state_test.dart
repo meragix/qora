@@ -332,10 +332,10 @@ void main() {
     });
 
     test('status enum conversion', () {
-      expect(const Initial<String>().status, ReqryStatus.initial);
-      expect(const Loading<String>().status, ReqryStatus.loading);
-      expect(Success.now('').status, ReqryStatus.success);
-      expect(const Failure<String>(error: '').status, ReqryStatus.error);
+      expect(const Initial<String>().status, QoraStatus.initial);
+      expect(const Loading<String>().status, QoraStatus.loading);
+      expect(Success.now('').status, QoraStatus.success);
+      expect(const Failure<String>(error: '').status, QoraStatus.error);
     });
   });
 

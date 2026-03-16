@@ -156,25 +156,25 @@ extension QoraStateExtensions<T> on QoraState<T> {
   }
 
   /// Converts state to a simple status enum.
-  ReqryStatus get status => switch (this) {
-        Initial() => ReqryStatus.initial,
-        Loading() => ReqryStatus.loading,
-        Success() => ReqryStatus.success,
-        Failure() => ReqryStatus.error,
+  QoraStatus get status => switch (this) {
+        Initial() => QoraStatus.initial,
+        Loading() => QoraStatus.loading,
+        Success() => QoraStatus.success,
+        Failure() => QoraStatus.error,
       };
 }
 
 /// Simple status enum for cases where you don't need full state.
-enum ReqryStatus {
+enum QoraStatus {
   initial,
   loading,
   success,
   error;
 
-  bool get isInitial => this == ReqryStatus.initial;
-  bool get isLoading => this == ReqryStatus.loading;
-  bool get isSuccess => this == ReqryStatus.success;
-  bool get isError => this == ReqryStatus.error;
+  bool get isInitial => this == QoraStatus.initial;
+  bool get isLoading => this == QoraStatus.loading;
+  bool get isSuccess => this == QoraStatus.success;
+  bool get isError => this == QoraStatus.error;
 }
 
 /// Extension for working with Future&lt;QoraState&lt;T&gt;&gt;.
