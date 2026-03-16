@@ -86,7 +86,7 @@ examples/
 
 <!-- Pour la documentation technique de Qora, nous devons adopter un ton 'Senior Architect' : concis, autoritaire et structuré
 
-docs/content/1.getting-started
+docs/content
 
 Corrige cette sections de docs en adoptant un ton technique, affirmatif et professionnel.
 

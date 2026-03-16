@@ -1,6 +1,10 @@
+import 'package:devtools_app_shared/ui.dart';
 import 'package:flutter/material.dart';
 
 /// Primary tab bar of the Qora DevTools application.
+///
+/// Relies entirely on the [TabBarTheme] injected by [DevToolsExtension] via
+/// [themeFor] — no custom colours or padding needed here.
 class MainTabBar extends StatelessWidget implements PreferredSizeWidget {
   /// Creates a main tab bar.
   const MainTabBar({super.key, required this.controller});
@@ -17,8 +21,6 @@ class MainTabBar extends StatelessWidget implements PreferredSizeWidget {
       child: TabBar(
         controller: controller,
         isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        labelPadding: const EdgeInsets.symmetric(horizontal: 14),
         tabs: const <Tab>[
           Tab(text: 'QUERIES'),
           Tab(text: 'MUTATIONS'),

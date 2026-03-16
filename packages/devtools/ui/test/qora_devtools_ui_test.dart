@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:qora_devtools_ui/src/ui/app.dart';
+import 'package:qora_devtools_ui/src/ui/.dart';
 
 void main() {
   testWidgets('renders tab scaffold', (tester) async {

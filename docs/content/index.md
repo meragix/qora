@@ -51,14 +51,14 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
   :::prose
 
   ```dart [main.dart]
-  // One call — cached, deduplicated, background-refreshed.
+  // One call: cached, deduplicated, background-refreshed.
   final user = await client.fetchQuery<User>(
     key: ['user', userId],
     fetcher: () => api.getUser(userId),
     options: QoraOptions(staleTime: Duration(minutes: 5)),
   );
 
-  // Optimistic update — UI reflects the change before the server responds.
+  // Optimistic update: UI reflects the change before the server responds.
   // On error, Qora rolls back automatically.
   await controller.mutate(
     key: ['user', userId, 'rename'],
@@ -68,6 +68,7 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
     onSuccess: (_) => client.invalidateQuery(['user', userId]),
   );
   ```
+
   :::
 ::
 
