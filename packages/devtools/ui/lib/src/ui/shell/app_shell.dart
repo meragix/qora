@@ -93,7 +93,16 @@ class _AppShellState extends State<AppShell>
             activeQueryCount: widget.queriesNotifier.activeQueryCount,
           ),
         ),
-        bottom: MainTabBar(controller: _tabController),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(37),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Divider(height: 1),
+              MainTabBar(controller: _tabController),
+            ],
+          ),
+        ),
       ),
       body: TabBarView(
         controller: _tabController,

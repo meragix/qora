@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_ui/src/ui/theme/devtools_typography.dart';
 
 /// Compact breadcrumb-like key label used in list rows.
 class BreadcrumbKey extends StatelessWidget {
@@ -17,6 +18,7 @@ class BreadcrumbKey extends StatelessWidget {
       value,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+      style: DevtoolsTypography.queryKey,
     );
   }
 }

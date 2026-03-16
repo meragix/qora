@@ -14,6 +14,7 @@ import 'package:qora_devtools_ui/src/domain/usecases/refetch_query.dart';
 import 'package:qora_devtools_ui/src/ui/shell/app_shell.dart';
 import 'package:qora_devtools_ui/src/ui/state/cache_controller.dart';
 import 'package:qora_devtools_ui/src/ui/state/timeline_controller.dart';
+import 'package:qora_devtools_ui/src/ui/theme/devtools_theme.dart';
 
 /// Root Material application for the Qora DevTools extension.
 class QoraDevToolsApp extends StatefulWidget {
@@ -81,8 +82,9 @@ class _QoraDevToolsAppState extends State<QoraDevToolsApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
+      theme: DevtoolsTheme.dark,
+      darkTheme: DevtoolsTheme.dark,
+      themeMode: ThemeMode.dark,
       home: AppShell(
         timelineController: _timelineController,
         cacheController: _cacheController,

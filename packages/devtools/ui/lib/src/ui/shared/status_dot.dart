@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_ui/src/ui/theme/devtools_colors.dart';
 
-/// Colored status marker used in mutations lists.
+/// Colored status marker used in list rows.
 class StatusDot extends StatelessWidget {
   /// Creates a status dot.
   const StatusDot({
@@ -8,7 +9,7 @@ class StatusDot extends StatelessWidget {
     this.color,
   });
 
-  /// Dot color.
+  /// Dot color. Defaults to [DevtoolsColors.statusIdle].
   final Color? color;
 
   @override
@@ -16,7 +17,7 @@ class StatusDot extends StatelessWidget {
     return Icon(
       Icons.circle,
       size: 10,
-      color: color ?? Theme.of(context).colorScheme.primary,
+      color: color ?? DevtoolsColors.statusIdle,
     );
   }
 }
