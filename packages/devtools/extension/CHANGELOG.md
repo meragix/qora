@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `QoraClientTrackingGateway.refetch` — now returns `false` when the target entry has no active `watchQuery` subscriber (i.e. no live fetcher closure in scope). The entry is still marked stale so the next mount revalidates, but the DevTools UI can surface a "no active observer" warning instead of reporting success. Uses `QoraClient.hasActiveWatcher` added in `qora 0.9.1`.
 - `QoraClientTrackingGateway` — default `TrackingGateway` implementation backed by `QoraClient`; eliminates the boilerplate of writing a custom gateway for the common single-client setup. Covers `refetch`, `invalidate`, `rollbackOptimistic`, and a real `getCacheSnapshot` that walks `cachedKeys` and `activeMutations`. An escape hatch (`implements TrackingGateway`) remains for multi-client or audit-logging scenarios.
 - `ext.qora.getVersion` handler — `ExtensionHandlers.versionResponse` returns `{"version": "1.0.0"}`; registered first in `ExtensionRegistrar.registerAll` so the DevTools UI can verify protocol compatibility on connect.
 - `VmTracker.needsSerialization` — returns `true`; satisfies the new `QoraTracker` interface getter added in `qora 0.9.0`.

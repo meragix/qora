@@ -53,12 +53,24 @@ class QoraClientTrackingGateway implements TrackingGateway {
 
   final QoraClient _client;
 
+  /// Triggers a refetch for [queryKey].
+  ///
+  /// Returns `true` when the key has at least one active [watchQuery]
+  /// subscriber (i.e. a live fetcher closure is in scope and the network
+  /// call will actually fire). Returns `false` when the entry exists but
+  /// has no active subscriber — the entry is marked stale so the next mount
+  /// will revalidate, but no immediate network call is made.
+  ///
+  /// DevTools UI should surface a warning on `false` rather than reporting
+  /// success (e.g. "No active observer — query will revalidate on next mount").
   @override
   bool refetch(String queryKey) {
-    // invalidate() marks the entry stale and triggers a background refetch
-    // for any active subscriber currently watching the key.
-    _client.invalidate(_decodeKey(queryKey));
-    return true;
+    final key = _decodeKey(queryKey);
+    final hasWatcher = _client.hasActiveWatcher(key);
+    // invalidate() marks stale and, for active watchers, triggers _doFetch
+    // immediately via the watchQuery stream's internal listener.
+    _client.invalidate(key);
+    return hasWatcher;
   }
 
   @override

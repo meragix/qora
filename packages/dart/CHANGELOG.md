@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `QoraClient.hasActiveWatcher(Object key)` — returns `true` when the cache entry for `key` has at least one active `watchQuery` subscriber. DevTools gateways use this to distinguish "refetch will fire a real network call" from "entry is stale but no fetcher is in scope".
 - `QoraTracker.needsSerialization` — `bool` getter on the tracker interface; `QoraClient` skips `_serializeForTracker` entirely when `false`, eliminating JSON serialization overhead for `NoOpTracker` in production builds.
 - `NoOpTracker.needsSerialization` — returns `false`; zero-cost guard so production apps never pay the serialization cost.
 - `QoraClient.attachLifecycleManager(LifecycleManager)` — wires a lifecycle manager post-construction; `QoraScope` now calls this so `refetchOnWindowFocus` actually triggers background revalidation on app resume.

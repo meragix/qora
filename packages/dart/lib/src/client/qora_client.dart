@@ -1024,6 +1024,23 @@ class QoraClient implements MutationTracker {
     }
   }
 
+  /// Returns `true` when [key] has at least one active [watchQuery] subscriber.
+  ///
+  /// A query with no active subscriber has no fetcher in scope. DevTools
+  /// actions that require a live fetcher (Refetch) should check this before
+  /// proceeding and surface a warning when it returns `false`.
+  ///
+  /// ```dart
+  /// if (client.hasActiveWatcher(['users', userId])) {
+  ///   client.invalidate(['users', userId]); // will trigger a real network call
+  /// }
+  /// ```
+  bool hasActiveWatcher(Object key) {
+    _assertNotDisposed();
+    final normalized = normalizeKey(key);
+    return _cache.peek(normalized)?.isActive ?? false;
+  }
+
   // ── Removal ──────────────────────────────────────────────────────────────
 
   /// Remove a single query from cache and cancel any pending requests for it.
