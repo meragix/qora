@@ -2,55 +2,6 @@
 
 import 'package:qora/qora.dart';
 import 'package:qora_devtools_extension/qora_devtools_extension.dart';
-import 'package:qora_devtools_shared/qora_devtools_shared.dart';
-
-// ---------------------------------------------------------------------------
-// TrackingGateway implementation
-//
-// TrackingGateway is the anti-corruption layer between the DevTools extension
-// and QoraClient. It exposes only the operations DevTools needs — refetch,
-// invalidate, rollback, and cache snapshot — without leaking QoraClient
-// internals into the extension.
-// ---------------------------------------------------------------------------
-
-class AppTrackingGateway implements TrackingGateway {
-  AppTrackingGateway(this._client);
-
-  final QoraClient _client;
-
-  @override
-  Future<bool> refetch(String queryKey) async {
-    // invalidate() marks the entry stale and triggers a background refetch
-    // if any subscriber is currently watching the key.
-    _client.invalidate(queryKey);
-    return true;
-  }
-
-  @override
-  Future<bool> invalidate(String queryKey) async {
-    _client.invalidate(queryKey);
-    return true;
-  }
-
-  @override
-  Future<bool> rollbackOptimistic(String queryKey) async {
-    // restoreQueryData rolls back an optimistic update to the previous
-    // snapshot. Pass null to clear optimistic state entirely.
-    _client.restoreQueryData(queryKey, null);
-    return true;
-  }
-
-  @override
-  Future<CacheSnapshot> getCacheSnapshot() async {
-    // In a real app, walk QoraClient.getQueryState / activeMutations to
-    // build the snapshot. This stub returns an empty snapshot for brevity.
-    return CacheSnapshot(
-      queries: const <QuerySnapshot>[],
-      mutations: const <MutationSnapshot>[],
-      emittedAtMs: DateTime.now().millisecondsSinceEpoch,
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Bridge setup
@@ -85,27 +36,16 @@ QoraClient createDebugClient() {
     tracker: tracker,
   );
 
-  // 4. Gateway bridges DevTools commands back to the client.
-  final gateway = AppTrackingGateway(client);
-
-  // 5. Handlers implement the request/response logic for each ext.qora.*
-  //    method; they validate params and delegate to the gateway or lazy store.
-  final handlers = ExtensionHandlers(
-    gateway: gateway,
-    lazyPayloadManager: lazy,
-  );
-
-  // 6. Register all ext.qora.* VM service extensions.
-  //    Call this exactly once before opening the DevTools panel.
-  //
-  //    Extensions registered:
-  //      ext.qora.refetch
-  //      ext.qora.invalidate
-  //      ext.qora.rollbackOptimistic
-  //      ext.qora.getCacheSnapshot
-  //      ext.qora.getPayloadChunk
-  //      ext.qora.getPayload  ← legacy alias
-  ExtensionRegistrar(handlers: handlers).registerAll();
+  // 4. Wire DevTools commands back to the client via QoraClientTrackingGateway.
+  //    This default implementation covers refetch, invalidate, rollback, and
+  //    cache snapshot without any extra boilerplate.
+  //    To intercept or customise behaviour, implement TrackingGateway directly.
+  ExtensionRegistrar(
+    handlers: ExtensionHandlers(
+      gateway: QoraClientTrackingGateway(client),
+      lazyPayloadManager: lazy,
+    ),
+  ).registerAll();
 
   return client;
 }

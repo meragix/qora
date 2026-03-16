@@ -30,17 +30,24 @@
 /// import 'package:qora_devtools_extension/qora_devtools_extension.dart';
 ///
 /// void main() {
-///   final lazy   = LazyPayloadManager();
+///   final lazy    = LazyPayloadManager();
 ///   final tracker = VmTracker(lazyPayloadManager: lazy);
-///   final handlers = ExtensionHandlers(
-///     gateway: MyTrackingGateway(), // implements TrackingGateway
-///     lazyPayloadManager: lazy,
-///   );
-///   ExtensionRegistrar(handlers: handlers).registerAll();
+///   final client  = QoraClient(tracker: tracker);
 ///
-///   runApp(MyApp(client: QoraClient(tracker: tracker)));
+///   ExtensionRegistrar(
+///     handlers: ExtensionHandlers(
+///       gateway: QoraClientTrackingGateway(client), // default implementation
+///       lazyPayloadManager: lazy,
+///     ),
+///   ).registerAll();
+///
+///   runApp(MyApp(client: client));
 /// }
 /// ```
+///
+/// If you need to intercept or override specific gateway operations (e.g.
+/// multi-client routing, audit logging), implement [TrackingGateway] directly
+/// instead of using [QoraClientTrackingGateway].
 ///
 /// ## Dependency inversion (DIP)
 ///
@@ -62,6 +69,7 @@ library;
 export 'src/lazy/lazy_payload_manager.dart';
 export 'src/lazy/payload_chunker.dart';
 export 'src/lazy/payload_store.dart';
+export 'src/tracker/qora_client_tracking_gateway.dart';
 export 'src/tracker/tracking_gateway.dart';
 export 'src/tracker/vm_qora_tracker.dart';
 export 'src/vm/extension_handlers.dart';
