@@ -7,6 +7,12 @@ export default defineNuxtConfig({
       { code: 'en', name: 'English' },
       { code: 'fr', name: 'Français' },
     ],
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root',
+      fallbackLocale: 'en',
+    },
   },
   content: {
     build: {
