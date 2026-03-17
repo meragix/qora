@@ -13,7 +13,7 @@ orientation: horizontal
 Server State for [Dart & Flutter]{.text-primary}
 
 #description
-Declare what data you need. Qora fetches it, caches it, deduplicates concurrent requests, and keeps it fresh — automatically. Mutations ship with optimistic updates and automatic rollback.
+Declare what data you need. Qora fetches it, caches it, deduplicates concurrent requests, and keeps it fresh automatically. Mutations ship with optimistic updates and automatic rollback.
 
 #headline
   :::u-badge
@@ -22,7 +22,7 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
   variant: outline
   class: rounded-full
   ---
-  v0.9.0 is now available
+  v1.0.0 is now available
   :::
 
 #links
@@ -164,7 +164,7 @@ Everything server state needs. Nothing it does not.
   #title
   [Prefetch]{.text-primary}
   #description
-  Warm the cache before the user navigates. Call `prefetch` on any key and the data is ready when the screen mounts. Respects `staleTime`, already-fresh entries are not re-fetched.
+  Warm the cache before the user navigates. Call `prefetch` on any key and the data is ready when the screen mounts. Respects `staleTime` — already-fresh entries are not re-fetched.
   :::
 ::
 
