@@ -14,6 +14,11 @@ coverage/
 *.iml
 *.code-workspace
 CLAUDE.md
+LAUNCH_BLOG_POST.md
+LAUNCH_REDDIT_POST.md
+LAUNCH_TWITTER_POST.md
+LAUNCH_LINKEDIN_POST.md
+LAUNCH_DISCORD_POST.md
 
 # Melos
 .melos_tool/
