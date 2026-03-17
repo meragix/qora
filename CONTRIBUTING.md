@@ -1,8 +1,8 @@
 # Contributing to Qora
 
-First, thank you for considering contributing! We treat every contributor as a **Senior Peer**. To maintain the architectural integrity of Qora, we follow strict engineering principles.
+Contributions are welcome. To preserve the architectural integrity of Qora, all submissions must follow the engineering principles described in this document.
 
-## 📦 Package Structure
+## Package Structure
 
 | Package                       | Kind         | Description                                                                      |
 | ----------------------------- | ------------ | -------------------------------------------------------------------------------- |
@@ -16,29 +16,29 @@ First, thank you for considering contributing! We treat every contributor as a *
 
 ---
 
-## 🏛️ Architectural Principles
+## Architectural Principles
 
-1. **SOLID & Clean Code**: Every class must have a Single Responsibility. Interfaces over implementations.
-2. **Agnosticism**: The core (`packages/dart`) must NEVER depend on Flutter or any specific third-party library (like Dio or Hive). Use abstractions.
-3. **Zero-Side Effects**: Logic must be predictable and deterministic.
-4. **Performance Matters**: Avoid heavy computations inside the `fetch` cycles. Use JIT (Just-in-Time) strategies for decoding.
-
----
-
-## 🤖 AI Usage Guidelines
-
-We embrace the use of AI tools (Claude, Cursor, etc.) to speed up development, but with strict oversight:
-
-- **No Blind Copy-Paste**: You are 100% responsible for every line of code you submit. If an AI generates a snippet, you must be able to explain the logic, the time complexity, and the architectural trade-offs.
-- **No Hallucinated Dependencies**: Ensure that any package or method suggested by AI actually exists and is maintained.
-- **TDD is Mandatory**: AI is great at writing code but often fails at edge cases. You must write your tests before or alongside AI-generated logic to prove its validity.
-- **Documentation Quality**: AI-generated comments must be reviewed. We prefer concise, "why"-focused documentation over verbose "what" descriptions.
+1. **Single Responsibility**: Every class must have a single, well-defined responsibility. Depend on abstractions, not concrete implementations.
+2. **Core Agnosticism**: `packages/dart` must not depend on Flutter or any third-party library (Dio, Hive, etc.). Use the `LifecycleManager` and `ConnectivityManager` abstractions.
+3. **Deterministic Logic**: State transitions must be predictable and free of unintended side effects.
+4. **Fetch-Path Performance**: Avoid heavy computation inside fetch cycles. Apply JIT decoding strategies for large payloads.
 
 ---
 
-## 🧪 Testing Strategy (TDD)
+## AI Usage Guidelines
 
-No Pull Request will be accepted without tests.
+AI tools (Claude, Cursor, etc.) are permitted, with the following requirements:
+
+- **Accountability**: You are responsible for every line of code submitted. Be able to explain the logic, time complexity, and architectural trade-offs of any AI-generated snippet.
+- **Dependency Verification**: Confirm that any package or method suggested by AI exists and is actively maintained.
+- **TDD Requirement**: Write tests before or alongside AI-generated logic to validate edge cases.
+- **Documentation Review**: Review AI-generated comments. Prefer concise, why-focused documentation over verbose what descriptions.
+
+---
+
+## Testing Strategy
+
+No pull request will be accepted without tests.
 
 - **Unit Tests**: Required for every core logic change (logic, state machine, cache).
 - **Mocking**: Use `mocktail` or `mockito` to isolate dependencies.
@@ -46,7 +46,7 @@ No Pull Request will be accepted without tests.
 
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
 This is a [Melos](https://melos.invertase.dev/) monorepo. Install Melos once, then use it for all day-to-day tasks.
 
@@ -76,7 +76,7 @@ cd packages/devtools/ui && flutter test
 
 ---
 
-## 🔀 Development Workflow
+## Development Workflow
 
 1. **Branching**: Use descriptive names — `feat/feature-name` or `fix/issue-name`.
 2. **Commits**: Follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat(core): add prefetching logic`).
@@ -86,21 +86,17 @@ cd packages/devtools/ui && flutter test
 
 ---
 
-## ⚖️ Quality Checklist
+## Quality Checklist
 
-Before submitting a PR, ask yourself:
+Before submitting a pull request, verify:
 
-- **Impact on Scale**: Does this logic scale if the cache contains 10,000 items?
-- **Security**: Are we exposing sensitive data in logs or middleware?
-- **Testability**: Can this feature be tested without a network connection?
-- **Boilerplate**: Does this add unnecessary complexity for the end-user?
-
----
-
-## 💬 Communication
-
-We value **concise, direct, and technical** communication. Be prepared to defend your technical choices during code review.
+- **Scale**: The changed logic must perform acceptably with 10,000 items in cache.
+- **Security**: Sensitive data must be absent from logs and middleware output.
+- **Testability**: The feature must be testable without a network connection.
+- **Complexity**: The change must not add unnecessary public API surface or boilerplate for consumers.
 
 ---
 
-> *Failure is an option here. If things are not failing, you are not innovating enough. — Elon Musk (applied to code)*
+## Communication
+
+Prefer concise, direct, and technical communication. Be prepared to explain and defend technical decisions during code review.

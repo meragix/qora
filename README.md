@@ -2,12 +2,9 @@
 
 **Server-state management engine for Dart and Flutter.**
 
-Stop writing boilerplate to fetch, cache, and sync server data. Qora handles deduplication, stale-while-revalidate, retries, and invalidation so you can focus on your product.
+Qora handles query deduplication, stale-while-revalidate caching, automatic retry with backoff, and cache invalidation. One API covers both pure Dart and Flutter targets.
 
 ```dart
-// Before Qora — 40+ lines of setState, loading flags, error handling, retry logic…
-
-// After Qora — one call, everything handled
 final user = await client.fetchQuery<User>(
   key: ['users', userId],
   fetcher: () => api.getUser(userId),
@@ -15,13 +12,13 @@ final user = await client.fetchQuery<User>(
 );
 ```
 
-In Flutter, bind it directly to your UI — no `setState`, no `StreamBuilder` boilerplate:
+In Flutter, bind it directly to the widget tree:
 
 ```dart
 QoraBuilder<User>(
   queryKey: ['users', userId],
   fetcher: () => api.getUser(userId),
-  builder: (context, state) => switch (state) {
+  builder: (context, state, fetchStatus) => switch (state) {
     Initial() => const SizedBox.shrink(),
     Loading(:final previousData) => previousData != null
         ? UserCard(previousData)
@@ -34,7 +31,7 @@ QoraBuilder<User>(
 
 ---
 
-## What you get out of the box
+## Capabilities
 
 | Feature                | Description                                                              |
 | ---------------------- | ------------------------------------------------------------------------ |
@@ -86,7 +83,7 @@ dev_dependencies:
 ```yaml
 # DevTools extension (IDE) — under development, not yet published on pub.dev
 # dependencies:
-#   qora_devtools_extension: ^0.3.0
+#   qora_devtools_extension: ^1.0.0
 ```
 
 Setup:
@@ -94,13 +91,16 @@ Setup:
 ```dart
 void main() {
   final tracker = OverlayTracker();
-  final client = QoraClient();
+  final client = QoraClient(tracker: tracker);
 
   runApp(
     QoraInspector(
-      tracker: kDebugMode ? tracker : null,
-      client: kDebugMode ? client : null,
-      child: MyApp(client: client),
+      tracker: tracker,
+      client: client,
+      child: QoraScope(
+        client: client,
+        child: const MyApp(),
+      ),
     ),
   );
 }
