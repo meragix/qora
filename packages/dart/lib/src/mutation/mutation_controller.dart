@@ -266,11 +266,20 @@ class MutationController<TData, TVariables, TContext> {
   // ── Private ──────────────────────────────────────────────────────────────
 
   /// Standard online execution path.
-  Future<TData?> _executeOnline(TVariables variables) async {
-    TContext? context;
+  ///
+  /// [existingContext] is forwarded when replaying an offline-queued mutation
+  /// whose [MutationOptions.onMutate] was already called at enqueue time.
+  /// Passing it skips the [MutationOptions.onMutate] call on replay so the
+  /// optimistic cache update is not applied twice.
+  Future<TData?> _executeOnline(
+    TVariables variables, {
+    TContext? existingContext,
+    bool skipOnMutate = false,
+  }) async {
+    TContext? context = existingContext;
 
-    // 1. onMutate — optimistic update + snapshot
-    if (options?.onMutate != null) {
+    // 1. onMutate — optimistic update + snapshot (skipped on offline replay)
+    if (!skipOnMutate && options?.onMutate != null) {
       try {
         context = await options!.onMutate!(variables);
       } catch (e, st) {
@@ -327,23 +336,48 @@ class MutationController<TData, TVariables, TContext> {
 
   /// Offline enqueue path.
   ///
+  /// Calls [MutationOptions.onMutate] immediately (so optimistic cache updates
+  /// work offline), then enqueues a [PendingMutation] that replays
+  /// [_executeOnline] on reconnect — skipping [onMutate] on replay to avoid
+  /// applying the cache update twice.
+  ///
   /// Emits an optimistic [MutationSuccess] if [MutationOptions.optimisticResponse]
-  /// is provided, or stays [MutationPending] otherwise. Enqueues a
-  /// [PendingMutation] that replays the full [_executeOnline] on reconnect.
+  /// is provided, or [MutationPending] otherwise.
   Future<TData?> _handleOfflineMutate(
     TVariables variables,
     MutationOptions<TData, TVariables, TContext> opts,
-  ) {
-    // Enqueue for replay when connectivity is restored.
+  ) async {
+    // 1. onMutate — run immediately so cache updates happen even while offline.
+    TContext? context;
+    if (opts.onMutate != null) {
+      try {
+        context = await opts.onMutate!(variables);
+      } catch (e, st) {
+        _setState(
+          MutationFailure<TData, TVariables>(
+            error: e,
+            stackTrace: st,
+            variables: variables,
+          ),
+        );
+        return null;
+      }
+    }
+
+    // 2. Enqueue for replay when connectivity is restored.
     offlineQueue?.enqueue(
       PendingMutation(
         mutatorId: id,
         variables: variables,
         enqueuedAt: DateTime.now(),
         replay: () async {
-          // Re-run the full online path, which emits the real success/failure
-          // state on this controller's stream and calls onSuccess/onError hooks.
-          await _executeOnline(variables);
+          // Re-run the online path with the context already captured above.
+          // skipOnMutate prevents the cache update from being applied twice.
+          await _executeOnline(
+            variables,
+            existingContext: context,
+            skipOnMutate: true,
+          );
         },
       ),
     );

@@ -214,26 +214,34 @@ class _AddTodoFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return QoraMutationBuilder<Todo, CreateTodoInput, void>(
+    return QoraMutationBuilder<Todo, CreateTodoInput, List<Todo>?>(
       queryKey: const ['todos'],
       mutator: api.createTodo,
       options: MutationOptions(
         offlineQueue: true,
-        // Optimistic: the item appears in the list immediately with isPending=true.
-        optimisticResponse: (input) => Todo(
-          id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-          title: input.title,
-          completed: false,
-          isPending: true,
-        ),
-        // onSuccess only fires for REAL server success (isOptimistic: false).
-        // Replace the temp entry by invalidating the query.
-        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
+        // onMutate runs immediately — even offline — so the todo appears in the
+        // list straight away. Returns the previous list for rollback on error.
+        onMutate: (input) async {
+          final prev =
+              context.qora.getQueryData<List<Todo>>(const ['todos']) ?? [];
+          context.qora.setQueryData<List<Todo>>(const ['todos'], [
+            ...prev,
+            Todo(
+              id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+              title: input.title,
+              completed: false,
+              isPending: true,
+            ),
+          ]);
+          return prev;
+        },
+        onError: (_, _, prev) async =>
+            context.qora.restoreQueryData(const ['todos'], prev),
+        onSuccess: (_, _, _) async =>
+            context.qora.invalidate(const ['todos']),
       ),
       builder: (context, state, mutate) {
-        final isQueued =
-            state is MutationSuccess<Todo, CreateTodoInput> &&
-            state.isOptimistic;
+        final isQueued = state.isPending;
 
         return FloatingActionButton.extended(
           onPressed: state.isPending
