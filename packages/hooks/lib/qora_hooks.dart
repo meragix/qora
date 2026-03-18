@@ -33,6 +33,19 @@
 /// ```
 library;
 
+export 'package:qora_flutter/qora_flutter.dart'
+    show
+        QoraClient,
+        QoraClientConfig,
+        QoraScope,
+        QoraOptions,
+        MutationOptions,
+        QoraState,
+        Initial,
+        Loading,
+        Success,
+        Failure;
+
 export 'src/hooks/use_query_client.dart';
 export 'src/hooks/use_query.dart';
 export 'src/hooks/use_mutation.dart' show MutationHandle, useMutation;

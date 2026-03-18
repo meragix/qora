@@ -56,8 +56,7 @@ class _JsonTreeViewerState extends State<JsonTreeViewer> {
         JsonNumber v => v.value,
         JsonString v => v.value,
         JsonArray v => v.items.map(_toObject).toList(),
-        JsonObject v =>
-          v.fields.map((k, val) => MapEntry(k, _toObject(val))),
+        JsonObject v => v.fields.map((k, val) => MapEntry(k, _toObject(val))),
       };
 
   @override
@@ -269,8 +268,8 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
               AnimatedRotation(
                 turns: _expanded ? 0.25 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: Icon(Icons.chevron_right,
-                    size: 14, color: colors.chevron_),
+                child:
+                    Icon(Icons.chevron_right, size: 14, color: colors.chevron_),
               ),
               const SizedBox(width: 2),
               Text(_open, style: font.copyWith(color: colors.bracket_)),
@@ -318,8 +317,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
                             ),
                             if (i < _length - 1)
                               Text(',',
-                                  style:
-                                      font.copyWith(color: colors.bracket_)),
+                                  style: font.copyWith(color: colors.bracket_)),
                           ],
                         ),
                       ),
