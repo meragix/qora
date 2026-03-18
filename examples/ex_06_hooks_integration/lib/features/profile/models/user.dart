@@ -16,7 +16,7 @@ class User {
     id: '${json['id']}',
     name: json['name'] as String,
     username: json['username'] as String,
-    email: json['email'] as String,
+    email: json['email'] as String? ?? '',
   );
 
   User copyWith({String? name, String? username}) => User(

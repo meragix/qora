@@ -64,7 +64,12 @@ class PostsScreen extends HookWidget {
       itemBuilder: (context, index) {
         if (index == posts.length) {
           // Auto-trigger next page when the sentinel scrolls into view.
-          if (!query.isFetchingNextPage) query.fetchNextPage();
+          // Deferred to post-frame to avoid setState() during build.
+          if (!query.isFetchingNextPage) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => query.fetchNextPage(),
+            );
+          }
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(child: CircularProgressIndicator()),

@@ -34,7 +34,14 @@ class ProfileScreen extends HookWidget {
     final updateMutation = useMutation<User, UpdateUserInput>(
       mutator: api.updateUser,
       options: MutationOptions(
-        onSuccess: (_, _, _) async => client.invalidate(['users', userId]),
+        onSuccess: (_, _, _) async {
+          client.invalidate(['users', userId]);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile saved')),
+            );
+          }
+        },
       ),
     );
 
@@ -94,12 +101,21 @@ class _ProfileBody extends StatefulWidget {
 class _ProfileBodyState extends State<_ProfileBody> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _usernameCtrl;
+  bool _isDirty = false;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.user.name);
     _usernameCtrl = TextEditingController(text: widget.user.username);
+    _nameCtrl.addListener(_onChanged);
+    _usernameCtrl.addListener(_onChanged);
+  }
+
+  void _onChanged() {
+    final dirty = _nameCtrl.text != widget.user.name ||
+        _usernameCtrl.text != widget.user.username;
+    if (dirty != _isDirty) setState(() => _isDirty = dirty);
   }
 
   @override
@@ -109,6 +125,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
     if (old.user != widget.user) {
       _nameCtrl.text = widget.user.name;
       _usernameCtrl.text = widget.user.username;
+      setState(() => _isDirty = false);
     }
   }
 
@@ -173,7 +190,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
         // Save button
         FilledButton(
-          onPressed: widget.isSaving
+          onPressed: widget.isSaving || !_isDirty
               ? null
               : () => widget.onSave(_nameCtrl.text, _usernameCtrl.text),
           child: widget.isSaving
