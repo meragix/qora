@@ -44,9 +44,7 @@ void main() {
       client: client,
       connectivityManager: connectivity,
       lifecycleManager: FlutterLifecycleManager(qoraClient: client),
-      child: OfflineBannerWrapper(
-        child: _App(api: api, connectivity: connectivity),
-      ),
+      child: _App(api: api, connectivity: connectivity),
     ),
   );
 }
@@ -65,7 +63,9 @@ class _App extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
+      builder: (context, child) => OfflineBannerWrapper(child: child!),
       home: _HomeScreen(api: api, connectivity: connectivity),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

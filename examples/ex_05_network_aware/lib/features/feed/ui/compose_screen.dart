@@ -33,20 +33,39 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return QoraMutationBuilder<Post, String, void>(
+    return QoraMutationBuilder<Post, String, List<Post>?>(
       queryKey: const ['posts'],
       mutator: widget.api.createPost,
       options: MutationOptions(
         offlineQueue: true,
-        // Provides an immediate local result while the mutation waits offline.
+        // Add the optimistic post to the cache immediately — works offline too.
+        onMutate: (content) async {
+          final prev =
+              context.qora.getQueryData<List<Post>>(const ['posts']) ?? [];
+          context.qora.setQueryData<List<Post>>(const ['posts'], [
+            Post.optimistic(content: content),
+            ...prev,
+          ]);
+          return prev;
+        },
+        // Transitions state to MutationSuccess(isOptimistic: true) when offline
+        // so the UI can distinguish "queued offline" from "sending online".
         optimisticResponse: (content) => Post.optimistic(content: content),
-        // onSuccess only runs for real server success (isOptimistic: false).
-        onSuccess: (_, _, _) async => context.qora.invalidate(const ['posts']),
+        onError: (_, _, prev) async =>
+            context.qora.restoreQueryData(const ['posts'], prev),
+        onSuccess: (realPost, _, _) async {
+          // Replace the optimistic entry with the confirmed server post.
+          // We don't invalidate because JSONPlaceholder doesn't persist writes —
+          // a refetch would wipe the post from the list.
+          final current =
+              context.qora.getQueryData<List<Post>>(const ['posts']) ?? [];
+          final replaced = current.map((p) => p.isOptimistic ? realPost : p).toList();
+          context.qora.setQueryData<List<Post>>(const ['posts'], replaced);
+        },
       ),
       builder: (context, state, mutate) {
-        final isQueued =
-            state is MutationSuccess<Post, String> && state.isOptimistic;
         final isPending = state.isPending;
+        final isQueued = state.isOptimistic;
 
         return Padding(
           padding: const EdgeInsets.all(16),
