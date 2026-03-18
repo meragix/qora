@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:qora_flutter/qora_flutter.dart';
 import 'package:qora_hooks/qora_hooks.dart';
-
 import 'features/posts/ui/posts_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
 import 'shared/api/json_placeholder_api.dart';

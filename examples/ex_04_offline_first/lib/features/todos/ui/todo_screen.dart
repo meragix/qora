@@ -135,7 +135,7 @@ class _TodoList extends StatelessWidget {
             // ── Todo list ─────────────────────────────────────────────────
             Expanded(
               child: todos.isEmpty
-                  ? const Center(child: Text('No todos yet — add one below!'))
+                  ? const Center(child: Text('No todos yet, add one below!'))
                   : ListView.separated(
                       itemCount: todos.length,
                       separatorBuilder: (_, _) => const Divider(height: 1),
@@ -171,7 +171,7 @@ class _TodoTileWithMutations extends StatelessWidget {
       options: MutationOptions(
         offlineQueue: true,
         optimisticResponse: (input) =>
-            todo.copyWith(completed: input.completed, isPending: true),
+            todo.copyWith(completed: input.completed),
         onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
       ),
       builder: (context, toggleState, toggle) {
@@ -184,18 +184,19 @@ class _TodoTileWithMutations extends StatelessWidget {
                 context.qora.invalidate(const ['todos']),
           ),
           builder: (context, deleteState, delete) {
-            // If a toggle optimistic result exists use that, otherwise the
-            // canonical todo from the query.
             final displayTodo =
                 (toggleState is MutationSuccess<Todo, ToggleTodoInput> &&
                     toggleState.isOptimistic)
                 ? toggleState.data
                 : todo;
 
+            final isDeleteQueued =
+                deleteState.isPending || deleteState.isOptimistic;
+
             return TodoTile(
               todo: displayTodo,
               onToggle: toggle,
-              onDelete: delete,
+              onDelete: isDeleteQueued ? null : delete,
             );
           },
         );

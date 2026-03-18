@@ -110,6 +110,7 @@ class NetworkStatusIndicator extends StatelessWidget {
     final banner = offlineBanner?.call(context) ?? _DefaultOfflineBanner();
 
     return Stack(
+      alignment: Alignment.topLeft,
       children: [
         child!,
         Positioned(

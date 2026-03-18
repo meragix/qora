@@ -190,7 +190,10 @@ class PersistQoraClient extends QoraClient {
       'Fix: registerSerializer<$T>(serializer, name: \'${T.toString()}\').',
     );
     final typeName = name ?? T.toString();
-    _serializersByName[typeName] = serializer as QoraSerializer<dynamic>;
+    _serializersByName[typeName] = QoraSerializer<dynamic>(
+      toJson: (value) => serializer.toJson(value as T),
+      fromJson: serializer.fromJson,
+    );
     _typeNames[T] = typeName;
   }
 

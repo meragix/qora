@@ -11,13 +11,13 @@ import '../models/todo.dart';
 class TodoTile extends StatelessWidget {
   final Todo todo;
   final void Function(ToggleTodoInput input) onToggle;
-  final void Function(DeleteTodoInput input) onDelete;
+  final void Function(DeleteTodoInput input)? onDelete;
 
   const TodoTile({
     super.key,
     required this.todo,
     required this.onToggle,
-    required this.onDelete,
+    this.onDelete,
   });
 
   @override
@@ -61,7 +61,9 @@ class TodoTile extends StatelessWidget {
           : IconButton(
               icon: const Icon(Icons.delete_outline),
               color: Colors.grey.shade600,
-              onPressed: () => onDelete(DeleteTodoInput(id: todo.id)),
+              onPressed: onDelete == null
+                  ? null
+                  : () => onDelete!(DeleteTodoInput(id: todo.id)),
             ),
     );
   }
