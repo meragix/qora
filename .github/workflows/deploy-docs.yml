@@ -38,7 +38,21 @@ jobs:
       - name: Build website
         working-directory: ./docs
         run: npm run build
-        # run: NUXT_APP_BASE_URL=/qora/ npm run build
+      
+      - name: Create root index with i18n redirect
+        run: |
+          cat > ./docs/.output/public/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <script>
+              const lang = navigator.language?.startsWith('fr') ? 'fr' : 'en';
+              window.location.replace('/' + lang);
+            </script>
+          </head>
+          </html>
+          EOF
+          cp ./docs/.output/public/index.html ./docs/.output/public/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
