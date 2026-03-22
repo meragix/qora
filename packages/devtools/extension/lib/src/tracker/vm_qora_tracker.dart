@@ -129,7 +129,7 @@ class VmTracker implements QoraTracker {
     _emit(
       QueryEvent.fetched(
         key: key,
-        data: lazy.hasLargePayload ? null : data,
+        data: lazy.hasLargePayload ? null : lazy.inlineData,
         status: status,
         hasLargePayload: lazy.hasLargePayload,
         payloadId: lazy.hasLargePayload ? lazy.payloadId : null,
@@ -187,7 +187,7 @@ class VmTracker implements QoraTracker {
 
   @override
   void onMutationStarted(String id, String key, Object? variables) {
-    _emit(MutationEvent.started(id: id, key: key, variables: variables));
+    _emit(MutationEvent.started(id: id, key: key, variables: _toJsonSafe(variables)));
   }
 
   @override
@@ -197,7 +197,7 @@ class VmTracker implements QoraTracker {
         id: id,
         key: '',
         success: success,
-        result: result,
+        result: _toJsonSafe(result),
       ),
     );
   }
@@ -211,7 +211,7 @@ class VmTracker implements QoraTracker {
         timestampMs: DateTime.now().millisecondsSinceEpoch,
         payload: <String, Object?>{
           'queryKey': key,
-          'data': optimisticData,
+          'data': _toJsonSafe(optimisticData),
         },
       ),
     );
@@ -237,6 +237,18 @@ class VmTracker implements QoraTracker {
     _buffer.clear();
     _fetchStartTimes.clear();
     _lazy.clear();
+  }
+
+  /// Converts [value] to a JSON-safe form by round-tripping through
+  /// `jsonEncode`/`jsonDecode`. Falls back to the string representation if
+  /// the value is not directly serialisable (e.g. a custom Dart class).
+  Object? _toJsonSafe(Object? value) {
+    if (value == null) return null;
+    try {
+      return jsonDecode(jsonEncode(value));
+    } catch (_) {
+      return value.toString();
+    }
   }
 
   Map<String, Object?> _summarizeData(Object? data) {

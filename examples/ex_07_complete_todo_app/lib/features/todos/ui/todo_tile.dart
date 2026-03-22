@@ -7,6 +7,7 @@ import '../models/todo.dart';
 /// | State                  | Leading               | Title style     | Trailing          |
 /// |------------------------|-----------------------|-----------------|-------------------|
 /// | Optimistic (queued)    | schedule icon (orange)| grey + italic   | —                 |
+/// | Optimistic (sending)   | small spinner         | grey + italic   | —                 |
 /// | Completed              | checked checkbox       | strikethrough   | delete button     |
 /// | Active                 | unchecked checkbox     | normal          | delete button     |
 class TodoTile extends StatelessWidget {
@@ -14,7 +15,18 @@ class TodoTile extends StatelessWidget {
   final VoidCallback? onToggle;
   final VoidCallback? onDelete;
 
-  const TodoTile({super.key, required this.todo, this.onToggle, this.onDelete});
+  /// When [todo.isOptimistic] is `true`, this flag controls the leading icon:
+  /// - `true`  → schedule icon with "Queued" tooltip (offline queue)
+  /// - `false` → small spinner (online request in flight)
+  final bool isQueued;
+
+  const TodoTile({
+    super.key,
+    required this.todo,
+    this.onToggle,
+    this.onDelete,
+    this.isQueued = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +34,16 @@ class TodoTile extends StatelessWidget {
 
     return ListTile(
       leading: todo.isOptimistic
-          ? Tooltip(
-              message: 'Queued — will sync on reconnect',
-              child: Icon(Icons.schedule, color: Colors.orange.shade400),
-            )
+          ? isQueued
+              ? Tooltip(
+                  message: 'Queued — will sync on reconnect',
+                  child: Icon(Icons.schedule, color: Colors.orange.shade400),
+                )
+              : const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
           : Checkbox(
               value: todo.completed,
               onChanged: onToggle == null ? null : (_) => onToggle!(),

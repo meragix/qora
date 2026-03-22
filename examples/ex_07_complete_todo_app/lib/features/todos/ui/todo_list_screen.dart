@@ -41,7 +41,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   final List<Todo> _pendingTodos = [];
 
   String get _userId => widget.authService.value!.id;
-  Object get _queryKey => ['todos', _userId];
+  late final Object _queryKey = ['todos', _userId];
 
   MutationOptions<Todo, CreateTodoInput, List<Todo>>
   get _createOptions => MutationOptions(
@@ -59,7 +59,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     },
     onSuccess: (_, _, _) async {
       setState(() => _pendingTodos.clear());
-      context.qora.invalidate(_queryKey);
+      context.qora.invalidateInfiniteQuery(_queryKey);
     },
     onError: (_, _, snapshot) async {
       // Rollback: restore the pending list to the snapshot taken in onMutate.
@@ -103,7 +103,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 icon: const Icon(Icons.logout),
                 tooltip: 'Sign out',
                 onPressed: () {
-                  context.qora.invalidate(_queryKey);
+                  context.qora.invalidateInfiniteQuery(_queryKey);
                   widget.authService.logout();
                 },
               ),
@@ -129,7 +129,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                   state.previousData == null) {
                 return _ErrorView(
                   error: state.error,
-                  onRetry: () => context.qora.invalidate(_queryKey),
+                  onRetry: () => context.qora.invalidateInfiniteQuery(_queryKey),
                 );
               }
 
@@ -148,6 +148,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 hasNextPage: successState?.hasNextPage ?? false,
                 isFetchingNextPage: successState?.isFetchingNextPage ?? false,
                 controller: controller,
+                isCreateQueued: createState.isOptimistic,
                 errorBanner: failureState != null
                     ? '${failureState.error}'
                     : null,
@@ -181,6 +182,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     required bool hasNextPage,
     required bool isFetchingNextPage,
     required InfiniteQueryController<TodosPage, int> controller,
+    required bool isCreateQueued,
     String? errorBanner,
   }) {
     final allItems = [..._pendingTodos, ...todos];
@@ -216,7 +218,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
                       // ── Optimistic (pending) todos ─────────────────────
                       if (todo.isOptimistic) {
-                        return TodoTile(todo: todo);
+                        return TodoTile(todo: todo, isQueued: isCreateQueued);
                       }
 
                       // ── Real todos with toggle + delete mutations ──────
@@ -292,20 +294,87 @@ class _MutableTodoTile extends StatelessWidget {
     required this.queryKey,
   });
 
+  // Updates a single todo's completed flag across all cached pages.
+  InfiniteData<TodosPage, int> _toggleInCache(
+    InfiniteData<TodosPage, int> data,
+    String id,
+    bool completed,
+  ) =>
+      InfiniteData(
+        pages: data.pages
+            .map(
+              (page) => TodosPage(
+                todos: page.todos
+                    .map((t) => t.id == id ? t.copyWith(completed: completed) : t)
+                    .toList(),
+                page: page.page,
+                hasMore: page.hasMore,
+              ),
+            )
+            .toList(),
+        pageParams: data.pageParams,
+      );
+
+  // Removes a single todo from all cached pages.
+  InfiniteData<TodosPage, int> _deleteFromCache(
+    InfiniteData<TodosPage, int> data,
+    String id,
+  ) =>
+      InfiniteData(
+        pages: data.pages
+            .map(
+              (page) => TodosPage(
+                todos: page.todos.where((t) => t.id != id).toList(),
+                page: page.page,
+                hasMore: page.hasMore,
+              ),
+            )
+            .toList(),
+        pageParams: data.pageParams,
+      );
+
   @override
   Widget build(BuildContext context) {
-    return QoraMutationBuilder<Todo, ToggleTodoInput, void>(
+    return QoraMutationBuilder<Todo, ToggleTodoInput, InfiniteData<TodosPage, int>?>(
       queryKey: queryKey,
       mutator: api.toggleTodo,
       options: MutationOptions(
-        onSuccess: (_, _, _) async => context.qora.invalidate(queryKey),
+        onMutate: (input) async {
+          final prev = context.qora.getInfiniteQueryData<TodosPage, int>(queryKey);
+          if (prev != null) {
+            context.qora.setInfiniteQueryData<TodosPage, int>(
+              queryKey,
+              _toggleInCache(prev, input.id, input.completed),
+            );
+          }
+          return prev;
+        },
+        onError: (_, _, prev) async {
+          if (prev != null) {
+            context.qora.setInfiniteQueryData<TodosPage, int>(queryKey, prev);
+          }
+        },
       ),
       builder: (context, toggleState, toggle) {
-        return QoraMutationBuilder<void, String, void>(
+        return QoraMutationBuilder<void, String, InfiniteData<TodosPage, int>?>(
           queryKey: queryKey,
           mutator: api.deleteTodo,
           options: MutationOptions(
-            onSuccess: (_, _, _) async => context.qora.invalidate(queryKey),
+            onMutate: (id) async {
+              final prev = context.qora.getInfiniteQueryData<TodosPage, int>(queryKey);
+              if (prev != null) {
+                context.qora.setInfiniteQueryData<TodosPage, int>(
+                  queryKey,
+                  _deleteFromCache(prev, id),
+                );
+              }
+              return prev;
+            },
+            onError: (_, _, prev) async {
+              if (prev != null) {
+                context.qora.setInfiniteQueryData<TodosPage, int>(queryKey, prev);
+              }
+            },
           ),
           builder: (context, deleteState, delete) {
             return TodoTile(

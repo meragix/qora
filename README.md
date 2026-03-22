@@ -63,7 +63,7 @@ QoraBuilder<User>(
 ## Install
 
 ```yaml
-# Flutter app — qora is included automatically
+# Flutter app: qora is included automatically
 dependencies:
   qora_flutter: ^1.0.0
 ```
@@ -75,13 +75,13 @@ dependencies:
 ```
 
 ```yaml
-# DevTools overlay (in-app panel) — in dev_dependencies; not included in release builds
+# DevTools overlay (in-app panel): in dev_dependencies; not included in release builds
 dev_dependencies:
   qora_devtools_overlay: ^1.0.0
 ```
 
 ```yaml
-# DevTools extension (IDE) — under development, not yet published on pub.dev
+# DevTools extension (IDE): under development, not yet published on pub.dev
 # dependencies:
 #   qora_devtools_extension: ^1.0.0
 ```
@@ -112,9 +112,9 @@ void main() {
 
 Qora ships with first-class developer tooling across two surfaces.
 
-**In-app overlay** *(stable)* — a draggable panel that lives inside your running app, similar to TanStack Query's overlay. Add `qora_devtools_overlay` to `dev_dependencies` and wrap your app with `QoraInspector`. Zero overhead in release, the widget tree is never built outside of debug mode.
+**In-app overlay** *(stable)*: a draggable panel that lives inside your running app, similar to TanStack Query's overlay. Add `qora_devtools_overlay` to `dev_dependencies` and wrap your app with `QoraInspector`. Zero overhead in release, the widget tree is never built outside of debug mode.
 
-**IDE extension** *(under development — not yet published)* — a native tab inside Flutter DevTools (VS Code / IntelliJ) with six panels: live query inspector, mutation timeline, mutation inspector, network activity monitor, performance metrics, and a query dependency graph. The package is not yet available on pub.dev. Use the in-app overlay in the meantime.
+**IDE extension** *(under development, not yet published)*: a native tab inside Flutter DevTools (VS Code / IntelliJ) with six panels: live query inspector, mutation timeline, mutation inspector, network activity monitor, performance metrics, and a query dependency graph. The package is not yet available on pub.dev. Use the in-app overlay in the meantime.
 
 Both surfaces share the same event protocol (`qora_devtools_shared`) and are independent of each other.
 

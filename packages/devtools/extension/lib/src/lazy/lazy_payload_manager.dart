@@ -59,21 +59,33 @@ class LazyPayloadManager {
 
   /// Serialises [data] and stores it in chunks if it exceeds [chunkSize].
   ///
-  /// Returns a record with three fields:
+  /// Returns a record with four fields:
   /// - `hasLargePayload` — `true` when chunks were created.
   /// - `payloadId` — opaque server-side ID (non-empty only when `hasLargePayload`).
   /// - `totalChunks` — number of chunks to pull (> 0 only when `hasLargePayload`).
+  /// - `inlineData` — JSON-safe decoded form of [data] when `hasLargePayload` is
+  ///   `false`; always `null` when `hasLargePayload` is `true`.
   ///
-  /// When `hasLargePayload` is `false`, the event can carry [data] inline and
-  /// no `getPayloadChunk` call is required.
-  ({String payloadId, int totalChunks, bool hasLargePayload}) store(
+  /// Pass `inlineData` (not the original [data]) to the event payload so that
+  /// `developer.postEvent` never encounters a non-serialisable object.
+  ({String payloadId, int totalChunks, bool hasLargePayload, Object? inlineData}) store(
     Object? data,
   ) {
-    final json = jsonEncode(data);
+    String json;
+    try {
+      json = jsonEncode(data);
+    } catch (_) {
+      json = jsonEncode(data.toString());
+    }
     final bytes = utf8.encode(json);
 
     if (bytes.length <= chunkSize) {
-      return (payloadId: '', totalChunks: 0, hasLargePayload: false);
+      return (
+        payloadId: '',
+        totalChunks: 0,
+        hasLargePayload: false,
+        inlineData: jsonDecode(json),
+      );
     }
 
     final payloadId = _generateId();
@@ -84,6 +96,7 @@ class LazyPayloadManager {
       payloadId: payloadId,
       totalChunks: chunks.length,
       hasLargePayload: true,
+      inlineData: null,
     );
   }
 

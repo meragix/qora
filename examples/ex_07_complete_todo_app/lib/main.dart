@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:qora_devtools_extension/qora_devtools_extension.dart';
+import 'package:qora_devtools_overlay/qora_devtools_overlay.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 
 import 'core/auth/auth_service.dart';
@@ -21,6 +23,7 @@ import 'shared/widgets/offline_banner.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final overlay = OverlayTracker();
   final storage = await HiveStorageAdapter.open('qora_cache');
   final connectivity = SimulatedConnectivityManager();
   final auth = AuthService();
@@ -29,14 +32,8 @@ Future<void> main() async {
     storage: storage,
     persistDuration: const Duration(days: 7),
     config: QoraClientConfig(
-      defaultOptions: const QoraOptions(
-        networkMode: NetworkMode.offlineFirst,
-        staleTime: Duration(minutes: 5),
-      ),
-      reconnectStrategy: const ReconnectStrategy(
-        maxConcurrent: 3,
-        jitter: Duration(milliseconds: 150),
-      ),
+      defaultOptions: const QoraOptions(networkMode: NetworkMode.offlineFirst, staleTime: Duration(minutes: 5)),
+      reconnectStrategy: const ReconnectStrategy(maxConcurrent: 3, jitter: Duration(milliseconds: 150)),
       debugMode: kDebugMode,
     ),
   );
@@ -46,12 +43,18 @@ Future<void> main() async {
 
   final api = TodoApi();
 
+  if (kDebugMode) {
+    QoraDevtools.setup(client, additionalTrackers: [overlay]);
+  }
+
   runApp(
-    QoraScope(
-      client: client,
-      lifecycleManager: FlutterLifecycleManager(qoraClient: client),
-      connectivityManager: connectivity,
-      child: OfflineBannerWrapper(
+    QoraInspector(
+      tracker: overlay,
+      client: kDebugMode ? client : null,
+      child: QoraScope(
+        client: client,
+        lifecycleManager: FlutterLifecycleManager(qoraClient: client),
+        connectivityManager: connectivity,
         child: _App(auth: auth, api: api, connectivity: connectivity),
       ),
     ),
@@ -63,11 +66,7 @@ class _App extends StatelessWidget {
   final TodoApi api;
   final SimulatedConnectivityManager connectivity;
 
-  const _App({
-    required this.auth,
-    required this.api,
-    required this.connectivity,
-  });
+  const _App({required this.auth, required this.api, required this.connectivity});
 
   @override
   Widget build(BuildContext context) {
@@ -75,17 +74,14 @@ class _App extends StatelessWidget {
       title: 'Qora Todos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      builder: (context, child) => OfflineBannerWrapper(child: child!),
       home: ValueListenableBuilder<AuthUser?>(
         valueListenable: auth,
         builder: (context, user, _) {
           if (user == null) {
             return LoginScreen(authService: auth);
           }
-          return TodoListScreen(
-            api: api,
-            authService: auth,
-            connectivity: connectivity,
-          );
+          return TodoListScreen(api: api, authService: auth, connectivity: connectivity);
         },
       ),
     );

@@ -9,10 +9,10 @@ Contributions are welcome. To preserve the architectural integrity of Qora, all 
 | `packages/dart`               | Pure Dart    | Core state machine, cache, `QoraClient`, `QoraTracker`                           |
 | `packages/flutter`            | Flutter      | `QoraScope`, `QoraBuilder`, `QoraStateBuilder`, lifecycle wiring                 |
 | `packages/hooks`              | Flutter      | `useQuery`, `useMutation`, `useIsFetching`, `useIsMutating`                      |
-| `packages/devtools/shared`    | Pure Dart    | Protocol DTOs — events, commands, codecs, models                                 |
-| `packages/devtools/extension` | Pure Dart    | VM Service bridge — `VmTracker`, lazy payload, extension registration            |
-| `packages/devtools/ui`        | Flutter Web  | DevTools panel UI - Queries, Mutations, Inspector, Network, Performance, Graph   |
-| `packages/devtools/overlay`   | Flutter      | In-app overlay — `QoraInspector`, `OverlayTracker`, panel UI                    |
+| `packages/devtools/shared`    | Pure Dart    | Protocol DTOs: events, commands, codecs, models                                  |
+| `packages/devtools/extension` | Pure Dart    | VM Service bridge: `VmTracker`, lazy payload, extension registration             |
+| `packages/devtools/ui`        | Flutter Web  | DevTools panel UI: Queries, Mutations, Inspector, Network, Performance, Graph    |
+| `packages/devtools/overlay`   | Flutter      | In-app overlay: `QoraInspector`, `OverlayTracker`, panel UI                      |
 
 ---
 
@@ -78,11 +78,11 @@ cd packages/devtools/ui && flutter test
 
 ## Development Workflow
 
-1. **Branching**: Use descriptive names — `feat/feature-name` or `fix/issue-name`.
+1. **Branching**: Use descriptive names; `feat/feature-name` or `fix/issue-name`.
 2. **Commits**: Follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat(core): add prefetching logic`).
 3. **Changelog**: Update `CHANGELOG.md` in every package you touch. Add an entry under `## [Unreleased]` using the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format (`### Added`, `### Changed`, `### Fixed`).
 4. **Documentation**: If you add a public API, add `///` dartdoc to it and update the relevant doc page under `docs/content/`.
-5. **Analysis**: Run `melos analyze` before opening a PR. Zero warnings is the bar — `--fatal-infos` is enforced in CI.
+5. **Analysis**: Run `melos analyze` before opening a PR. Zero warnings is the bar, `--fatal-infos` is enforced in CI.
 
 ---
 
