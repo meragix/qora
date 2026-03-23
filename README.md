@@ -6,7 +6,7 @@
 
   <h3 align="center">Qora</h3>
 
-  <p align="center">Server-state management engine for Dart and Flutter.</a>.
+  <p align="center">Server-state management engine for Dart and Flutter.</p>
     <br />
     <a href="https://qora.meragix.dev"><strong>Explore the docs »</strong></a>
     <br />
@@ -19,6 +19,8 @@
   </p>
 </div>
 <br />
+
+## Introduction
 
 Qora handles query deduplication, stale-while-revalidate caching, automatic retry with backoff, and cache invalidation. One API covers both pure Dart and Flutter targets.
 
