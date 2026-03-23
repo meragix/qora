@@ -11,7 +11,7 @@
     <a href="https://qora.meragix.dev"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/meragix/qora/blob/main/CONTRIBUTING.md">Contribute</a>
+    <a href="https://github.com/meragix/qora/tree/main/examples">View Examples</a>
     &middot;
     <a href="https://github.com/meragix/qora/issues/new">Report Bug</a>
     &middot;
@@ -150,24 +150,16 @@ Full guides, API reference, and examples: **[qora.meragix.dev](https://qora.mera
 
 ---
 
-## Monorepo
+## License
 
-This repository is managed with [Melos](https://melos.invertase.dev).
+This project is licensed under the [LICENSE](LICENSE) License
 
-```bash
-# Install Melos
-dart pub global activate melos
+## Acknowledgments
 
-# Bootstrap all packages
-melos bootstrap
+Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
 
-# Run all tests
-melos test
-
-# Analyze all packages
-melos analyze
-```
-
----
-
-Built for the Dart community.
+* [TanStack Query](https://tanstack.com/query/latest)
+* [Melos](https://melos.invertase.dev)
+* [GitHub Pages](https://pages.github.com)
+* [Docus](https://docus.dev)
+* [Lucide Icons](https://lucide.dev)
