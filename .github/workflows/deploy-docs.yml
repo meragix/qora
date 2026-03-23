@@ -52,7 +52,29 @@ jobs:
           </head>
           </html>
           EOF
-          cp ./docs/.output/public/index.html ./docs/.output/public/404.html
+          cat > ./docs/.output/public/404.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <script>
+              // Preserve the full path so deep links survive the i18n redirect.
+              // GitHub Pages serves 404.html for unknown routes; we detect the
+              // locale prefix and either keep the path or prepend the user locale.
+              const path = window.location.pathname;
+              const isLocalized = /^\/(fr|en)(\/|$)/.test(path);
+              if (isLocalized) {
+                // Already has a locale prefix — page genuinely doesn't exist.
+                const lang = path.startsWith('/fr') ? 'fr' : 'en';
+                window.location.replace('/' + lang);
+              } else {
+                // No locale prefix — prepend the user's locale and retry.
+                const lang = navigator.language?.startsWith('fr') ? 'fr' : 'en';
+                window.location.replace('/' + lang + path);
+              }
+            </script>
+          </head>
+          </html>
+          EOF
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
