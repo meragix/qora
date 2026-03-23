@@ -6,7 +6,8 @@
 
   <h3 align="center">Qora</h3>
 
-  <p align="center">Server-state management engine for Dart and Flutter.</p>
+  <p align="center">
+     Server-state management engine for Dart and Flutter.
     <br />
     <a href="https://qora.meragix.dev"><strong>Explore the docs »</strong></a>
     <br />
