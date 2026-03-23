@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
+import 'package:qora_devtools_overlay/src/ui/shared/json_viewer.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
@@ -22,22 +23,15 @@ class DataDiffTab extends StatelessWidget {
     final selected = notifier.selected;
 
     if (selected == null) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(
-              LucideIcons.fileDiff,
-              color: DevtoolsColors.textMuted,
-              size: 32,
-            ),
+          children: [
+            Icon(LucideIcons.fileDiff, color: DevtoolsColors.textMuted, size: 32),
             SizedBox(height: 8),
             Text(
               'Select a mutation to compare data',
-              style: TextStyle(
-                color: DevtoolsColors.textMuted,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: DevtoolsColors.textMuted, fontSize: 12),
             ),
           ],
         ),
@@ -49,10 +43,11 @@ class DataDiffTab extends StatelessWidget {
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        // ── Before column ───────────────────────────────────────────────
+      children: [
+        // ── Before column ───────────────────────────────────────────────────
         Expanded(
           child: _DiffColumn(
+            key: ValueKey('${selected.id}_before'),
             label: 'BEFORE',
             labelColor: const Color(0xFF64748B),
             value: selected.variables,
@@ -60,9 +55,10 @@ class DataDiffTab extends StatelessWidget {
           ),
         ),
         const VerticalDivider(width: 1, color: Color(0xFF1E293B)),
-        // ── After column ────────────────────────────────────────────────
+        // ── After column ────────────────────────────────────────────────────
         Expanded(
           child: _DiffColumn(
+            key: ValueKey('${selected.id}_after'),
             label: isSettled
                 ? (isSuccess ? 'AFTER (success)' : 'AFTER (error)')
                 : 'AFTER (pending)',
@@ -84,6 +80,7 @@ class DataDiffTab extends StatelessWidget {
 
 class _DiffColumn extends StatelessWidget {
   const _DiffColumn({
+    super.key,
     required this.label,
     required this.labelColor,
     required this.value,
@@ -99,7 +96,7 @@ class _DiffColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
+      children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -115,135 +112,23 @@ class _DiffColumn extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(8),
-            child: value != null
-                ? _JsonValue(value: value)
-                : Text(
+          child: value != null
+              ? SingleChildScrollView(
+                  padding: const EdgeInsets.all(8),
+                  child: JsonViewer(data: value),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
                     emptyText,
                     style: const TextStyle(
                       color: Color(0xFF475569),
                       fontSize: 11,
                     ),
                   ),
-          ),
+                ),
         ),
       ],
-    );
-  }
-}
-
-// ── Minimal JSON renderer (overlay dark-themed) ───────────────────────────────
-
-class _JsonValue extends StatefulWidget {
-  const _JsonValue({required this.value});
-  final Object? value;
-
-  @override
-  State<_JsonValue> createState() => _JsonValueState();
-}
-
-class _JsonValueState extends State<_JsonValue> {
-  bool _expanded = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final v = widget.value;
-    if (v is Map) return _buildObject(v);
-    if (v is List) return _buildArray(v);
-    return _buildLeaf(v);
-  }
-
-  Widget _buildObject(Map<dynamic, dynamic> map) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Text(
-            _expanded ? '{' : '{…}',
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 11,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ),
-        if (_expanded)
-          Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: map.entries
-                  .map(
-                    (e) => Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          '"${e.key}": ',
-                          style: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        Expanded(child: _JsonValue(value: e.value)),
-                      ],
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildArray(List<dynamic> list) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Text(
-            _expanded ? '[${list.length}]' : '[…${list.length}]',
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 11,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ),
-        if (_expanded)
-          Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: list
-                  .asMap()
-                  .entries
-                  .map((e) => _JsonValue(value: e.value))
-                  .toList(growable: false),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildLeaf(Object? v) {
-    final (text, color) = switch (v) {
-      null => ('null', const Color(0xFF94A3B8)),
-      bool b => ('$b', const Color(0xFFF59E0B)),
-      num n => ('$n', const Color(0xFF60A5FA)),
-      String s => ('"$s"', const Color(0xFF34D399)),
-      _ => ('$v', const Color(0xFFE2E8F0)),
-    };
-    return Text(
-      text,
-      style: TextStyle(
-        color: color,
-        fontSize: 11,
-        fontFamily: 'monospace',
-      ),
     );
   }
 }

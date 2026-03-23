@@ -6,6 +6,10 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// the inspector panel renders directly — status badge, raw data for the
 /// JSON viewer, and metadata rows.
 class MutationDetail {
+  /// Runtime mutation identifier — stable across retries. Used as widget key
+  /// for [JsonViewer] instances to force a full rebuild on selection change.
+  final String id;
+
   /// The serialised mutation key, e.g. `["createPost"]` or `["updateUser", "42"]`.
   final String? key;
 
@@ -56,6 +60,7 @@ class MutationDetail {
   final int retryCount;
 
   const MutationDetail({
+    required this.id,
     this.key,
     required this.status,
     this.variables,
@@ -90,6 +95,7 @@ class MutationDetail {
         : null;
 
     return MutationDetail(
+      id: event.id,
       key: event.key,
       status: status,
       variables: event.variables,

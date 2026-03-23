@@ -191,22 +191,30 @@ class _ExpandableNode extends StatefulWidget {
 
 class _ExpandableNodeState extends State<_ExpandableNode> {
   late bool _expanded;
-
-  // Computed once from the sealed value
-  late final bool _isArray;
-  late final int _length;
-  late final Iterable<MapEntry<String, JsonValue>> _entries;
+  late bool _isArray;
+  late int _length;
+  late Iterable<MapEntry<String, JsonValue>> _entries;
 
   @override
   void initState() {
     super.initState();
     _expanded = widget.depth < widget.autoExpandDepth;
+    _computeFromValue(widget.value);
+  }
 
-    switch (widget.value) {
+  @override
+  void didUpdateWidget(_ExpandableNode oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _computeFromValue(widget.value);
+    }
+  }
+
+  void _computeFromValue(JsonValue value) {
+    switch (value) {
       case JsonArray v:
         _isArray = true;
         _length = v.length;
-        // index as string key — matches React's `data.entries()`
         _entries = v.items.asMap().entries.map(
               (e) => MapEntry(e.key.toString(), e.value),
             );

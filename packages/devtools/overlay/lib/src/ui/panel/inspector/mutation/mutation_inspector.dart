@@ -172,28 +172,40 @@ class _MutationInspectorState extends State<MutationInspector>
                   // VARIABLES
                   InspectorSection(
                     label: 'VARIABLES',
-                    child: JsonViewer(data: detail.variables),
+                    child: JsonViewer(
+                      key: ValueKey('${detail.id}_vars'),
+                      data: detail.variables,
+                    ),
                   ),
 
                   // DATA — server response on success
                   if (detail.data != null)
                     InspectorSection(
                       label: 'DATA',
-                      child: JsonViewer(data: detail.data),
+                      child: JsonViewer(
+                        key: ValueKey('${detail.id}_data'),
+                        data: detail.data,
+                      ),
                     ),
 
                   // ERROR — on failure
                   if (detail.error != null)
                     InspectorSection(
                       label: 'ERROR',
-                      child: JsonViewer(data: detail.error),
+                      child: JsonViewer(
+                        key: ValueKey('${detail.id}_error'),
+                        data: detail.error,
+                      ),
                     ),
 
                   // ROLLBACK CONTEXT — optimistic updates only
                   if (detail.rollbackContext != null)
                     InspectorSection(
                       label: 'ROLLBACK CONTEXT',
-                      child: JsonViewer(data: detail.rollbackContext),
+                      child: JsonViewer(
+                        key: ValueKey('${detail.id}_rollback'),
+                        data: detail.rollbackContext,
+                      ),
                     ),
                 ],
               ),
