@@ -1241,12 +1241,20 @@ class QoraClient implements MutationTracker {
           : rawKey is String
               ? rawKey
               : jsonEncode(rawKey);
-      _tracker.onMutationStarted(id, mutationKey, state.variablesOrNull);
+      _tracker.onMutationStarted(
+        id,
+        mutationKey,
+        _tracker.needsSerialization
+            ? _toJsonSafe(state.variablesOrNull)
+            : state.variablesOrNull,
+      );
     } else if (state.isSuccess || state.isError) {
+      final rawResult =
+          state.isSuccess ? state.dataOrNull : state.errorOrNull;
       _tracker.onMutationSettled(
         id,
         state.isSuccess,
-        state.isSuccess ? state.dataOrNull : state.errorOrNull,
+        _tracker.needsSerialization ? _toJsonSafe(rawResult) : rawResult,
       );
     }
 
