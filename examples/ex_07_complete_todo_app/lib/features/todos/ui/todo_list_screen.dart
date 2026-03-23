@@ -40,6 +40,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
   /// Populated in [onMutate] and cleared in [onSuccess] / [onError].
   final List<Todo> _pendingTodos = [];
 
+  /// Reference to the infinite query controller, used in [_createOptions]
+  /// to refetch without resetting to [InfiniteInitial].
+  InfiniteQueryController<TodosPage, int>? _queryController;
+
   String get _userId => widget.authService.value!.id;
   late final Object _queryKey = ['todos', _userId];
 
@@ -59,7 +63,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     },
     onSuccess: (_, _, _) async {
       setState(() => _pendingTodos.clear());
-      context.qora.invalidateInfiniteQuery(_queryKey);
+      await _queryController?.refetch();
     },
     onError: (_, _, snapshot) async {
       // Rollback: restore the pending list to the snapshot taken in onMutate.
@@ -119,6 +123,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               baseOptions: const QoraOptions(staleTime: Duration(minutes: 5)),
             ),
             builder: (context, state, controller) {
+              _queryController = controller;
               // ── First load ───────────────────────────────────────────────
               if (state is InfiniteInitial || state is InfiniteLoading) {
                 return const Center(child: CircularProgressIndicator());

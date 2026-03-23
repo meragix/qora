@@ -54,6 +54,15 @@ class InfiniteCacheEntry<TData, TPageParam> {
     yield* _controller.stream;
   }
 
+  /// Reset this entry to [InfiniteInitial], preserving the correct runtime
+  /// type parameters.
+  ///
+  /// Prefer this over calling `updateState(const InfiniteInitial())` through
+  /// an erased `InfiniteCacheEntry<dynamic, dynamic>` reference — doing so
+  /// would push `InfiniteInitial<dynamic, dynamic>` into a typed stream and
+  /// cause a runtime [TypeError].
+  void reset() => updateState(const InfiniteInitial());
+
   /// Push [newState] to all active subscribers and update internal state.
   ///
   /// No-op if this entry has been [dispose]d.

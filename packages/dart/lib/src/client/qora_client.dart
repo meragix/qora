@@ -1025,7 +1025,7 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final entry = _infiniteCache.get(normalized);
     if (entry == null) return;
-    entry.updateState(const InfiniteInitial());
+    entry.reset();
     _tracker.onQueryInvalidated(_stringKey(normalized));
     _log('Infinite query invalidated: $normalized');
   }
