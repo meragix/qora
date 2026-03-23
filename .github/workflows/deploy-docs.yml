@@ -70,7 +70,7 @@ jobs:
                 // No locale prefix — prepend the user's locale and retry.
                 const lang = navigator.language?.startsWith('fr') ? 'fr' : 'en';
                 window.location.replace('/' + lang + path);
-                window.location.reload();
+                //window.location.reload();
               }
             </script>
           </head>
