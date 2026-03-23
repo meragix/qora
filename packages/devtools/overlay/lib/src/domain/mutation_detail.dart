@@ -15,6 +15,9 @@ class MutationDetail {
   /// Raw variables passed to the mutation, or `null` if none.
   final dynamic variables;
 
+  /// Server response — only present when [status] is `'success'`.
+  final dynamic data;
+
   /// Raw error/result — only present when [status] is `'error'`.
   final dynamic error;
 
@@ -22,6 +25,11 @@ class MutationDetail {
   ///
   /// Currently `null`; will be populated when the tracker exposes rollback data.
   final dynamic rollbackContext;
+
+  /// Round-trip duration in milliseconds from `started` to `settled`.
+  ///
+  /// `null` while the mutation is still pending (no settle event yet).
+  final int? elapsedMs;
 
   /// Timestamp of the `mutation.started` event.
   final DateTime createdAt;
@@ -51,8 +59,10 @@ class MutationDetail {
     this.key,
     required this.status,
     this.variables,
+    this.data,
     this.error,
     this.rollbackContext,
+    this.elapsedMs,
     required this.createdAt,
     this.submittedAt,
     this.updatedAt,
@@ -61,7 +71,10 @@ class MutationDetail {
   });
 
   /// Builds a [MutationDetail] from the latest [MutationEvent] snapshot.
-  factory MutationDetail.fromEvent(MutationEvent event) {
+  ///
+  /// [startedAtMs] is the timestamp of the original `started` event, used to
+  /// compute [elapsedMs]. Pass `null` when the start time is unavailable.
+  factory MutationDetail.fromEvent(MutationEvent event, {int? startedAtMs}) {
     final isSettled = event.type == MutationEventType.settled;
     final isSuccess = isSettled && (event.success ?? false);
     final isError = isSettled && !(event.success ?? false);
@@ -72,12 +85,18 @@ class MutationDetail {
             ? 'error'
             : 'pending';
 
+    final elapsedMs = (isSettled && startedAtMs != null)
+        ? event.timestampMs - startedAtMs
+        : null;
+
     return MutationDetail(
       key: event.key,
       status: status,
       variables: event.variables,
+      data: isSuccess ? event.result : null,
       error: isError ? event.result : null,
-      createdAt: event.timestampMs.toDateTime(),
+      elapsedMs: elapsedMs,
+      createdAt: (startedAtMs ?? event.timestampMs).toDateTime(),
       updatedAt: isSettled ? event.timestampMs.toDateTime() : null,
       isOptimistic: event.isOptimistic,
       retryCount: event.retryCount,

@@ -10,11 +10,15 @@ class MutationRow extends StatelessWidget {
   final VoidCallback onTap;
   final bool isSelected;
 
+  /// Round-trip duration from `started` to `settled`, or `null` if pending.
+  final int? elapsedMs;
+
   const MutationRow({
     super.key,
     required this.mutation,
     required this.onTap,
     this.isSelected = false,
+    this.elapsedMs,
   });
 
   @override
@@ -80,6 +84,14 @@ class MutationRow extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 10, color: DevtoolsColors.textDisabled),
                         ),
+                        if (elapsedMs != null) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            '${elapsedMs}ms',
+                            style: const TextStyle(
+                                fontSize: 10, color: DevtoolsColors.textDisabled),
+                          ),
+                        ],
                         if (mutation.retryCount > 0) ...[
                           const SizedBox(width: 12),
                           Text(

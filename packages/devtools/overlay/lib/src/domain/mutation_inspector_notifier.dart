@@ -21,17 +21,30 @@ class MutationInspectorNotifier extends ChangeNotifier {
 
   MutationEvent? _selected;
 
+  /// mutation id → timestampMs of the original `started` event.
+  final _startTimes = <String, int>{};
+
   /// The currently selected mutation event, or `null` when nothing is selected.
   MutationEvent? get selected => _selected;
 
   /// View-model for the inspector panel, derived from [selected].
   ///
   /// `null` when [selected] is `null` — the panel renders a placeholder.
-  MutationDetail? get detail =>
-      _selected == null ? null : MutationDetail.fromEvent(_selected!);
+  MutationDetail? get detail => _selected == null
+      ? null
+      : MutationDetail.fromEvent(
+          _selected!,
+          startedAtMs: _startTimes[_selected!.id],
+        );
 
   MutationInspectorNotifier(this._tracker, {QoraClient? client}) {
+    for (final e in _tracker.mutationHistory) {
+      if (e.type == MutationEventType.started) _startTimes[e.id] = e.timestampMs;
+    }
     _sub = _tracker.onMutation.listen((event) {
+      if (event.type == MutationEventType.started) {
+        _startTimes[event.id] = event.timestampMs;
+      }
       // Auto-update if the selected mutation changes state (e.g. retry settled)
       if (_selected != null && event.id == _selected!.id) {
         _selected = event;

@@ -155,6 +155,9 @@ class _MutationInspectorState extends State<MutationInspector>
                         if (detail.updatedAt != null)
                           InspectorMetaRow(
                               'Updated At', detail.updatedAt!.fmtDateTime()),
+                        if (detail.elapsedMs != null)
+                          InspectorMetaRow(
+                              'Duration', '${detail.elapsedMs}ms'),
                         InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),
@@ -172,7 +175,14 @@ class _MutationInspectorState extends State<MutationInspector>
                     child: JsonViewer(data: detail.variables),
                   ),
 
-                  // ERROR — conditional
+                  // DATA — server response on success
+                  if (detail.data != null)
+                    InspectorSection(
+                      label: 'DATA',
+                      child: JsonViewer(data: detail.data),
+                    ),
+
+                  // ERROR — on failure
                   if (detail.error != null)
                     InspectorSection(
                       label: 'ERROR',

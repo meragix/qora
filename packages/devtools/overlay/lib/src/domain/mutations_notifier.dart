@@ -16,11 +16,20 @@ class MutationsNotifier extends ChangeNotifier {
   /// mutation id → latest MutationEvent
   final _mutations = <String, MutationEvent>{};
 
+  /// mutation id → timestampMs of the original `started` event.
+  ///
+  /// Used to compute round-trip [MutationDetail.elapsedMs].
+  final _startTimes = <String, int>{};
+
   MutationsNotifier(this._tracker) {
     for (final e in _tracker.mutationHistory) {
+      if (e.type == MutationEventType.started) _startTimes[e.id] = e.timestampMs;
       _mutations[e.id] = e;
     }
     _sub = _tracker.onMutation.listen((event) {
+      if (event.type == MutationEventType.started) {
+        _startTimes[event.id] = event.timestampMs;
+      }
       _mutations[event.id] = event;
       notifyListeners();
     });
@@ -30,6 +39,9 @@ class MutationsNotifier extends ChangeNotifier {
   ///
   /// Ordered by insertion time (oldest first). The UI may reverse this list.
   List<MutationEvent> get mutations => _mutations.values.toList();
+
+  /// Returns the start timestamp (ms) for [id], or `null` if not recorded.
+  int? startedAtMs(String id) => _startTimes[id];
 
   @override
   void dispose() {
