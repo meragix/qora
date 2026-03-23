@@ -64,13 +64,12 @@ jobs:
               const isLocalized = /^\/(fr|en)(\/|$)/.test(path);
               if (isLocalized) {
                 // Already has a locale prefix — page genuinely doesn't exist.
-                //const lang = path.startsWith('/fr') ? 'fr' : 'en';
-                //window.location.assign('/' + lang);
+                const lang = path.startsWith('/fr') ? 'fr' : 'en';
+                window.location.replace('/' + lang);
               } else {
                 // No locale prefix — prepend the user's locale and retry.
                 const lang = navigator.language?.startsWith('fr') ? 'fr' : 'en';
                 window.location.replace('/' + lang + path);
-                //window.location.reload();
               }
             </script>
           </head>

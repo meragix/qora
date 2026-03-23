@@ -1,19 +1,16 @@
 export default defineNuxtConfig({
   extends: ['docus'],
   modules: ['@nuxtjs/i18n'],
+   site: {
+    name: 'Qora',
+  },
   i18n: {
-    strategy: 'prefix_except_default',
+    strategy: 'prefix',
     defaultLocale: 'en',
     locales: [
       { code: 'en', name: 'English' },
       { code: 'fr', name: 'Français' },
     ],
-    detectBrowserLanguage: {
-      useCookie: true,
-      cookieKey: 'i18n_redirected',
-      redirectOn: 'root',
-      fallbackLocale: 'en',
-    },
   },
   content: {
     build: {
