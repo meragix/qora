@@ -1,6 +1,24 @@
-# Qora
+<br />
+<div align="center">
+  <a href="https://github.com/meragix/qora">
+    <img src="assets/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-**Server-state management engine for Dart and Flutter.**
+  <h3 align="center">Qora</h3>
+
+  <p align="center">Server-state management engine for Dart and Flutter.</a>.
+    <br />
+    <a href="https://qora.meragix.dev"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/meragix/qora/blob/main/CONTRIBUTING.md">Contribute</a>
+    &middot;
+    <a href="https://github.com/meragix/qora/issues/new">Report Bug</a>
+    &middot;
+    <a href="https://github.com/meragix/qora/issues/new">Request Feature</a>
+  </p>
+</div>
+<br />
 
 Qora handles query deduplication, stale-while-revalidate caching, automatic retry with backoff, and cache invalidation. One API covers both pure Dart and Flutter targets.
 
@@ -43,7 +61,7 @@ QoraBuilder<User>(
 | Reactive invalidation  | Invalidate a key → every subscriber rebuilds automatically               |
 | Infinite queries       | Bi-directional pagination with `fetchNextPage` / `fetchPreviousPage`     |
 | Offline support        | Queue mutations offline, replay on reconnect; `NetworkMode` per-query    |
-| Persistence            | `PersistQoraClient` — hydrate the cache from storage on startup          |
+| Persistence            | `PersistQoraClient`: hydrate the cache from storage on startup          |
 
 ---
 
