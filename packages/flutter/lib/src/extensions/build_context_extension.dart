@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:qora/qora.dart';
-import '../widgets/qora_scope.dart';
+import 'package:qora_flutter/qora_flutter.dart';
 
 /// Convenience extension on [BuildContext] for accessing [QoraClient].
 ///

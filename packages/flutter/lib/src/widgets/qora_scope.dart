@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
+import 'network_status_builder.dart';
+
 /// Provides a [QoraClient] to the widget tree via an [InheritedWidget].
 ///
 /// Place [QoraScope] near the root of your app so that any descendant widget

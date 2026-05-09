@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
+import 'package:qora_flutter/src/widgets/qora_scope.dart';
 
 /// Flutter implementation of [LifecycleManager].
 ///

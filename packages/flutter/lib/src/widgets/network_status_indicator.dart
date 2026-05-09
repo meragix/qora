@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
 import 'network_status_builder.dart';
+import 'qora_scope.dart';
 
 /// A widget that overlays an offline banner on top of [child] when the device
 /// loses connectivity.

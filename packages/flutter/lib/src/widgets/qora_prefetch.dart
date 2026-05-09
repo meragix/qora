@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
+import 'package:qora_flutter/src/extensions/build_context_extension.dart';
+
 import 'qora_scope.dart';
 
 /// A widget that pre-warms the Qora cache for a query as soon as it is
