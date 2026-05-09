@@ -23,5 +23,5 @@ melos test
 
 echo -e "\n${GREEN}✓ Setup complete!${NC}"
 echo -e "\n${YELLOW}Next steps:${NC}"
-echo "  cd packages/zema"
+echo "  cd packages/dart"
 echo "  Start coding!"
