@@ -187,7 +187,8 @@ class VmTracker implements QoraTracker {
 
   @override
   void onMutationStarted(String id, String key, Object? variables) {
-    _emit(MutationEvent.started(id: id, key: key, variables: _toJsonSafe(variables)));
+    _emit(MutationEvent.started(
+        id: id, key: key, variables: _toJsonSafe(variables)));
   }
 
   @override

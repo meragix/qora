@@ -68,7 +68,12 @@ class LazyPayloadManager {
   ///
   /// Pass `inlineData` (not the original [data]) to the event payload so that
   /// `developer.postEvent` never encounters a non-serialisable object.
-  ({String payloadId, int totalChunks, bool hasLargePayload, Object? inlineData}) store(
+  ({
+    String payloadId,
+    int totalChunks,
+    bool hasLargePayload,
+    Object? inlineData
+  }) store(
     Object? data,
   ) {
     String json;

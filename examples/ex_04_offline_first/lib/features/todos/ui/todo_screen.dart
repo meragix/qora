@@ -224,21 +224,23 @@ class _AddTodoFab extends StatelessWidget {
         onMutate: (input) async {
           final prev =
               context.qora.getQueryData<List<Todo>>(const ['todos']) ?? [];
-          context.qora.setQueryData<List<Todo>>(const ['todos'], [
-            ...prev,
-            Todo(
-              id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-              title: input.title,
-              completed: false,
-              isPending: true,
-            ),
-          ]);
+          context.qora.setQueryData<List<Todo>>(
+            const ['todos'],
+            [
+              ...prev,
+              Todo(
+                id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+                title: input.title,
+                completed: false,
+                isPending: true,
+              ),
+            ],
+          );
           return prev;
         },
         onError: (_, _, prev) async =>
             context.qora.restoreQueryData(const ['todos'], prev),
-        onSuccess: (_, _, _) async =>
-            context.qora.invalidate(const ['todos']),
+        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
       ),
       builder: (context, state, mutate) {
         final isQueued = state.isPending;

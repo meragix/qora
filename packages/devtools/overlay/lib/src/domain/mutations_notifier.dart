@@ -23,7 +23,8 @@ class MutationsNotifier extends ChangeNotifier {
 
   MutationsNotifier(this._tracker) {
     for (final e in _tracker.mutationHistory) {
-      if (e.type == MutationEventType.started) _startTimes[e.id] = e.timestampMs;
+      if (e.type == MutationEventType.started)
+        _startTimes[e.id] = e.timestampMs;
       _mutations[e.id] = e;
     }
     _sub = _tracker.onMutation.listen((event) {

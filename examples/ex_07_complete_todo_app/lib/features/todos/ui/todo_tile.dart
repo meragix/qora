@@ -35,15 +35,15 @@ class TodoTile extends StatelessWidget {
     return ListTile(
       leading: todo.isOptimistic
           ? isQueued
-              ? Tooltip(
-                  message: 'Queued — will sync on reconnect',
-                  child: Icon(Icons.schedule, color: Colors.orange.shade400),
-                )
-              : const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                ? Tooltip(
+                    message: 'Queued — will sync on reconnect',
+                    child: Icon(Icons.schedule, color: Colors.orange.shade400),
+                  )
+                : const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
           : Checkbox(
               value: todo.completed,
               onChanged: onToggle == null ? null : (_) => onToggle!(),

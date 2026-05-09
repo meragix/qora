@@ -42,10 +42,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
         onMutate: (content) async {
           final prev =
               context.qora.getQueryData<List<Post>>(const ['posts']) ?? [];
-          context.qora.setQueryData<List<Post>>(const ['posts'], [
-            Post.optimistic(content: content),
-            ...prev,
-          ]);
+          context.qora.setQueryData<List<Post>>(
+            const ['posts'],
+            [Post.optimistic(content: content), ...prev],
+          );
           return prev;
         },
         // Transitions state to MutationSuccess(isOptimistic: true) when offline
@@ -59,7 +59,9 @@ class _ComposeScreenState extends State<ComposeScreen> {
           // a refetch would wipe the post from the list.
           final current =
               context.qora.getQueryData<List<Post>>(const ['posts']) ?? [];
-          final replaced = current.map((p) => p.isOptimistic ? realPost : p).toList();
+          final replaced = current
+              .map((p) => p.isOptimistic ? realPost : p)
+              .toList();
           context.qora.setQueryData<List<Post>>(const ['posts'], replaced);
         },
       ),

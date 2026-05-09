@@ -156,8 +156,7 @@ class _MutationInspectorState extends State<MutationInspector>
                           InspectorMetaRow(
                               'Updated At', detail.updatedAt!.fmtDateTime()),
                         if (detail.elapsedMs != null)
-                          InspectorMetaRow(
-                              'Duration', '${detail.elapsedMs}ms'),
+                          InspectorMetaRow('Duration', '${detail.elapsedMs}ms'),
                         InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),

@@ -89,7 +89,8 @@ class MutationRow extends StatelessWidget {
                           Text(
                             '${elapsedMs}ms',
                             style: const TextStyle(
-                                fontSize: 10, color: DevtoolsColors.textDisabled),
+                                fontSize: 10,
+                                color: DevtoolsColors.textDisabled),
                           ),
                         ],
                         if (mutation.retryCount > 0) ...[

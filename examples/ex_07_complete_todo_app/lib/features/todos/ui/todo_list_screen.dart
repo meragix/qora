@@ -134,7 +134,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
                   state.previousData == null) {
                 return _ErrorView(
                   error: state.error,
-                  onRetry: () => context.qora.invalidateInfiniteQuery(_queryKey),
+                  onRetry: () =>
+                      context.qora.invalidateInfiniteQuery(_queryKey),
                 );
               }
 
@@ -304,48 +305,52 @@ class _MutableTodoTile extends StatelessWidget {
     InfiniteData<TodosPage, int> data,
     String id,
     bool completed,
-  ) =>
-      InfiniteData(
-        pages: data.pages
-            .map(
-              (page) => TodosPage(
-                todos: page.todos
-                    .map((t) => t.id == id ? t.copyWith(completed: completed) : t)
-                    .toList(),
-                page: page.page,
-                hasMore: page.hasMore,
-              ),
-            )
-            .toList(),
-        pageParams: data.pageParams,
-      );
+  ) => InfiniteData(
+    pages: data.pages
+        .map(
+          (page) => TodosPage(
+            todos: page.todos
+                .map((t) => t.id == id ? t.copyWith(completed: completed) : t)
+                .toList(),
+            page: page.page,
+            hasMore: page.hasMore,
+          ),
+        )
+        .toList(),
+    pageParams: data.pageParams,
+  );
 
   // Removes a single todo from all cached pages.
   InfiniteData<TodosPage, int> _deleteFromCache(
     InfiniteData<TodosPage, int> data,
     String id,
-  ) =>
-      InfiniteData(
-        pages: data.pages
-            .map(
-              (page) => TodosPage(
-                todos: page.todos.where((t) => t.id != id).toList(),
-                page: page.page,
-                hasMore: page.hasMore,
-              ),
-            )
-            .toList(),
-        pageParams: data.pageParams,
-      );
+  ) => InfiniteData(
+    pages: data.pages
+        .map(
+          (page) => TodosPage(
+            todos: page.todos.where((t) => t.id != id).toList(),
+            page: page.page,
+            hasMore: page.hasMore,
+          ),
+        )
+        .toList(),
+    pageParams: data.pageParams,
+  );
 
   @override
   Widget build(BuildContext context) {
-    return QoraMutationBuilder<Todo, ToggleTodoInput, InfiniteData<TodosPage, int>?>(
+    return QoraMutationBuilder<
+      Todo,
+      ToggleTodoInput,
+      InfiniteData<TodosPage, int>?
+    >(
       queryKey: queryKey,
       mutator: api.toggleTodo,
       options: MutationOptions(
         onMutate: (input) async {
-          final prev = context.qora.getInfiniteQueryData<TodosPage, int>(queryKey);
+          final prev = context.qora.getInfiniteQueryData<TodosPage, int>(
+            queryKey,
+          );
           if (prev != null) {
             context.qora.setInfiniteQueryData<TodosPage, int>(
               queryKey,
@@ -366,7 +371,9 @@ class _MutableTodoTile extends StatelessWidget {
           mutator: api.deleteTodo,
           options: MutationOptions(
             onMutate: (id) async {
-              final prev = context.qora.getInfiniteQueryData<TodosPage, int>(queryKey);
+              final prev = context.qora.getInfiniteQueryData<TodosPage, int>(
+                queryKey,
+              );
               if (prev != null) {
                 context.qora.setInfiniteQueryData<TodosPage, int>(
                   queryKey,
@@ -377,7 +384,10 @@ class _MutableTodoTile extends StatelessWidget {
             },
             onError: (_, _, prev) async {
               if (prev != null) {
-                context.qora.setInfiniteQueryData<TodosPage, int>(queryKey, prev);
+                context.qora.setInfiniteQueryData<TodosPage, int>(
+                  queryKey,
+                  prev,
+                );
               }
             },
           ),

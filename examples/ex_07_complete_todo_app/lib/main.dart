@@ -32,8 +32,14 @@ Future<void> main() async {
     storage: storage,
     persistDuration: const Duration(days: 7),
     config: QoraClientConfig(
-      defaultOptions: const QoraOptions(networkMode: NetworkMode.offlineFirst, staleTime: Duration(minutes: 5)),
-      reconnectStrategy: const ReconnectStrategy(maxConcurrent: 3, jitter: Duration(milliseconds: 150)),
+      defaultOptions: const QoraOptions(
+        networkMode: NetworkMode.offlineFirst,
+        staleTime: Duration(minutes: 5),
+      ),
+      reconnectStrategy: const ReconnectStrategy(
+        maxConcurrent: 3,
+        jitter: Duration(milliseconds: 150),
+      ),
       debugMode: kDebugMode,
     ),
   );
@@ -66,7 +72,11 @@ class _App extends StatelessWidget {
   final TodoApi api;
   final SimulatedConnectivityManager connectivity;
 
-  const _App({required this.auth, required this.api, required this.connectivity});
+  const _App({
+    required this.auth,
+    required this.api,
+    required this.connectivity,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +91,11 @@ class _App extends StatelessWidget {
           if (user == null) {
             return LoginScreen(authService: auth);
           }
-          return TodoListScreen(api: api, authService: auth, connectivity: connectivity);
+          return TodoListScreen(
+            api: api,
+            authService: auth,
+            connectivity: connectivity,
+          );
         },
       ),
     );

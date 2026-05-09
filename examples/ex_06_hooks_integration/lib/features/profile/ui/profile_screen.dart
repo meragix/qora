@@ -37,9 +37,9 @@ class ProfileScreen extends HookWidget {
         onSuccess: (_, _, _) async {
           client.invalidate(['users', userId]);
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile saved')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Profile saved')));
           }
         },
       ),
@@ -113,7 +113,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   void _onChanged() {
-    final dirty = _nameCtrl.text != widget.user.name ||
+    final dirty =
+        _nameCtrl.text != widget.user.name ||
         _usernameCtrl.text != widget.user.username;
     if (dirty != _isDirty) setState(() => _isDirty = dirty);
   }

@@ -27,7 +27,8 @@ class DataDiffTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.fileDiff, color: DevtoolsColors.textMuted, size: 32),
+            Icon(LucideIcons.fileDiff,
+                color: DevtoolsColors.textMuted, size: 32),
             SizedBox(height: 8),
             Text(
               'Select a mutation to compare data',
