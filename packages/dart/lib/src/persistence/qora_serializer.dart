@@ -1,3 +1,5 @@
+import 'package:qora/src/persistence/persist_qora_client.dart';
+
 /// A pair of functions that convert a value of type [T] to and from a
 /// JSON-compatible representation.
 ///
@@ -48,7 +50,7 @@
 ///
 /// The [name] must **not change across app versions** — changing it will cause
 /// previously persisted entries for that type to be silently skipped on the
-/// next [hydrate].
+/// next [PersistQoraClient.hydrate].
 class QoraSerializer<T> {
   /// Converts a value of [T] to a JSON-encodable value.
   ///

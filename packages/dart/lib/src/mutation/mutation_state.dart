@@ -1,5 +1,8 @@
 import 'package:meta/meta.dart';
 
+import 'mutation_controller.dart';
+import 'mutation_options.dart';
+
 /// Represents the state of a mutation operation.
 ///
 /// A mutation can be in one of four states:

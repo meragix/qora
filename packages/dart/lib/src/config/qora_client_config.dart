@@ -1,6 +1,8 @@
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/network/reconnect_strategy.dart';
+import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/utils/qora_exception.dart';
 
-import '../network/reconnect_strategy.dart';
 import 'qora_options.dart';
 
 /// Global configuration for [QoraClient].
@@ -78,7 +80,7 @@ class QoraClientConfig {
   /// analytics, or syncing persistent storage.
   final void Function(List<dynamic> key)? onCacheEvict;
 
-  /// Global default for whether [watchQuery] should trigger a fetch on the
+  /// Global default for whether [QoraClient.watchQuery] should trigger a fetch on the
   /// first subscription, even when fresh cached data already exists.
   ///
   /// Can be overridden per-query via [QoraOptions.refetchOnMount].

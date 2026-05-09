@@ -1,4 +1,8 @@
 import 'package:meta/meta.dart';
+import 'package:qora/src/client/qora_client.dart';
+
+import 'mutation_controller.dart';
+import 'mutation_options.dart';
 import 'mutation_state_extensions.dart';
 
 /// An event emitted by [QoraClient] whenever a tracked [MutationController]
@@ -50,7 +54,7 @@ class MutationUpdate {
 
   /// `true` when this success event carries optimistic (unconfirmed) data.
   ///
-  /// Set when a mutation was enqueued offline with an [optimisticResponse].
+  /// Set when a mutation was enqueued offline with an [MutationOptions.optimisticResponse].
   /// Transitions to `false` once the queued mutation successfully replays on
   /// reconnect. Forwarded as-is to the DevTools event bus so the UI can show
   /// a "pending sync" indicator.
@@ -68,8 +72,11 @@ class MutationUpdate {
   });
 
   bool get isIdle => status == MutationStatus.idle;
+
   bool get isPending => status == MutationStatus.pending;
+
   bool get isSuccess => status == MutationStatus.success;
+
   bool get isError => status == MutationStatus.error;
 
   /// `true` when the mutation has completed — either successfully or with an

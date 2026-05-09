@@ -9,10 +9,10 @@ extension MutationStateExtensions<TData, TVariables>
   ///
   /// ```dart
   /// final label = state.fold(
-  ///   onIdle:    ()          => 'Submit',
-  ///   onPending: (vars)      => 'Saving…',
-  ///   onSuccess: (data, _)   => 'Saved!',
-  ///   onError:   (err, _, _) => 'Retry',
+  ///   onIdle: () => 'Submit',
+  ///   onPending: (vars) => 'Saving…',
+  ///   onSuccess: (data, _) => 'Saved!',
+  ///   onError: (err, _, _) => 'Retry',
   /// );
   /// ```
   R fold<R>({

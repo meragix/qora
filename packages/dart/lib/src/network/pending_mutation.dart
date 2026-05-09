@@ -1,4 +1,10 @@
 import 'package:meta/meta.dart';
+import 'package:qora/src/managers/connectivity_manager.dart';
+import 'package:qora/src/mutation/mutation_controller.dart';
+import 'package:qora/src/mutation/mutation_options.dart';
+import 'package:qora/src/mutation/mutation_state.dart';
+
+import 'offline_mutation_queue.dart';
 
 /// A mutation enqueued while the device was offline.
 ///

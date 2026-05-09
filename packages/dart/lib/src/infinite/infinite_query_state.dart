@@ -1,4 +1,7 @@
+import 'package:qora/src/state/qora_state.dart';
+
 import 'infinite_data.dart';
+import 'infinite_query_options.dart';
 
 /// The state machine for an infinite (paginated) query.
 ///

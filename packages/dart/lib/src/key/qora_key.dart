@@ -1,4 +1,6 @@
 import 'package:meta/meta.dart';
+import 'package:qora/src/client/qora_client.dart';
+
 import 'key_equality.dart';
 
 /// Type alias for raw key parts (backwards compatibility).

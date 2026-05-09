@@ -1,3 +1,8 @@
+import 'package:qora/src/cancellation/cancel_token.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/network/fetch_status.dart';
+import 'package:qora/src/network/network_mode.dart';
+
 class QoraException implements Exception {
   final String message;
   final Object? originalError;
@@ -43,7 +48,7 @@ class QoraCancelException implements Exception {
 ///
 /// Widgets typically don't need to catch this directly — [QoraBuilder] exposes
 /// [FetchStatus.paused] instead. Catch it only in imperative one-shot
-/// [fetchQuery] call-sites where you need to handle the offline case
+/// [QoraClient.fetchQuery] call-sites where you need to handle the offline case
 /// explicitly.
 ///
 /// ```dart

@@ -3,7 +3,10 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_client_config.dart';
+import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/state/qora_state.dart';
 
 import 'qora_serializer.dart';
 import 'storage_adapter.dart';
@@ -249,19 +252,19 @@ class PersistQoraClient extends QoraClient {
   /// | JSON decode failure             | Delete from storage, skip       |
   /// | TTL expired                     | Delete from storage, skip       |
   /// | No serializer registered        | Log (debugMode), skip           |
-  /// | [fromJson] throws               | Delete from storage, log, skip  |
+  /// | [QoraSerializer.fromJson] throws| Delete from storage, log, skip  |
   /// | Valid                           | Add to pending hydration queue  |
   ///
   /// ### Model versioning
   ///
   /// If your model schema changes between app releases — a required field
   /// added, a field renamed, a type changed — persisted entries written by
-  /// the old version may throw in [fromJson]. [hydrate] catches every such
+  /// the old version may throw in [QoraSerializer.fromJson]. [hydrate] catches every such
   /// exception, logs a warning (when [QoraClientConfig.debugMode] is `true`),
   /// deletes the corrupt entry from storage, and continues. The app never
   /// crashes because of a stale schema on disk.
   ///
-  /// Your responsibility is a defensive [fromJson] that handles both old and
+  /// Your responsibility is a defensive [QoraSerializer.fromJson] that handles both old and
   /// new shapes:
   ///
   /// ```dart

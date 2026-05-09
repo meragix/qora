@@ -1,3 +1,12 @@
+import 'package:qora/src/cancellation/cancel_token.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/mutation/mutation_controller.dart';
+import 'package:qora/src/mutation/mutation_state.dart';
+import 'package:qora/src/state/qora_state.dart';
+
+import 'no_op_tracker.dart';
+
 /// Observability interface injected into [QoraClient] to report cache and
 /// mutation lifecycle events.
 ///
@@ -44,7 +53,7 @@ abstract interface class QoraTracker {
   /// Whether this tracker requires query data to be serialized before
   /// [onQueryFetched] is called.
   ///
-  /// [QoraClient] skips the (potentially expensive) [_serializeForTracker]
+  /// [QoraClient] skips the (potentially expensive) [QoraClient._serializeForTracker]
   /// call when this returns `false`, which is the case for [NoOpTracker].
   /// DevTools trackers ([VmTracker], [OverlayTracker]) return `true` because
   /// they need a JSON-safe representation of the data for display.

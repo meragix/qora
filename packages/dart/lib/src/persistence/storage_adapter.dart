@@ -1,3 +1,5 @@
+import 'package:qora/src/persistence/persist_qora_client.dart';
+
 /// Low-level key/value storage contract for Qora persistence.
 ///
 /// Implementations store raw JSON strings keyed by a stable string derived

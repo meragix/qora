@@ -19,6 +19,7 @@ import 'package:qora/src/mutation/mutation.dart';
 import 'package:qora/src/network/fetch_status.dart';
 import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/network/offline_mutation_queue.dart';
+import 'package:qora/src/persistence/persist_qora_client.dart';
 import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/tracking/no_op_tracker.dart';
 import 'package:qora/src/tracking/qora_tracker.dart';
@@ -523,10 +524,10 @@ class QoraClient implements MutationTracker {
   ///   ),
   ///   builder: (context, snapshot) {
   ///     return switch (snapshot.data) {
-  ///       Loading()              => const CircularProgressIndicator(),
-  ///       Success(:final data)   => UserWidget(data),
-  ///       Failure(:final error)  => ErrorWidget('$error'),
-  ///       _                      => const SizedBox.shrink(),
+  ///       Loading() => const CircularProgressIndicator(),
+  ///       Success(:final data) => UserWidget(data),
+  ///       Failure(:final error) => ErrorWidget('$error'),
+  ///       _ => const SizedBox.shrink(),
   ///     };
   ///   },
   /// )
@@ -1249,8 +1250,7 @@ class QoraClient implements MutationTracker {
             : state.variablesOrNull,
       );
     } else if (state.isSuccess || state.isError) {
-      final rawResult =
-          state.isSuccess ? state.dataOrNull : state.errorOrNull;
+      final rawResult = state.isSuccess ? state.dataOrNull : state.errorOrNull;
       _tracker.onMutationSettled(
         id,
         state.isSuccess,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:qora/src/client/qora_client.dart';
 import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/state/qora_state.dart';
 
@@ -62,7 +63,7 @@ class CacheEntry<T> {
   ///
   /// Multiple concurrent subscribers are supported (broadcast stream).
   /// This is the key property that makes [QoraClient.setQueryData] and
-  /// [QoraClient.invalidate] push updates to all active [watchQuery] streams.
+  /// [QoraClient.invalidate] push updates to all active [QoraClient.watchQuery] streams.
   Stream<QoraState<T>> get stream async* {
     if (_isDisposed) return;
     yield _state;
@@ -125,8 +126,8 @@ class CacheEntry<T> {
   /// Mark this entry as stale without pushing any state update to observers.
   ///
   /// Unlike [invalidate], this does **not** transition the state to [Loading]
-  /// and does **not** notify active subscribers. The next [fetchQuery] or
-  /// [watchQuery] mount that calls [isStale] will see the entry as stale and
+  /// and does **not** notify active subscribers. The next [QoraClient.fetchQuery] or
+  /// [QoraClient.watchQuery] mount that calls [isStale] will see the entry as stale and
   /// trigger a background SWR revalidation.
   void markStale() {
     _forcedStale = true;

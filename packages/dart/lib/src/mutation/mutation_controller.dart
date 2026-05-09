@@ -1,13 +1,15 @@
 import 'dart:async';
 
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/network/network_mode.dart';
+import 'package:qora/src/network/offline_mutation_queue.dart';
+import 'package:qora/src/network/pending_mutation.dart';
 import 'package:qora/src/utils/query_function.dart';
 
-import '../network/network_mode.dart';
-import '../network/offline_mutation_queue.dart';
-import '../network/pending_mutation.dart';
 import 'mutation_options.dart';
 import 'mutation_state.dart';
 import 'mutation_tracker.dart';
+import 'mutation_update.dart';
 
 /// Controls and tracks the lifecycle of a single mutation.
 ///

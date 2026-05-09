@@ -1,4 +1,9 @@
+import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
+
+import 'infinite_data.dart';
+import 'infinite_query_observer.dart';
+import 'infinite_query_state.dart';
 
 /// Configuration for an infinite (paginated) query.
 ///

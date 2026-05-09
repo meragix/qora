@@ -1,5 +1,8 @@
 import 'package:meta/meta.dart';
 
+import 'infinite_query_observer.dart';
+import 'infinite_query_options.dart';
+
 /// Immutable container holding all fetched pages and their corresponding
 /// page parameters for an infinite query.
 ///
@@ -78,7 +81,7 @@ class InfiniteData<TData, TPageParam> {
   /// Called when [InfiniteQueryOptions.maxPages] is set and appending a
   /// new next-page would exceed the limit. After dropping, the user can
   /// scroll back to the top to trigger [InfiniteQueryObserver.fetchPreviousPage],
-  /// which re-fetches the dropped page using [getPreviousPageParam].
+  /// which re-fetches the dropped page using [InfiniteQueryOptions.getPreviousPageParam].
   InfiniteData<TData, TPageParam> dropFirst() {
     assert(pages.isNotEmpty, 'Cannot drop from empty InfiniteData');
     return InfiniteData(

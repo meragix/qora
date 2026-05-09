@@ -1,3 +1,7 @@
+import 'package:qora/src/state/qora_state.dart';
+
+import 'network_mode.dart';
+
 /// Indicates whether a query is currently executing a network request.
 ///
 /// This is the **second axis** of query state, alongside [QoraState].
@@ -26,8 +30,8 @@
 ///     }
 ///     return switch (state) {
 ///       Success(:final data) => UserCard(data),
-///       Loading()            => const Spinner(),
-///       _                    => const SizedBox.shrink(),
+///       Loading() => const Spinner(),
+///       _ => const SizedBox.shrink(),
 ///     };
 ///   },
 /// )

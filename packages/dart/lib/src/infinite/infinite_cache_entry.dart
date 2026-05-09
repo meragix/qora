@@ -1,5 +1,10 @@
 import 'dart:async';
 
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_options.dart';
+import 'package:qora/src/state/qora_state.dart';
+
+import 'infinite_query_observer.dart';
 import 'infinite_query_state.dart';
 
 /// A reactive cache entry for an infinite (paginated) query.

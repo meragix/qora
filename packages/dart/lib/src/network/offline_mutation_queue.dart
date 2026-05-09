@@ -1,3 +1,7 @@
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/mutation/mutation_controller.dart';
+import 'package:qora/src/mutation/mutation_options.dart';
+
 import 'pending_mutation.dart';
 
 /// Result of an [OfflineMutationQueue.replay] call.
@@ -17,7 +21,7 @@ class OfflineReplayResult {
   /// Mutations that were not replayed because a prior mutation failed and
   /// [OfflineMutationQueue.stopOnFirstError] is `true`.
   ///
-  /// They remain in the queue and will be retried on the next [replay] call.
+  /// They remain in the queue and will be retried on the next [PendingMutation.replay] call.
   final List<PendingMutation> skipped;
 
   const OfflineReplayResult({
@@ -47,7 +51,7 @@ class OfflineReplayResult {
 ///
 /// ## Design notes
 ///
-/// - **In-memory only** for v0.6.0. A [StorageAdapter?] slot is reserved for
+/// - A [StorageAdapter?] slot is reserved for
 ///   a future persistence extension without requiring a breaking API change.
 /// - **FIFO order** is preserved. Avoid chaining dependent mutations (e.g.
 ///   "create post A then add comment to A") unless you set

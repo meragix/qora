@@ -10,7 +10,7 @@ import 'qora_key.dart';
 /// query key lookups. This wrapper uses [equalsKey] and [hashKey] instead.
 ///
 /// Supports polymorphic keys:
-/// - [ReqryKey] instances
+/// - [QoraKey] instances
 /// - [List<dynamic>] (raw parts)
 ///
 /// **Performance**: O(n) key comparison where n = key depth.
@@ -20,7 +20,7 @@ class KeyCacheMap<V> {
 
   /// Get a value by key (null if not found).
   ///
-  /// Accepts [ReqryKey] or [List<dynamic>].
+  /// Accepts [QoraKey] or [List<dynamic>].
   V? get(Object key) {
     final parts = normalizeKey(key);
     return _storage[_KeyWrapper(parts)];
@@ -28,7 +28,7 @@ class KeyCacheMap<V> {
 
   /// Set a value by key.
   ///
-  /// Accepts [ReqryKey] or [List<dynamic>].
+  /// Accepts [QoraKey] or [List<dynamic>].
   void set(Object key, V value) {
     final parts = normalizeKey(key);
     _storage[_KeyWrapper(parts)] = value;
@@ -36,7 +36,7 @@ class KeyCacheMap<V> {
 
   /// Check if key exists.
   ///
-  /// Accepts [ReqryKey] or [List<dynamic>].
+  /// Accepts [QoraKey] or [List<dynamic>].
   bool containsKey(Object key) {
     final parts = normalizeKey(key);
     return _storage.containsKey(_KeyWrapper(parts));
@@ -44,7 +44,7 @@ class KeyCacheMap<V> {
 
   /// Remove a key.
   ///
-  /// Accepts [ReqryKey] or [List<dynamic>].
+  /// Accepts [QoraKey] or [List<dynamic>].
   V? remove(Object key) {
     final parts = normalizeKey(key);
     return _storage.remove(_KeyWrapper(parts));

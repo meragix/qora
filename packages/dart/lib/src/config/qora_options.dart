@@ -1,4 +1,9 @@
-import '../network/network_mode.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_client_config.dart';
+import 'package:qora/src/managers/connectivity_manager.dart';
+import 'package:qora/src/network/network_mode.dart';
+import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/tracking/qora_tracker.dart';
 
 /// Per-query configuration that overrides global [QoraClientConfig] defaults.
 ///
@@ -35,7 +40,7 @@ class QoraOptions {
   /// How long an *inactive* query is retained in cache before being garbage
   /// collected.
   ///
-  /// A query is inactive when it has no [watchQuery] subscribers. Once the GC
+  /// A query is inactive when it has no [QoraClient.watchQuery] subscribers. Once the GC
   /// timer fires, the entry is removed and the next access will trigger a
   /// fresh fetch. Default: 5 minutes.
   final Duration cacheTime;
@@ -102,7 +107,7 @@ class QoraOptions {
   final bool refetchOnReconnect;
 
   /// Automatically refetch the query at this interval while at least one
-  /// [watchQuery] subscriber is active.
+  /// [QoraClient.watchQuery] subscriber is active.
   ///
   /// Useful for live/polling data (e.g. prices, notifications, feed).
   /// The timer is cancelled when the last subscriber unsubscribes.
@@ -113,7 +118,7 @@ class QoraOptions {
   /// ```
   final Duration? refetchInterval;
 
-  /// Whether to trigger a fetch when a [watchQuery] stream is first
+  /// Whether to trigger a fetch when a [QoraClient.watchQuery] stream is first
   /// subscribed to (mounted).
   ///
   /// - `true` — always refetch on mount, even if data is fresh.
@@ -205,7 +210,7 @@ class QoraOptions {
   /// automatically — no re-mount required.
   ///
   /// [QoraClient.fetchQuery] throws [StateError] if the dependency is not
-  /// resolved; prefer [watchQuery] for reactive dependent queries.
+  /// resolved; prefer [QoraClient.watchQuery] for reactive dependent queries.
   ///
   /// [QoraClient.prefetch] is a silent no-op when the dependency is not ready.
   ///

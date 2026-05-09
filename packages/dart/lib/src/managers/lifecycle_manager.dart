@@ -1,3 +1,6 @@
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/config/qora_options.dart';
+
 /// Platform-agnostic abstraction over application lifecycle events.
 ///
 /// [QoraClient] uses this interface to implement [QoraOptions.refetchOnWindowFocus]:
@@ -102,6 +105,6 @@ enum LifecycleState {
   /// The application has returned to the foreground after being paused.
   ///
   /// [QoraClient.attachLifecycleManager] listens for this state and triggers
-  /// [refetchOnWindowFocus] revalidation for all stale active queries.
+  /// [QoraOptions.refetchOnWindowFocus] revalidation for all stale active queries.
   resumed,
 }

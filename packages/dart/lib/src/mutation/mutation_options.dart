@@ -1,4 +1,9 @@
-import '../network/network_mode.dart';
+import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/managers/connectivity_manager.dart';
+import 'package:qora/src/network/network_mode.dart';
+
+import 'mutation_controller.dart';
+import 'mutation_state.dart';
 
 /// Configuration and lifecycle callbacks for a [MutationController].
 ///

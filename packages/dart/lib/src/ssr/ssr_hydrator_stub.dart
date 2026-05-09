@@ -1,4 +1,4 @@
-import '../client/qora_client.dart';
+import 'package:qora/src/client/qora_client.dart';
 
 /// No-op [SsrHydrator] for non-web platforms.
 ///

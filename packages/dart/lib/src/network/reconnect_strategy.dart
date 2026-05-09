@@ -1,3 +1,5 @@
+import 'package:qora/src/client/qora_client.dart';
+
 /// Controls how [QoraClient] replays paused queries when the device reconnects.
 ///
 /// Without throttling, a large number of paused queries can all execute at

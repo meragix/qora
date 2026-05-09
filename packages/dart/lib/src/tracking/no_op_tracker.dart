@@ -1,3 +1,5 @@
+import 'package:qora/src/client/qora_client.dart';
+
 import 'qora_tracker.dart';
 
 /// Production-safe [QoraTracker] implementation with zero runtime overhead.

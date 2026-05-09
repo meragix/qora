@@ -1,3 +1,5 @@
+import 'package:qora/src/client/qora_client.dart';
+
 /// Abstract interface for network connectivity observation.
 ///
 /// `ConnectivityManager` is a pure signal provider: it emits [NetworkStatus]
