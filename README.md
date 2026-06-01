@@ -7,7 +7,7 @@
   <h3 align="center">Qora</h3>
 
   <p align="center">
-     Server-state management engine for Dart and Flutter.
+     Server-state management for Dart and Flutter.
     <br />
     <a href="https://qora.meragix.dev"><strong>Explore the docs »</strong></a>
     <br />
@@ -18,12 +18,64 @@
     &middot;
     <a href="https://github.com/meragix/qora/issues/new">Request Feature</a>
   </p>
+
+  <div align="center">
+    <a href="https://pub.dev/packages/qora"><img src="https://img.shields.io/pub/v/qora.svg?label=qora" alt="qora"></a>
+    <a href="https://github.com/meragix/qora/actions/workflows/flutter.yml"><img src="https://img.shields.io/github/actions/workflow/status/meragix/qora/dart.yml?branch=main&label=ci" alt="CI"></a>
+    <a href="https://pub.dev/packages/qora/score"><img src="https://img.shields.io/pub/likes/qora" alt="likes"></a>
+    <a href="https://pub.dev/packages/qora/score"><img src="https://img.shields.io/pub/points/qora" alt="pub points"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/meragix/qora" alt="license"></a>
+    <a href="https://github.com/meragix/qora"><img src="https://img.shields.io/badge/sdk-dart%20%7C%20flutter-9cf" alt="sdk"></a>
+  </div>
 </div>
 <br />
 
-## Introduction
+Qora is what server-state management looks like when it's built for Flutter from the ground up. Fetch, cache, synchronize, and mutate server data with a declarative API, without writing `isLoading` flags, `try/catch` blocks, or cache invalidation logic ever again.
 
-Qora handles query deduplication, stale-while-revalidate caching, automatic retry with backoff, and cache invalidation. One API covers both pure Dart and Flutter targets.
+If you've used [TanStack Query](https://tanstack.com/query) on the web, this will feel familiar. If you haven't, it's the pattern where server data is treated as a synchronized cache with its own lifecycle, not as global UI state.
+
+---
+
+## Quick Start
+
+```yaml
+dependencies:
+  qora_flutter: ^1.0.0
+```
+
+```dart
+void main() {
+  final client = QoraClient();
+
+  runApp(
+    QoraScope(
+      client: client,
+      child: const MyApp(),
+    ),
+  );
+}
+```
+
+Now bind any query to the widget tree:
+
+```dart
+QoraBuilder<User>(
+  queryKey: ['users', userId],
+  fetcher: () => api.getUser(userId),
+  builder: (context, state, fetchStatus) => switch (state) {
+    Loading(:final previousData) => previousData != null
+        ? UserCard(previousData)
+        : const CircularProgressIndicator(),
+    Success(:final data) => UserCard(data),
+    Failure(:final error, :final previousData) => previousData != null
+        ? Column(children: [UserCard(previousData), ErrorBanner(error)])
+        : ErrorScreen(error),
+    _ => const SizedBox.shrink(),
+  },
+)
+```
+
+The same API works in pure Dart:
 
 ```dart
 final user = await client.fetchQuery<User>(
@@ -33,81 +85,70 @@ final user = await client.fetchQuery<User>(
 );
 ```
 
-In Flutter, bind it directly to the widget tree:
-
-```dart
-QoraBuilder<User>(
-  queryKey: ['users', userId],
-  fetcher: () => api.getUser(userId),
-  builder: (context, state, fetchStatus) => switch (state) {
-    Initial() => const SizedBox.shrink(),
-    Loading(:final previousData) => previousData != null
-        ? UserCard(previousData)
-        : const CircularProgressIndicator(),
-    Success(:final data) => UserCard(data),
-    Failure(:final error) => ErrorScreen(error),
-  },
-)
-```
-
 ---
 
 ## Capabilities
 
-| Feature                | Description                                                              |
-| ---------------------- | ------------------------------------------------------------------------ |
-| Automatic caching      | Data is stored and served instantly on repeat requests                   |
-| Stale-while-revalidate | Show cached data immediately, refetch silently in background             |
-| Request deduplication  | 10 widgets, same key → 1 network call                                    |
-| Automatic retry        | Failed requests retry with exponential backoff                           |
-| Optimistic updates     | Update the UI before the server responds, roll back on failure           |
-| Reactive invalidation  | Invalidate a key → every subscriber rebuilds automatically               |
-| Infinite queries       | Bi-directional pagination with `fetchNextPage` / `fetchPreviousPage`     |
-| Offline support        | Queue mutations offline, replay on reconnect; `NetworkMode` per-query    |
-| Persistence            | `PersistQoraClient`: hydrate the cache from storage on startup          |
+| Core | Description |
+|------|-------------|
+| Stale-while-revalidate | Show cached data instantly, refresh in the background |
+| Request deduplication | 10 widgets, same key → 1 network call |
+| Two-axis state model | `QoraState` (data lifecycle) and `FetchStatus` (engine status) are fully independent |
+| Automatic retry | Exponential backoff with configurable policy |
+| Optimistic updates | Update UI before the server responds, roll back on failure |
+| Reactive invalidation | Invalidate a key → every subscriber rebuilds |
+
+| Advanced | Description |
+|----------|-------------|
+| Offline mutation queue | FIFO replay on reconnect with jitter-based backoff |
+| Infinite queries | Paginated data with `maxPages` memory window |
+| Obfuscation-safe persistence | Disk cache that survives Dart obfuscation in release builds |
+| Zero code generation | Pure Dart 3 sealed classes + pattern matching, no `build_runner` |
+| DevTools overlay | In-app debug panel (debug mode only, zero overhead in release) |
+
+---
+
+## Why Qora?
+
+Existing state management solutions for Flutter (Bloc, Riverpod, Provider) are excellent for *UI state*: theming, auth, form state, navigation. But server data is different. It has its own concerns: loading states, error states, staleness, background refresh, cache invalidation, optimistic updates, offline queues.
+
+Mixing these concerns into a general-purpose state store means you're reinventing the same patterns for every feature. Qora handles them all in one place: one cache, one lifecycle, one API.
 
 ---
 
 ## Packages
 
-| Package | CI | Likes | Downloads | Analysis |
-| ------- | -- | ----- | --------- | -------- |
-| [![qora](https://img.shields.io/pub/v/qora.svg?label=qora)](https://pub.dev/packages/qora) | [![build](https://github.com/meragix/qora/actions/workflows/dart.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/dart.yml) | [![likes](https://img.shields.io/pub/likes/qora)](https://pub.dev/packages/qora/score) | [![dm](https://img.shields.io/pub/dm/qora)](https://pub.dev/packages/qora/score) | [![pub points](https://img.shields.io/pub/points/qora)](https://pub.dev/packages/qora/score) |
-| [![qora_flutter](https://img.shields.io/pub/v/qora_flutter.svg?label=qora_flutter)](https://pub.dev/packages/qora_flutter) | [![build](https://github.com/meragix/qora/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/flutter.yml) | [![likes](https://img.shields.io/pub/likes/qora_flutter)](https://pub.dev/packages/qora_flutter/score) | [![dm](https://img.shields.io/pub/dm/qora_flutter)](https://pub.dev/packages/qora_flutter/score) | [![pub points](https://img.shields.io/pub/points/qora_flutter)](https://pub.dev/packages/qora_flutter/score) |
-| [![qora_hooks](https://img.shields.io/pub/v/qora_hooks.svg?label=qora_hooks)](https://pub.dev/packages/qora_hooks) | [![build](https://github.com/meragix/qora/actions/workflows/hooks.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/hooks.yml) | [![likes](https://img.shields.io/pub/likes/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![dm](https://img.shields.io/pub/dm/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | [![pub points](https://img.shields.io/pub/points/qora_hooks)](https://pub.dev/packages/qora_hooks/score) | 
-| [![qora_devtools_overlay](https://img.shields.io/pub/v/qora_devtools_overlay.svg?label=qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay) | [![build](https://github.com/meragix/qora/actions/workflows/overlay.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/overlay.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_overlay)](https://pub.dev/packages/qora_devtools_overlay/score) |
-
-<!-- | [![qora_devtools_extension](https://img.shields.io/pub/v/qora_devtools_extension.svg?label=qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension) | [![build](https://github.com/meragix/qora/actions/workflows/extension.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/extension.yml) | [![likes](https://img.shields.io/pub/likes/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![dm](https://img.shields.io/pub/dm/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | [![pub points](https://img.shields.io/pub/points/qora_devtools_extension)](https://pub.dev/packages/qora_devtools_extension/score) | -->
+| Package | CI | Pub |
+|---------|----|-----|
+| [qora](https://pub.dev/packages/qora) | [![build](https://github.com/meragix/qora/actions/workflows/dart.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/dart.yml) | [![qora](https://img.shields.io/pub/v/qora.svg?label=pub)](https://pub.dev/packages/qora) |
+| [qora_flutter](https://pub.dev/packages/qora_flutter) | [![build](https://github.com/meragix/qora/actions/workflows/flutter.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/flutter.yml) | [![qora_flutter](https://img.shields.io/pub/v/qora_flutter.svg?label=pub)](https://pub.dev/packages/qora_flutter) |
+| [qora_hooks](https://pub.dev/packages/qora_hooks) | [![build](https://github.com/meragix/qora/actions/workflows/hooks.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/hooks.yml) | [![qora_hooks](https://img.shields.io/pub/v/qora_hooks.svg?label=pub)](https://pub.dev/packages/qora_hooks) |
+| [qora_devtools_overlay](https://pub.dev/packages/qora_devtools_overlay) | [![build](https://github.com/meragix/qora/actions/workflows/overlay.yml/badge.svg?branch=main)](https://github.com/meragix/qora/actions/workflows/overlay.yml) | [![qora_devtools_overlay](https://img.shields.io/pub/v/qora_devtools_overlay.svg?label=pub)](https://pub.dev/packages/qora_devtools_overlay) |
 
 ---
 
 ## Install
 
+### Flutter
+
 ```yaml
-# Flutter app: qora is included automatically
 dependencies:
   qora_flutter: ^1.0.0
 ```
 
+### Pure Dart
+
 ```yaml
-# Pure Dart (CLI, backend, shared package)
 dependencies:
   qora: ^1.0.0
 ```
 
+### DevTools overlay (in-app debug panel)
+
 ```yaml
-# DevTools overlay (in-app panel): in dev_dependencies; not included in release builds
 dev_dependencies:
   qora_devtools_overlay: ^1.0.0
 ```
-
-```yaml
-# DevTools extension (IDE): under development, not yet published on pub.dev
-# dependencies:
-#   qora_devtools_extension: ^1.0.0
-```
-
-Setup:
 
 ```dart
 void main() {
@@ -127,17 +168,19 @@ void main() {
 }
 ```
 
+The `QoraInspector` widget is stripped from release builds automatically; zero overhead in production.
+
 ---
 
 ## DevTools
 
-Qora ships with first-class developer tooling across two surfaces.
+Qora ships with developer tooling across two surfaces.
 
-**In-app overlay** *(stable)*: a draggable panel that lives inside your running app, similar to TanStack Query's overlay. Add `qora_devtools_overlay` to `dev_dependencies` and wrap your app with `QoraInspector`. Zero overhead in release, the widget tree is never built outside of debug mode.
+**In-app overlay** *(stable)*: a draggable panel inside your running app, similar to TanStack Query's overlay. Add `qora_devtools_overlay` to `dev_dependencies` and wrap your app with `QoraInspector`. Zero overhead in release builds.
 
-**IDE extension** *(under development, not yet published)*: a native tab inside Flutter DevTools (VS Code / IntelliJ) with six panels: live query inspector, mutation timeline, mutation inspector, network activity monitor, performance metrics, and a query dependency graph. The package is not yet available on pub.dev. Use the in-app overlay in the meantime.
+**IDE extension** *(under development)*: a native tab inside Flutter DevTools with live query inspection, mutation timeline, network activity monitoring, and a query dependency graph. Not yet published on pub.dev. Use the in-app overlay in the meantime.
 
-Both surfaces share the same event protocol (`qora_devtools_shared`) and are independent of each other.
+Both surfaces share the same event protocol and are independent of each other.
 
 ---
 
@@ -153,16 +196,19 @@ Full guides, API reference, and examples: **[qora.meragix.dev](https://qora.mera
 
 ---
 
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, testing guidelines, and architectural principles. For a sense of where the project is heading, check [ROADMAP.md](ROADMAP.md).
+
+---
+
 ## License
 
-This project is licensed under the [LICENSE](LICENSE) License
+This project is licensed under the MIT License; see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
-
-* [TanStack Query](https://tanstack.com/query/latest)
-* [Melos](https://melos.invertase.dev)
-* [GitHub Pages](https://pages.github.com)
-* [Docus](https://docus.dev)
-* [Lucide Icons](https://lucide.dev)
+- [TanStack Query](https://tanstack.com/query/latest): the pattern that inspired Qora
+- [Melos](https://melos.invertase.dev): monorepo tooling
+- [Docus](https://docus.dev): documentation site
+- [Lucide Icons](https://lucide.dev): icons
