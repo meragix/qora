@@ -8,7 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.0] - 2026-03-16
+## [1.0.0] - 2026-06-01
+
+### Fixed
+
+- `Failure.hashCode` — fixed a bug where `Failure` states incorrectly computed their hash using the `Error` type instead of their own type.
+- `QoraClient.watchFetchStatus` — fixed a potential memory leak where the local `StreamController` was not properly closed on cancel.
+- `QoraState` docs — corrected outdated docstrings referencing `Error` instead of `Failure`.
+
+## [0.9.0] - 2026-06-01
 
 ### Added
 
@@ -183,7 +191,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/0.8.0...HEAD
+[unreleased]: https://github.com/meragix/qora/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/meragix/qora/compare/0.9.0...1.0.0
+[0.9.0]: https://github.com/meragix/qora/compare/0.8.0...0.9.0
 [0.8.0]: https://github.com/meragix/qora/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/meragix/qora/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/meragix/qora/compare/0.5.0...0.6.0

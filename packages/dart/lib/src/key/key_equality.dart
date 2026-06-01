@@ -57,9 +57,6 @@ bool _deepEquals(dynamic a, dynamic b) {
   // Null check
   if (a == null || b == null) return false;
 
-  // Type mismatch
-  if (a.runtimeType != b.runtimeType) return false;
-
   // Lists
   if (a is List && b is List) {
     if (a.length != b.length) return false;

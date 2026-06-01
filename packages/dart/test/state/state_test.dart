@@ -514,7 +514,7 @@ void main() {
       expect(
         json,
         equals({
-          'type': 'error',
+          'type': 'failure',
           'error': 'Network error',
           'previousData': {'id': 1, 'name': 'Alice'},
         }),
@@ -555,7 +555,7 @@ void main() {
 
     test('deserializes Failure', () {
       final json = {
-        'type': 'error',
+        'type': 'failure',
         'error': 'Network error',
         'previousData': {'id': 1, 'name': 'Alice'},
       };

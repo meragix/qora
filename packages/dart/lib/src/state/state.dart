@@ -4,7 +4,7 @@
 /// - [Initial]: Query hasn't started
 /// - [Loading]: Actively fetching (with optional previousData)
 /// - [Success]: Data fetched successfully
-/// - [Error]: Fetch failed (with optional previousData)
+/// - [Failure]: Fetch failed (with optional previousData)
 ///
 /// ## Basic Usage
 ///
@@ -19,7 +19,7 @@
 ///       : Spinner();
 ///   case Success(:final data):
 ///     return DataView(data);
-///   case Error(:final error, :final previousData):
+///   case Failure(:final error, :final previousData):
 ///     return Column(children: [
 ///       if (previousData != null) DataView(previousData),
 ///       ErrorBanner(error),

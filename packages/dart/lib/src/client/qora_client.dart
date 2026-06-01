@@ -384,6 +384,7 @@ class QoraClient implements MutationTracker {
         );
       },
       onCancel: () {
+        localSc.close();
         broadcastSub?.cancel();
         // Clean up the broadcast controller if no other subscribers remain.
         final bc = _fetchStatusBus[sk];

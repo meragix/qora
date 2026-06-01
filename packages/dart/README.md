@@ -8,7 +8,7 @@ For Flutter-specific features, see **[qora_flutter](https://pub.dev/packages/qor
 
 ```yaml
 dependencies:
-  qora: ^0.8.0
+  qora: ^1.0.0
 ```
 
 ## Quick start

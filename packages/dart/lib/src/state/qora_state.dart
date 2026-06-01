@@ -291,7 +291,7 @@ final class Failure<T> extends QoraState<T> {
           previousData == other.previousData;
 
   @override
-  int get hashCode => Object.hash(Error, T, error, stackTrace, previousData);
+  int get hashCode => Object.hash(Failure, T, error, stackTrace, previousData);
 
   @override
   String toString() =>
