@@ -1,10 +1,13 @@
 # qora_devtools_overlay
 
-In-app debug overlay for [Qora](https://pub.dev/packages/qora). Injects a floating action button
-and a three-column panel (Queries · Mutations · Timeline) directly into the running Flutter app.
+<a href="https://pub.dev/packages/qora_devtools_overlay"><img src="https://img.shields.io/pub/v/qora_devtools_overlay.svg" alt="pub.dev"></a>
+<a href="https://github.com/meragix/qora/actions/workflows/overlay.yml"><img src="https://img.shields.io/github/actions/workflow/status/meragix/qora/overlay.yml?branch=main&label=ci" alt="CI"></a>
 
-Zero overhead in release builds — `QoraInspector` returns its `child` unchanged and the entire
-widget tree is tree-shaken by the Dart compiler.
+In-app debug overlay for [Qora](https://pub.dev/packages/qora). Injects a floating action button and a three-column panel (Queries · Mutations · Timeline) directly into the running Flutter app.
+
+Part of the [Qora monorepo](https://github.com/meragix/qora).
+
+Zero overhead in release builds: `QoraInspector` returns its `child` unchanged and the entire widget tree is tree-shaken by the Dart compiler.
 
 ## Architecture
 
@@ -14,18 +17,16 @@ QoraClient ──onQueryFetched──────▶ OverlayTracker ──stream
            ──onOptimisticUpdate──▶
 ```
 
-`OverlayTracker` implements the `QoraTracker` interface from the core `qora` package.
-It converts hook calls into typed `QueryEvent`, `MutationEvent`, and `TimelineEvent` objects
-(defined in `qora_devtools_shared`) and fans them out to broadcast streams and ring-buffers.
+`OverlayTracker` implements the `QoraTracker` interface from the core `qora` package. It converts hook calls into typed `QueryEvent`, `MutationEvent`, and `TimelineEvent` objects (defined in `qora_devtools_shared`) and fans them out to broadcast streams and ring-buffers.
 
 ## Features
 
-- **Floating action button** — tap to open the panel; close button returns to the app
-- **Queries tab** — live list of query keys with status badges and last-updated timestamps
-- **Mutations tab** — pending and settled mutations with variable payload previews
-- **Timeline tab** — chronological event stream: fetch · mutation · optimistic · cache clear
-- **Zero-cost release** — `QoraInspector.build` returns `widget.child` when `!kDebugMode`
-- **Bounded memory** — ring-buffer capped at 200 events per channel; FIFO eviction on overflow
+- **Floating action button** : tap to open the panel; close button returns to the app
+- **Queries tab** : live list of query keys with status badges and last-updated timestamps
+- **Mutations tab** : pending and settled mutations with variable payload previews
+- **Timeline tab** : chronological event stream: fetch · mutation · optimistic · cache clear
+- **Zero-cost release** : `QoraInspector.build` returns `widget.child` when `!kDebugMode`
+- **Bounded memory** : ring-buffer capped at 200 events per channel; FIFO eviction on overflow
 
 ## Getting started
 
@@ -44,14 +45,10 @@ import 'package:qora/qora.dart';
 import 'package:qora_devtools_overlay/qora_devtools_overlay.dart';
 
 void main() {
-  // 1. Create a shared tracker.
   final tracker = OverlayTracker();
 
-  // 2. Connect it to QoraClient — pass null in release so the client uses
-  //    NoOpTracker and no events are emitted.
   final client = QoraClient(tracker: kDebugMode ? tracker : null);
 
-  // 3. Wrap your app — QoraInspector is a no-op in release builds.
   runApp(
     QoraInspector(
       tracker: tracker,

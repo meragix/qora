@@ -1,15 +1,22 @@
 # qora_flutter
 
-Flutter integration for [Qora](https://pub.dev/packages/qora). Bind server state to your UI with a single widget: no `setState`, no `StreamBuilder`, and no loading flag spaghetti.
+<a href="https://pub.dev/packages/qora_flutter"><img src="https://img.shields.io/pub/v/qora_flutter.svg" alt="pub.dev"></a>
+<a href="https://github.com/meragix/qora/actions/workflows/flutter.yml"><img src="https://img.shields.io/github/actions/workflow/status/meragix/qora/flutter.yml?branch=main&label=ci" alt="CI"></a>
+<a href="https://pub.dev/packages/qora_flutter/score"><img src="https://img.shields.io/pub/likes/qora_flutter" alt="likes"></a>
+<a href="https://pub.dev/packages/qora_flutter/score"><img src="https://img.shields.io/pub/points/qora_flutter" alt="pub points"></a>
 
-Qora handles the complex plumbing of asynchronous data: caching, background refetching, and offline persistence. Your UI simply reacts to the state.
+Flutter integration for [Qora](https://pub.dev/packages/qora). Bind server state to your UI with a single widget: no `setState`, no `StreamBuilder`, no loading flag boilerplate.
+
+Part of the [Qora monorepo](https://github.com/meragix/qora).
 
 ## Features
 
-* **Declarative UI**: Access your data directly via `QoraBuilder`.
-* **Lifecycle Aware**: Queries are automatically paused when the app is in the background.
-* **Network Aware**: Triggers refetches automatically when the connection is restored.
-* **Zero Boilerplate**: Manage loading, error, and data states in one place.
+| Feature | Description |
+|---------|-------------|
+| Declarative UI | Access your data directly via `QoraBuilder` |
+| Lifecycle aware | Queries pause when the app is in the background |
+| Network aware | Triggers refetches when the connection is restored |
+| Zero boilerplate | Loading, error, and data states handled in one place |
 
 ## Install
 
@@ -18,7 +25,7 @@ dependencies:
   qora_flutter: ^1.0.0
 ```
 
-> `qora_flutter` automatically includes `qora` and `connectivity_plus` as dependencies — no extra packages needed.
+`qora_flutter` automatically includes `qora` and `connectivity_plus` as dependencies; no extra packages needed.
 
 ## Setup
 
@@ -35,7 +42,6 @@ void main() {
   runApp(
     QoraScope(
       client: client,
-      // Optional: refetch when app resumes or network reconnects
       lifecycleManager: FlutterLifecycleManager(qoraClient: client),
       connectivityManager: FlutterConnectivityManager(),
       child: const MyApp(),
@@ -52,18 +58,16 @@ void main() {
 QoraBuilder<User>(
   queryKey: ['users', userId],
   fetcher: () => api.getUser(userId),
-  builder: (context, state, fetchStatus) {
-    return state.when(
-      onInitial: () => const SizedBox.shrink(),
-      onLoading: (previousData) => previousData != null
-          ? UserCard(user: previousData, isRefreshing: true)
-          : const CircularProgressIndicator(),
-      onSuccess: (user, updatedAt) => UserCard(user: user),
-      onFailure: (error, _, previousData) => ErrorScreen(
+  builder: (context, state, fetchStatus) => switch (state) {
+    Loading(:final previousData) => previousData != null
+        ? UserCard(user: previousData, isRefreshing: true)
+        : const CircularProgressIndicator(),
+    Success(:final data) => UserCard(user: data),
+    Failure(:final error, :final previousData) => ErrorScreen(
         message: error.toString(),
         onRetry: () => context.qora.invalidate(['users', userId]),
       ),
-    );
+    _ => const SizedBox.shrink(),
   },
 )
 ```
@@ -71,10 +75,9 @@ QoraBuilder<User>(
 ## Invalidate after a mutation
 
 ```dart
-// In a button handler, after creating or updating data
 await api.createPost(payload);
-context.qora.invalidate(['posts']);              // Exact key
-context.qora.invalidateWhere((k) => k.firstOrNull == 'posts'); // By predicate
+context.qora.invalidate(['posts']);
+context.qora.invalidateWhere((k) => k.firstOrNull == 'posts');
 ```
 
 Every `QoraBuilder` subscribed to a matching key re-fetches automatically.
@@ -85,25 +88,21 @@ Every `QoraBuilder` subscribed to a matching key re-fetches automatically.
 final client = context.qora;
 final key = ['users', userId];
 
-// 1. Snapshot for rollback
 final snapshot = client.getState<User>(key);
 
-// 2. Update UI instantly
 client.setQueryData<User>(key, user.copyWith(name: newName));
 
 try {
-  // 3. Fire the mutation
   final updated = await api.updateUser(userId, newName);
-  client.setQueryData<User>(key, updated); // Confirm with server data
+  client.setQueryData<User>(key, updated);
 } catch (_) {
-  // 4. Roll back on failure
   client.restoreQueryData<User>(key, snapshot);
 }
 ```
 
 ## Observe without fetching
 
-`QoraStateBuilder<T>` mirrors a query's state without triggering a fetch — ideal for badges, counters, or secondary displays:
+`QoraStateBuilder<T>` mirrors a query's state without triggering a fetch; ideal for badges, counters, or secondary displays:
 
 ```dart
 QoraStateBuilder<List<Notification>>(
@@ -119,7 +118,7 @@ QoraStateBuilder<List<Notification>>(
 
 Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 
-* [Setup](https://qora.meragix.dev/flutter-integration/setup)
-* [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
-* [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
-* [Optimistic Updates](https://qora.meragix.dev/guides/optimistic-updates)
+- [Setup](https://qora.meragix.dev/flutter-integration/setup)
+- [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
+- [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
+- [Optimistic Updates](https://qora.meragix.dev/guides/optimistic-updates)

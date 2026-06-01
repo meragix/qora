@@ -1,13 +1,17 @@
 # qora_hooks
 
-`flutter_hooks` integration for [Qora](https://github.com/meragix/qora) — provides
-`useQuery`, `useMutation`, `useInfiniteQuery`, and `useQueryClient`.
+<a href="https://pub.dev/packages/qora_hooks"><img src="https://img.shields.io/pub/v/qora_hooks.svg" alt="pub.dev"></a>
+<a href="https://github.com/meragix/qora/actions/workflows/hooks.yml"><img src="https://img.shields.io/github/actions/workflow/status/meragix/qora/hooks.yml?branch=main&label=ci" alt="CI"></a>
+<a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/likes/qora_hooks" alt="likes"></a>
+<a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/points/qora_hooks" alt="pub points"></a>
+
+`flutter_hooks` integration for [Qora](https://github.com/meragix/qora) : provides `useQuery`, `useMutation`, `useInfiniteQuery`, and `useQueryClient`.
+
+Part of the [Qora monorepo](https://github.com/meragix/qora).
 
 ## Why a separate package?
 
-`flutter_hooks` is an optional dependency. Bundling hooks inside `qora` or
-`qora_flutter` would impose it on every user, even those who prefer
-`QoraBuilder` / `QoraMutationBuilder`. A separate package keeps things opt-in.
+`flutter_hooks` is an optional dependency. Bundling hooks inside `qora` or `qora_flutter` would impose it on every user, even those who prefer `QoraBuilder` / `QoraMutationBuilder`. A separate package keeps things opt-in.
 
 ## Getting started
 
@@ -17,7 +21,7 @@ Add both `qora_flutter` and `qora_hooks` to your `pubspec.yaml`:
 dependencies:
   qora_flutter: ^1.0.0
   qora_hooks: ^1.0.0
-  flutter_hooks: ^0.20.0 # Make sure to have flutter_hooks installed
+  flutter_hooks: ^0.20.0
 ```
 
 Wrap your app with `QoraScope`:
@@ -37,9 +41,7 @@ void main() {
 
 ### `useQuery<T>`
 
-Fetches data on mount, caches it, and rebuilds the widget on every state
-change. Initialises from the cache synchronously — no loading flash when
-data is already fresh.
+Fetches data on mount, caches it, and rebuilds the widget on every state change. Initializes from the cache synchronously; no loading flash when data is already fresh.
 
 ```dart
 class UserScreen extends HookWidget {
@@ -65,6 +67,8 @@ class UserScreen extends HookWidget {
 ```
 
 ### `useMutation<TData, TVariables>`
+
+`TData` is the type returned by the mutator. `TVariables` is the type passed to `mutation.mutate()` : typically a payload class or record.
 
 ```dart
 class EditProfileScreen extends HookWidget {
@@ -103,9 +107,7 @@ final query = useInfiniteQuery<PostsPage, String?>(
 final allPosts = query.pages.expand((p) => p.posts).toList();
 ```
 
-Call `query.fetchNextPage()` when the user reaches the end of the list to
-load the next page. `query.hasNextPage` becomes `false` when
-`getNextPageParam` returns `null`.
+Call `query.fetchNextPage()` when the user reaches the end of the list to load the next page. `query.hasNextPage` becomes `false` when `getNextPageParam` returns `null`.
 
 ### `useQueryClient`
 

@@ -1,16 +1,17 @@
 # qora_devtools_ui
 
+<a href="https://pub.dev/packages/qora_devtools_ui"><img src="https://img.shields.io/pub/v/qora_devtools_ui.svg" alt="pub.dev"></a>
+
 Flutter Web DevTools extension UI for Qora.
 
-This package is the client-side interface rendered inside Flutter DevTools
-(VS Code / IntelliJ / browser DevTools). It consumes the protocol defined in
-`qora_devtools_shared` and communicates with the app runtime through Dart VM
-service extensions exposed by `qora_devtools_extension`.
+Part of the [Qora monorepo](https://github.com/meragix/qora).
+
+This package is the client-side interface rendered inside Flutter DevTools (VS Code, IntelliJ, browser DevTools). It consumes the protocol defined in `qora_devtools_shared` and communicates with the app runtime through Dart VM service extensions exposed by `qora_devtools_extension`.
 
 ## Responsibilities
 
 - Listen to runtime extension events (`qora:event`).
-- Decode and render query/mutation/optimistic timeline data.
+- Decode and render query, mutation, and optimistic timeline data.
 - Send commands to runtime (`refetch`, `invalidate`, etc.).
 - Lazy-load large payloads in chunks for cache inspection.
 
@@ -52,6 +53,5 @@ Those methods are typically provided by `qora_devtools_extension`.
 
 ## Notes
 
-- Payload-heavy query data should be fetched lazily using `payloadId` and
-  `totalChunks` metadata.
+- Payload-heavy query data should be fetched lazily using `payloadId` and `totalChunks` metadata.
 - Unknown event kinds are safely handled by the shared protocol fallback model.
