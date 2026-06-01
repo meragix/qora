@@ -9,22 +9,22 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `QoraExtensionMethods.protocolVersion` — `'1.0.0'` wire-protocol version constant; bump policy: major on breaking schema changes, minor on additive changes, patch on fixes.
-- `QoraExtensionMethods.getVersion` — `'ext.qora.getVersion'` constant for the version-handshake extension method.
-- `QueryEvent.dependsOnKey` — nullable `String?` field on `QueryEvent.fetched` events carrying the JSON-encoded key of the `QoraOptions.dependsOn` dependency; enables DevTools to draw authoritative query→query edges without temporal heuristics.
+- `QoraExtensionMethods.protocolVersion` : `'1.0.0'` wire-protocol version constant; bump policy: major on breaking schema changes, minor on additive changes, patch on fixes.
+- `QoraExtensionMethods.getVersion` : `'ext.qora.getVersion'` constant for the version-handshake extension method.
+- `QueryEvent.dependsOnKey` : nullable `String?` field on `QueryEvent.fetched` events carrying the JSON-encoded key of the `QoraOptions.dependsOn` dependency; enables DevTools to draw authoritative query→query edges without temporal heuristics.
 
 ## [0.2.0] - 2026-03-12
 
 ### Added
 
-- **`QueryEvent.fetchDurationMs`** — nullable `int` field on `QueryEvent.fetched` events carrying the wall-clock duration (milliseconds) between fetch-started and fetch-completed; `null` when timing data is unavailable (e.g. legacy trackers or events replayed from the ring buffer without a recorded start time).
+- **`QueryEvent.fetchDurationMs`** : nullable `int` field on `QueryEvent.fetched` events carrying the wall-clock duration (milliseconds) between fetch-started and fetch-completed; `null` when timing data is unavailable (e.g. legacy trackers or events replayed from the ring buffer without a recorded start time).
 
 ## [0.1.0] - 2026-02-28
 
 ### Added
 
 - `TimelineEventType` enum with `displayName` getter and 8 variants (optimisticUpdate, mutationStarted/Success/Error, fetchStarted/Error, queryCreated, cacheCleared)
-- `TimelineEvent` — immutable record with `type`, `key?`, `mutationId?`, `timestamp` fields; used by `OverlayTracker` ring buffer
+- `TimelineEvent` : immutable record with `type`, `key?`, `mutationId?`, `timestamp` fields; used by `OverlayTracker` ring buffer
 
 - Initial implementation of the shared DevTools protocol package.
 - Added typed events:
