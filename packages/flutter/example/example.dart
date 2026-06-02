@@ -34,7 +34,7 @@ void main() {
       // Invalidates all queries when the app resumes after 30 s in background.
       lifecycleManager: FlutterLifecycleManager(
         qoraClient: client,
-        refetchInterval: const Duration(seconds: 30),
+        minBackgroundDuration: const Duration(seconds: 30),
       ),
       // Pure signal provider — no QoraClient reference required.
       connectivityManager: FlutterConnectivityManager(),

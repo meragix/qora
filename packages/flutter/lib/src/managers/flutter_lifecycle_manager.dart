@@ -8,7 +8,7 @@ import 'package:qora_flutter/src/widgets/qora_scope.dart';
 ///
 /// Observes [AppLifecycleState] changes via [WidgetsBindingObserver] and
 /// invalidates all cached queries when the app resumes after a pause longer
-/// than [refetchInterval].
+/// than [minBackgroundDuration].
 ///
 /// ## Setup
 ///
@@ -21,7 +21,7 @@ import 'package:qora_flutter/src/widgets/qora_scope.dart';
 ///   client: client,
 ///   lifecycleManager: FlutterLifecycleManager(
 ///     qoraClient: client,
-///     refetchInterval: Duration(seconds: 30),
+///     minBackgroundDuration: Duration(seconds: 30),
 ///   ),
 ///   child: MyApp(),
 /// )
@@ -34,7 +34,7 @@ class FlutterLifecycleManager extends LifecycleManager
   ///
   /// If the app was in the background for less than this duration, no
   /// invalidation occurs. Default: 5 seconds.
-  final Duration refetchInterval;
+  final Duration minBackgroundDuration;
 
   DateTime? _lastPausedAt;
 
@@ -49,7 +49,7 @@ class FlutterLifecycleManager extends LifecycleManager
 
   FlutterLifecycleManager({
     required QoraClient qoraClient,
-    this.refetchInterval = const Duration(seconds: 5),
+    this.minBackgroundDuration = const Duration(seconds: 5),
   }) : _qoraClient = qoraClient;
 
   @override
@@ -82,7 +82,7 @@ class FlutterLifecycleManager extends LifecycleManager
   void _onAppResumed() {
     if (_lastPausedAt == null) return;
     final pauseDuration = DateTime.now().difference(_lastPausedAt!);
-    if (pauseDuration >= refetchInterval) {
+    if (pauseDuration >= minBackgroundDuration) {
       // Invalidate all cached queries. Active QoraBuilder widgets detect the
       // resulting Loading(previousData: …) state and trigger a re-fetch.
       _qoraClient.invalidateWhere((_) => true);

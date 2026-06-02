@@ -75,7 +75,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **`queryKey` accepts `Object`** : both `QoraBuilder` and `QoraStateBuilder` now accept a plain `List<dynamic>` or a `QoraKey`; no wrapping in `QoraKey(...)` required
-- **`FlutterLifecycleManager.refetchInterval`** is now public (was `_refetchInterval`); configures the minimum background duration before queries are invalidated on app resume (default: 5 s)
+- **`FlutterLifecycleManager.minBackgroundDuration`** replaces `refetchInterval`; configures the minimum duration the app must be in background before queries are invalidated on resume (default: 5 s)
 - **Internal refetch mechanism** uses `client.invalidateWhere((_) => true)` instead of direct stream manipulation; active `QoraBuilder` widgets detect the resulting `Loading(previousData: …)` state and re-fetch automatically
 
 ## [0.1.0] - 2026-02-11

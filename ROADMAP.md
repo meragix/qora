@@ -95,7 +95,7 @@ This document outlines the planned direction for Qora. Priorities shift based on
 | **Dart server-side adapter** | Core engine is already pure Dart. Needs `dart:io` HTTP adapter and shelf integration. Niche but valuable for server-driven caching. |
 
 ---
-
+go
 ## How priorities are decided
 
 1. **User feedback:** issues, discussions, and PRs are the primary signal
