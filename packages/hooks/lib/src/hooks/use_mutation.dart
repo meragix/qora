@@ -99,13 +99,20 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
     MutationIdle<TData, TVariables>(),
   );
 
-  // Create the controller once for the lifetime of the widget.
+  // Keep the latest mutator and options in refs so the controller is only
+  // created once and never recreated (the closure identity of [mutator]
+  // would change on every build, causing a cascade of stale subscriptions).
+  final mutatorRef = useRef(mutator);
+  mutatorRef.value = mutator;
+  final optionsRef = useRef(options);
+  optionsRef.value = options;
+
   final controller = useMemoized(
     () => MutationController<TData, TVariables, void>(
-      mutator: mutator,
-      options: options,
+      mutator: (v) => mutatorRef.value(v),
+      options: optionsRef.value,
     ),
-    [mutator], // Recreates the controller if the mutator function changes
+    [],
   );
 
   // Subscribe to state changes.

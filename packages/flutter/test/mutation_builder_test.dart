@@ -36,7 +36,10 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           QoraMutationBuilder<String, String, void>(
-            mutator: (title) async => 'created:$title',
+            mutator: (title) async {
+              await Future<void>.delayed(const Duration(milliseconds: 1));
+              return 'created:$title';
+            },
             builder: (context, state, mutate) {
               return Column(
                 children: [
