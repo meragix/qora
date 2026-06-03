@@ -78,7 +78,7 @@
 /// });
 ///
 /// // Debounce loading states
-/// stream.debounceLoading(Duration(milliseconds: 300));
+/// stream.delayLoading(Duration(milliseconds: 300));
 /// ```
 library;
 

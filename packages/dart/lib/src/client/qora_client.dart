@@ -1482,7 +1482,7 @@ class QoraClient implements MutationTracker {
 
   void _onAppResumed() {
     _log('App resumed — checking stale queries for refetchOnWindowFocus');
-    for (final mapEntry in _cache.entries) {
+    for (final mapEntry in _cache.entries.toList()) {
       final entry = mapEntry.value;
       final opts = entry.lastOptions;
       // Only act on queries that are currently observed, have been fetched at

@@ -5,7 +5,11 @@ description: >-
 version: 1.0.0
 repository: https://github.com/meragix/qora/tree/main/packages/hooks
 
-
+topics:
+  - state-management
+  - hooks
+  - flutter
+  
 environment:
   sdk: ">=3.5.0 <4.0.0"
 

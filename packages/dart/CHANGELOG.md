@@ -11,10 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `QoraClientConfig.onBackgroundFetchError` : callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state — use this for logging, telemetry, or crash reporting.
+- `pubspec.yaml` : added `topics` field.
 
 ### Fixed
 
 - `QoraClient.watchQuery` : background fetches via `unawaited(_doFetch(...))` re-threw errors that crashed the current async `Zone`; errors are now safely intercepted and forwarded to `onBackgroundFetchError`.
+- `combine` / `combineList` / `combine2` / `combine3` : `updatedAt` now correctly preserves the oldest timestamp from the input `Success` states using `isBefore`, ensuring `staleTime` logic remains accurate.
+- `debounceLoading` : naive `Future.delayed` inside `await for` blocked the entire stream — a Success arriving during the delay was blocked behind the Loading yield. Rewritten with a `StreamTransformer` + `Timer` so non-Loading states cancel any pending Loading timer and pass through immediately, preventing flickering spinners on fast requests.
+- `registerSerializer` : `assert(name != null)` only fired in debug builds, silently corrupting persisted data in release builds with obfuscation. Changed to `ArgumentError` that always throws.
+- `_onAppResumed` : iterated directly over `_cache.entries` without snapshotting, risking concurrent modification if entries changed during iteration. Added `.toList()`.
+
+### Changed
+
+- `mapSuccess` renamed to `mapData` because it also transforms `Loading` and `Failure` states when they hold `previousData`.
+- `debounceLoading` renamed to `delayLoading` to better reflect its behaviour.
+- `QueryFunction`, `MutatorFunction`, `InfiniteQueryFunction` : translated docstrings from French to English (legacy oversight).
 
 ## [1.0.0] - 2026-06-01
 

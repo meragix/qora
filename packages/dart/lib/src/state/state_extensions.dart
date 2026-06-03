@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'qora_state.dart';
 
 /// Additional utility extensions for [QoraState].
@@ -52,15 +54,24 @@ extension QoraStateExtensions<T> on QoraState<T> {
         _ => null,
       };
 
-  /// Maps only if state is Success, otherwise returns the state as-is.
+  /// Maps the data type on Success, preserving non-data fields.
   ///
-  /// Useful for chaining transformations:
+  /// [mapData] transforms the data of [Success] and the [previousData] of
+  /// [Loading] and [Failure] states. [Initial] is returned as-is.
+  ///
+  /// This makes it safe for chaining, since a previous `.mapData` that
+  /// received a non-Success state still produces a valid intermediate state
+  /// (e.g. `Loading<R>` with transformed `previousData`).
+  ///
+  /// Compare with [QoraState.map] which behaves identically but has a more
+  /// general name.
+  ///
   /// ```dart
   /// state
-  ///   .mapSuccess((users) => users.where((u) => u.isActive))
-  ///   .mapSuccess((users) => users.map((u) => u.name).toList());
+  ///   .mapData((users) => users.where((u) => u.isActive))
+  ///   .mapData((users) => users.map((u) => u.name).toList());
   /// ```
-  QoraState<R> mapSuccess<R>(R Function(T data) transform) {
+  QoraState<R> mapData<R>(R Function(T data) transform) {
     return switch (this) {
       Success(:final data, :final updatedAt) => Success(
           data: transform(data),
@@ -103,9 +114,11 @@ extension QoraStateExtensions<T> on QoraState<T> {
   ) {
     // If both Success, combine
     if (this is Success<T> && other is Success<T2>) {
+      final a = this as Success<T>;
+      final b = other;
       return Success(
-        data: combiner((this as Success<T>).data, other.data),
-        updatedAt: DateTime.now(),
+        data: combiner(a.data, b.data),
+        updatedAt: a.updatedAt.isBefore(b.updatedAt) ? a.updatedAt : b.updatedAt,
       );
     }
 
@@ -239,25 +252,58 @@ extension QoraStateStreamExtensions<T> on Stream<QoraState<T>> {
     return map((state) => state.map(transform));
   }
 
-  /// Debounces Loading states while letting other states through immediately.
+  /// Delays Loading states while letting other states through immediately.
   ///
-  /// Useful to prevent flickering spinners on fast requests.
+  /// Non-Loading states always pass through immediately. When a Loading state
+  /// arrives, a timer starts. If a non-Loading state arrives before the timer
+  /// fires, the pending Loading is cancelled and the non-Loading state is
+  /// emitted — preventing flickering spinners on fast requests.
   ///
   /// Example:
   /// ```dart
-  /// stream.debounceLoading(Duration(milliseconds: 300))
+  ///   stream.delayLoading(Duration(milliseconds: 300))
   /// ```
-  Stream<QoraState<T>> debounceLoading(Duration duration) async* {
-    await for (final state in this) {
-      if (state is Loading) {
-        // Wait before emitting Loading
-        await Future.delayed(duration, () {});
-        yield state;
-      } else {
-        // Immediately emit non-Loading states
-        yield state;
-      }
-    }
+  Stream<QoraState<T>> delayLoading(Duration duration) {
+    return transform(
+      StreamTransformer<QoraState<T>, QoraState<T>>(
+        (input, cancelOnError) {
+          final controller = StreamController<QoraState<T>>();
+          Timer? loadingTimer;
+          StreamSubscription<QoraState<T>>? inputSubscription;
+
+          inputSubscription = input.listen(
+            (state) {
+              if (state is Loading) {
+                loadingTimer ??= Timer(duration, () {
+                  loadingTimer = null;
+                  controller.add(state);
+                });
+              } else {
+                loadingTimer?.cancel();
+                loadingTimer = null;
+                controller.add(state);
+              }
+            },
+            onDone: () {
+              loadingTimer?.cancel();
+              controller.close();
+            },
+            onError: (Object e, StackTrace st) {
+              loadingTimer?.cancel();
+              controller.addError(e, st);
+            },
+            cancelOnError: cancelOnError,
+          );
+
+          controller.onCancel = () {
+            loadingTimer?.cancel();
+            inputSubscription?.cancel();
+          };
+
+          return controller.stream.listen(null);
+        },
+      ),
+    );
   }
 }
 
@@ -292,7 +338,10 @@ class QoraStateUtils {
     final allSuccess = states.every((s) => s is Success);
     if (allSuccess) {
       final data = states.map((s) => (s as Success<T>).data).toList();
-      return Success(data: data, updatedAt: DateTime.now());
+      final earliest = states.map((s) => (s as Success<T>).updatedAt).reduce(
+            (a, b) => a.isBefore(b) ? a : b,
+          );
+      return Success(data: data, updatedAt: earliest);
     }
 
     // Otherwise initial
@@ -307,7 +356,9 @@ class QoraStateUtils {
     if (state1 is Success<T1> && state2 is Success<T2>) {
       return Success(
         data: (state1.data, state2.data),
-        updatedAt: DateTime.now(),
+        updatedAt: state1.updatedAt.isBefore(state2.updatedAt)
+            ? state1.updatedAt
+            : state2.updatedAt,
       );
     }
 
@@ -334,9 +385,12 @@ class QoraStateUtils {
     if (state1 is Success<T1> &&
         state2 is Success<T2> &&
         state3 is Success<T3>) {
+      final earliest = state1.updatedAt.isBefore(state2.updatedAt)
+          ? state1.updatedAt
+          : state2.updatedAt;
       return Success(
         data: (state1.data, state2.data, state3.data),
-        updatedAt: DateTime.now(),
+        updatedAt: state3.updatedAt.isBefore(earliest) ? state3.updatedAt : earliest,
       );
     }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/state/state_extensions.dart';
@@ -287,15 +289,15 @@ void main() {
       expect(loading.isStale(const Duration(minutes: 5)), isFalse);
     });
 
-    test('mapSuccess() only transforms Success', () {
+    test('mapData() only transforms Success', () {
       final success = Success.now([1, 2, 3]);
-      final mapped = success.mapSuccess((list) => list.length);
+      final mapped = success.mapData((list) => list.length);
 
       expect(mapped, isA<Success<int>>());
       expect((mapped as Success<int>).data, equals(3));
 
       const loading = Loading<List<int>>();
-      final mappedLoading = loading.mapSuccess((list) => list.length);
+      final mappedLoading = loading.mapData((list) => list.length);
       expect(mappedLoading, isA<Loading<int>>());
     });
 
@@ -389,6 +391,102 @@ void main() {
       final results = await stream.mapData((n) => n.toString()).toList();
       expect(results[0], isA<Success<String>>());
       expect((results[0] as Success<String>).data, equals('42'));
+    });
+
+    test('delayLoading emits non-Loading immediately', () async {
+      final controller = StreamController<QoraState<String>>();
+      final results = <QoraState<String>>[];
+
+      controller.stream
+          .delayLoading(const Duration(milliseconds: 100))
+          .listen(results.add);
+
+      controller.add(Success.now('a'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, hasLength(1));
+      expect(results[0], isA<Success<String>>());
+
+      await controller.close();
+    });
+
+    test('delayLoading delays Loading until timer fires', () async {
+      final controller = StreamController<QoraState<String>>();
+      final results = <QoraState<String>>[];
+
+      controller.stream
+          .delayLoading(const Duration(milliseconds: 50))
+          .listen(results.add);
+
+      controller.add(const Loading<String>());
+      await Future<void>.microtask(() {});
+      expect(results, hasLength(0), reason: 'Loading should be delayed');
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(results, hasLength(1));
+      expect(results[0], isA<Loading<String>>());
+
+      await controller.close();
+    });
+
+    test('delayLoading cancels pending Loading on non-Loading', () async {
+      final controller = StreamController<QoraState<String>>();
+      final results = <QoraState<String>>[];
+
+      controller.stream
+          .delayLoading(const Duration(milliseconds: 100))
+          .listen(results.add);
+
+      controller.add(const Loading<String>());
+      controller.add(Success.now('fast'));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(results, hasLength(1));
+      expect(results[0], isA<Success<String>>());
+      expect((results[0] as Success<String>).data, equals('fast'));
+
+      await controller.close();
+    });
+
+    test('delayLoading does not reset timer on consecutive Loading', () async {
+      final controller = StreamController<QoraState<String>>();
+      final results = <QoraState<String>>[];
+
+      controller.stream
+          .delayLoading(const Duration(milliseconds: 100))
+          .listen(results.add);
+
+      controller.add(const Loading<String>());
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      controller.add(const Loading<String>(previousData: 'old'));
+
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(results, hasLength(1), reason: 'Timer started from first Loading');
+      expect(results[0], isA<Loading<String>>());
+
+      await controller.close();
+    });
+
+    test('delayLoading emits Loading then Success in order', () async {
+      final controller = StreamController<QoraState<String>>();
+      final results = <QoraState<String>>[];
+
+      controller.stream
+          .delayLoading(const Duration(milliseconds: 50))
+          .listen(results.add);
+
+      controller.add(const Loading<String>());
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      controller.add(Success.now('done'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, hasLength(2));
+      expect(results[0], isA<Loading<String>>());
+      expect(results[1], isA<Success<String>>());
+
+      await controller.close();
     });
   });
 

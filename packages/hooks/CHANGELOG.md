@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `pubspec.yaml` : added `topics` field.
+
 ### Fixed
 
 - `useQuery` / `useInfiniteQuery` : `Object.hashAll(key)` in `useEffect` dependency array caused hash collisions where different query keys produced the same hash, skipping re-subscription; replaced with a `_QueryKey` wrapper using deep equality.

@@ -182,17 +182,18 @@ class PersistQoraClient extends QoraClient {
     // single-letter identifiers, so a type discriminator of "User" becomes "a"
     // and hydrate() can no longer find the serializer.
     //
-    // This assert fires in debug builds whenever name is omitted, catching the
-    // mistake during development before it silently corrupts persisted data in
-    // a release build.
-    assert(
-      name != null,
-      'registerSerializer<$T>() called without an explicit "name".\n'
-      'T.toString() ("${T.toString()}") is not stable under --obfuscate or '
-      'Flutter Web and will cause hydrate() to silently skip this type.\n'
-      'Fix: registerSerializer<$T>(serializer, name: \'${T.toString()}\').',
-    );
-    final typeName = name ?? T.toString();
+    // Throws [ArgumentError] when [name] is omitted, catching the mistake in
+    // all build modes — not just debug — before it silently corrupts persisted
+    // data in a release build.
+    if (name == null) {
+      throw ArgumentError(
+        'registerSerializer<$T>() called without an explicit "name".\n'
+        'T.toString() ("${T.toString()}") is not stable under --obfuscate or '
+        'Flutter Web and will cause hydrate() to silently skip this type.\n'
+        'Fix: registerSerializer<$T>(serializer, name: \'${T.toString()}\').',
+      );
+    }
+    final typeName = name;
     _serializersByName[typeName] = QoraSerializer<dynamic>(
       toJson: (value) => serializer.toJson(value as T),
       fromJson: serializer.fromJson,

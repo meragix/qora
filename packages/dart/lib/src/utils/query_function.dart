@@ -1,15 +1,15 @@
-/// Fonction qui retourne les données de la query
+/// Function that returns query data.
 typedef QueryFunction<T> = Future<T> Function();
 
-/// Fonction de mutation
+/// Mutation function.
 typedef MutatorFunction<TData, TVariables> = Future<TData> Function(
   TVariables variables,
 );
 
-/// Fonction qui retourne une page de données pour une infinite query.
+/// Function that returns one page of data for an infinite query.
 ///
-/// Reçoit le paramètre de page ([TPageParam]) et retourne les données
-/// correspondantes ([TData]).
+/// Receives the page parameter ([TPageParam]) and returns the corresponding
+/// data ([TData]).
 ///
 /// ```dart
 /// InfiniteQueryFunction<List<Post>, int> fetchPosts =
