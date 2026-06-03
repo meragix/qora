@@ -1,6 +1,7 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 
+import '../utils/query_key.dart';
 import 'use_query_client.dart';
 
 /// Groups all pagination state returned by [useInfiniteQuery].
@@ -101,7 +102,7 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
       onDone: () => isLoading.value = false,
     );
     return null;
-  }, [Object.hashAll(key)]);
+  }, [QueryKey(key)]);
 
   Future<void> fetchNextPage() async {
     if (!hasNextPage.value || isFetchingNextPage.value) return;
@@ -163,3 +164,4 @@ Future<void> _fetchPage<T>({
     onDone();
   }
 }
+

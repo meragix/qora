@@ -1,6 +1,7 @@
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 
+import '../utils/query_key.dart';
 import 'use_query_client.dart';
 
 /// Subscribes to a [QoraClient] query and returns the current [QoraState].
@@ -54,7 +55,8 @@ QoraState<T> useQuery<T>({
         .listen((newState) => state.value = newState);
 
     return sub.cancel;
-  }, [Object.hashAll(key)]);
+  }, [QueryKey(key)]);
 
   return state.value;
 }
+
