@@ -1,0 +1,20 @@
+#!/bin/sh
+
+MESSAGE=$(cat "$1")
+PATTERN='^(feat|fix|chore|docs|style|refactor|test|build|ci|perf|revert)(\(.+\))?(!)?: .+'
+
+if ! echo "$MESSAGE" | grep -qE "$PATTERN"; then
+  echo "✗ Commit message does not follow Conventional Commits."
+  echo ""
+  echo "  Expected: <type>(<scope>): <subject>"
+  echo "  Got:      $(echo "$MESSAGE" | head -1)"
+  echo ""
+  echo "  Valid types: feat, fix, chore, docs, style, refactor,"
+  echo "               test, build, ci, perf, revert"
+  echo ""
+  echo "  Examples:"
+  echo "    feat(auth): add login screen"
+  echo "    fix: resolve null pointer exception"
+  echo "    chore(deps): update dependencies"
+  exit 1
+fi

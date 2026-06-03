@@ -1,4 +1,4 @@
-.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-coverage build-devtools publish-check publish examples examples-list audit audit-report audit-open
+.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-coverage build-devtools publish-check publish examples examples-list audit audit-report audit-open hooks
 
 # ── Default ───────────────────────────────────────────────────────────
 help: ## Show this help
@@ -6,7 +6,7 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # ── Setup ─────────────────────────────────────────────────────────────
-setup: ## First-time setup: install Melos + bootstrap
+setup: hooks ## First-time setup: install Melos + bootstrap + hooks
 	@echo "→ Installing Melos..."
 	dart pub global activate melos
 	@echo ""
@@ -14,6 +14,11 @@ setup: ## First-time setup: install Melos + bootstrap
 	@melos bootstrap
 	@echo ""
 	@echo "✓ Setup complete. Run 'make test' to verify."
+
+hooks: ## Configure git hooks
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/*
+	@echo "✓ Git hooks configured (.githooks/)"
 
 bootstrap: ## Re-bootstrap after pulling or switching branches
 	@melos bootstrap

@@ -4,6 +4,7 @@ description: >-
   events via developer.postEvent and registers ext.qora.* VM extensions for
   the DevTools inspector panel.
 version: 0.2.0
+publish_to: none
 homepage: https://github.com/meragix/qora
 repository: https://github.com/meragix/qora/tree/main/packages/devtools/extension
 issue_tracker: https://github.com/meragix/qora/issues

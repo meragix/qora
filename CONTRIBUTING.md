@@ -61,6 +61,7 @@ Qora uses [Melos](https://melos.invertase.dev/) to manage the monorepo. Install 
 ```bash
 dart pub global activate melos
 melos bootstrap       # install dependencies across all packages
+git config core.hooksPath .githooks  # enable pre-commit + commit-msg hooks
 ```
 
 Common commands:

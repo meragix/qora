@@ -4,7 +4,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${GREEN}Setting up Zema development environment...${NC}\n"
+echo -e "${GREEN}Setting up Qora development environment...${NC}\n"
 
 # Check Dart
 if ! command -v dart &> /dev/null; then
@@ -18,7 +18,10 @@ dart pub global activate melos
 echo -e "\n${YELLOW}2. Bootstrapping workspace...${NC}"
 melos bootstrap
 
-echo -e "\n${YELLOW}3. Running initial tests...${NC}"
+echo -e "\n${YELLOW}3. Configuring git hooks...${NC}"
+git config core.hooksPath .githooks
+
+echo -e "\n${YELLOW}4. Running initial tests...${NC}"
 melos test
 
 echo -e "\n${GREEN}✓ Setup complete!${NC}"

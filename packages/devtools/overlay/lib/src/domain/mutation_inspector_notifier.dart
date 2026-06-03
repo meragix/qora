@@ -39,8 +39,9 @@ class MutationInspectorNotifier extends ChangeNotifier {
 
   MutationInspectorNotifier(this._tracker, {QoraClient? client}) {
     for (final e in _tracker.mutationHistory) {
-      if (e.type == MutationEventType.started)
+      if (e.type == MutationEventType.started) {
         _startTimes[e.id] = e.timestampMs;
+      }
     }
     _sub = _tracker.onMutation.listen((event) {
       if (event.type == MutationEventType.started) {
