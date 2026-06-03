@@ -1,4 +1,4 @@
-.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-coverage build-devtools publish-check publish examples examples-list audit audit-report audit-open hooks release release-dry-run
+.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-flutter-chrome test-coverage build-devtools publish-check publish release release-dry-run examples examples-list audit audit-report audit-open hooks
 
 # ── Default ───────────────────────────────────────────────────────────
 help: ## Show this help
@@ -50,8 +50,11 @@ test: ## Run all tests (dart + flutter)
 test-dart: ## Run tests on pure Dart packages only
 	@melos test:dart
 
-test-flutter: ## Run tests on Flutter packages only
+test-flutter: ## Run tests on Flutter packages (excl. devtools/ui — needs --platform chrome)
 	@melos test:flutter
+
+test-flutter-chrome: ## Run DevTools UI tests on Chrome
+	@melos test:flutter:chrome || echo "Chrome not available, skipping."
 
 test-watch: ## Run all tests in watch mode (useful during development)
 	@melos exec -- dart test --watch

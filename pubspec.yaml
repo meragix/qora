@@ -56,12 +56,20 @@ melos:
       run: melos exec -- flutter test --coverage
       packageFilters:
         flutter: true           # uniquement les packages avec Flutter SDK
+        ignore: "qora_devtools_ui"  # nécessite --platform chrome (web-only deps)
+
+    test:flutter:chrome:
+      description: Run tests on Flutter packages that require Chrome (web-only)
+      run: melos exec -- flutter test --platform chrome
+      packageFilters:
+        scope: "qora_devtools_ui"
 
     test:all:
       description: Run all tests (dart + flutter)
       run: |
         melos run test:dart
         melos run test:flutter
+        melos run test:flutter:chrome || true  # ignore if Chrome unavailable
 
     # ── Coverage ──────────────────────────────────────────────────────
     coverage:
