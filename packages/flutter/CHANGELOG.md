@@ -3,6 +3,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-06-04
+
+### Changed
+
+- Bump version to 1.1.0 to align with `qora` core package for the v1.1.0 release.
+
 ## [Unreleased]
 
 ## [1.0.0] - 2026-06-01
@@ -87,3 +93,15 @@ All notable changes to this project will be documented in this file.
 - `QoraStateBuilder<T>` : observe-only variant; subscribes to state without triggering a fetch
 - `BuildContext` extensions: `context.qora`, `context.qoraOrNull`
 - `FlutterLifecycleManager` : invalidates all queries when the app resumes after a configurable background pause
+
+[unreleased]: https://github.com/meragix/qora/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/meragix/qora/compare/1.0.0...1.1.0
+[1.0.0]: https://github.com/meragix/qora/compare/0.8.0...1.0.0
+[0.8.0]: https://github.com/meragix/qora/compare/0.7.0...0.8.0
+[0.7.0]: https://github.com/meragix/qora/compare/0.6.0...0.7.0
+[0.6.0]: https://github.com/meragix/qora/compare/0.5.0...0.6.0
+[0.5.0]: https://github.com/meragix/qora/compare/0.4.0...0.5.0
+[0.4.0]: https://github.com/meragix/qora/compare/0.3.0...0.4.0
+[0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/meragix/qora/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0

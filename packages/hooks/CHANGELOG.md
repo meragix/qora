@@ -1,7 +1,7 @@
 <!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 # Changelog
 
-## [Unreleased]
+## [1.1.0] - 2026-06-04
 
 ### Added
 
@@ -10,6 +10,8 @@
 ### Fixed
 
 - `useQuery` / `useInfiniteQuery` : `Object.hashAll(key)` in `useEffect` dependency array caused hash collisions where different query keys produced the same hash, skipping re-subscription; replaced with a `_QueryKey` wrapper using deep equality.
+
+## [Unreleased]
 
 ## [1.0.0] - 2026-06-01
 
@@ -63,3 +65,11 @@
 - Added `qora_flutter` path dependency to support `QoraScope.of` in
   `useQueryClient`.
 - Widget tests covering all four hooks.
+
+[unreleased]: https://github.com/meragix/qora/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/meragix/qora/compare/1.0.0...1.1.0
+[1.0.0]: https://github.com/meragix/qora/compare/0.8.0...1.0.0
+[0.8.0]: https://github.com/meragix/qora/compare/0.7.0...0.8.0
+[0.7.0]: https://github.com/meragix/qora/compare/0.5.0...0.7.0
+[0.5.0]: https://github.com/meragix/qora/compare/0.1.0...0.5.0
+[0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0
