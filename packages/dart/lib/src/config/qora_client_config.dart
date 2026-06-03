@@ -30,6 +30,8 @@ import 'qora_options.dart';
 ///       stackTrace: stackTrace,
 ///     ),
 ///     onCacheEvict: (key) => print('Evicted: $key'),
+///     onBackgroundFetchError: (error, stackTrace, key) =>
+///         crashReporter.report(error, stackTrace, key),
 ///   ),
 /// );
 /// ```

@@ -164,4 +164,3 @@ Future<void> _fetchPage<T>({
     onDone();
   }
 }
-

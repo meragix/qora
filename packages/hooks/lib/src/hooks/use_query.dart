@@ -59,4 +59,3 @@ QoraState<T> useQuery<T>({
 
   return state.value;
 }
-
