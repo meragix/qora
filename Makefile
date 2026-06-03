@@ -1,4 +1,4 @@
-.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-coverage build-devtools publish-check publish examples examples-list audit audit-report audit-open hooks
+.PHONY: help setup bootstrap clean analyze format format-check test test-dart test-flutter test-coverage build-devtools publish-check publish examples examples-list audit audit-report audit-open hooks release release-dry-run
 
 # ── Default ───────────────────────────────────────────────────────────
 help: ## Show this help
@@ -7,13 +7,7 @@ help: ## Show this help
 
 # ── Setup ─────────────────────────────────────────────────────────────
 setup: hooks ## First-time setup: install Melos + bootstrap + hooks
-	@echo "→ Installing Melos..."
-	dart pub global activate melos
-	@echo ""
-	@echo "→ Bootstrapping workspace..."
-	@melos bootstrap
-	@echo ""
-	@echo "✓ Setup complete. Run 'make test' to verify."
+	@./scripts/setup.sh
 
 hooks: ## Configure git hooks
 	@git config core.hooksPath .githooks
@@ -86,6 +80,13 @@ publish-check: ## Dry-run publish on all packages
 
 publish: ## Publish all packages in dependency order
 	@melos publish
+
+# ── Release ─────────────────────────────────────────────────────────────
+release: ## Create a workspace release (usage: make release ARGS="1.1.0")
+	@./scripts/release.sh $(ARGS)
+
+release-dry-run: ## Simulate a workspace release without modifying files
+	@./scripts/release.sh --dry-run $(ARGS)
 
 # ── Examples ──────────────────────────────────────────────────────────
 EXAMPLES := ex_01_basic_query ex_02_mutations_optimistic ex_03_infinite_scroll ex_04_offline_first ex_05_network_aware ex_06_hooks_integration ex_07_complete_todo_app

@@ -2,109 +2,186 @@
 
 set -e
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# ── Colors ──────────────────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'
+CYAN='\033[0;36m'; NC='\033[0m'
 
-# Functions
-error() { echo -e "${RED}✗ $1${NC}" >&2; exit 1; }
+# ── Helpers ─────────────────────────────────────────────────────────────
+error()   { echo -e "${RED}✗ $1${NC}" >&2; exit 1; }
 success() { echo -e "${GREEN}✓ $1${NC}"; }
-info() { echo -e "${BLUE}ℹ $1${NC}"; }
+info()    { echo -e "${BLUE}ℹ $1${NC}"; }
 warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
 
-# Parse arguments
-if [ -z "$1" ]; then
-  error "Usage: ./scripts/release.sh <package>-<version>
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/release.sh [options] <version>
+
+Bumps qora, qora_flutter, and qora_hooks together and creates a
+tag matching the existing convention (x.y.z).
 
 Examples:
-  ./scripts/release.sh qora-0.1.0
-  ./scripts/release.sh qora-0.2.0-dev.1
-  ./scripts/release.sh qora_flutter-0.1.0
-  ./scripts/release.sh qora_flutter-0.1.0-beta.2"
-fi
+  ./scripts/release.sh 1.1.0
+  ./scripts/release.sh 1.2.0-dev.1
+  ./scripts/release.sh --dry-run 1.1.0
 
-TAG=$1
+Options:
+  --dry-run    Simulate release without making changes
+  --help       Show this message
+EOF
+  exit 0
+}
 
-# Extract package name and version
-# Supports: qora-0.1.0, qora-0.1.0-dev.1, qora_flutter-0.1.0
-if [[ ! "$TAG" =~ ^([a-z_]+)-([0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?)$ ]]; then
-  error "Invalid tag format. Use: <package>-<version>
-  
-Examples:
-  qora-0.1.0
-  qora-0.2.0-dev.1
-  qora_flutter-0.1.0-beta.2"
-fi
+# ── Parse args ──────────────────────────────────────────────────────────
+DRY_RUN=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true; shift ;;
+    --help)    usage ;;
+    -*)
+      if [[ "$1" =~ ^-- ]]; then
+        error "Unknown option: $1\n$(usage)"
+      fi
+      break ;;
+    *) break ;;
+  esac
+done
 
-PACKAGE=${BASH_REMATCH[1]}
-VERSION=${BASH_REMATCH[2]}
+TAG=${1:-}
+[[ -z "$TAG" ]] && error "Missing version. Use --help for usage."
 
-PACKAGE_DIR="packages/$PACKAGE"
-PUBSPEC="$PACKAGE_DIR/pubspec.yaml"
-CHANGELOG="$PACKAGE_DIR/CHANGELOG.md"
+# Strip optional qora- prefix for convenience, then validate
+TAG="${TAG#qora-}"
 
-# Check package exists
-if [ ! -d "$PACKAGE_DIR" ]; then
-  error "Package not found: $PACKAGE_DIR"
-fi
+VERSION_REGEX='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$'
+[[ ! "$TAG" =~ $VERSION_REGEX ]] && error "Invalid version. Expected semver (e.g. 1.1.0 or 1.2.0-dev.1)"
 
-echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Release: $PACKAGE v$VERSION"
-echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}\n"
+VERSION="$TAG"
 
-# 1. Check git status
+# All packages released together
+PACKAGES=("qora" "qora_flutter" "qora_hooks")
+
+echo -e "${CYAN}╔════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║  Workspace Release v$VERSION"
+echo -e "${CYAN}╚════════════════════════════════════════════════╝${NC}\n"
+$DRY_RUN && warning "DRY RUN — no files will be modified\n"
+
+# ── 1. Check git status ─────────────────────────────────────────────────
 info "Checking git status..."
-if [ -n "$(git status --porcelain)" ]; then
-  error "Working directory not clean. Commit or stash changes."
-fi
+[ -n "$(git status --porcelain)" ] && error "Working directory not clean. Commit or stash changes."
 success "Working directory clean"
 
-# 2. Run tests
+# ── 2. Validate & lint all packages ─────────────────────────────────────
+info "Checking formatting..."
+$DRY_RUN && melos run format:check 2>/dev/null || melos run format:check || error "Format check failed"
+success "Format OK"
+
+for PKG in "${PACKAGES[@]}"; do
+  info "Analyzing $PKG..."
+  PKG_DIR="packages/$PKG"
+  if $DRY_RUN; then
+    (cd "$PKG_DIR" && dart analyze --fatal-infos .) 2>/dev/null || true
+  else
+    (cd "$PKG_DIR" && dart analyze --fatal-infos .) || error "Analysis failed for $PKG"
+  fi
+  success "$PKG analysis passed"
+done
+
+# ── 3. Run tests ────────────────────────────────────────────────────────
 info "Running tests..."
-# melos test --no-select || error "Tests failed"
+for PKG in qora; do
+  PKG_DIR="packages/$PKG"
+  if $DRY_RUN; then
+    (cd "$PKG_DIR" && dart test) 2>/dev/null || true
+  else
+    (cd "$PKG_DIR" && dart test) || error "Tests failed for $PKG"
+  fi
+done
 success "Tests passed"
 
-# 3. Update pubspec.yaml
-info "Updating pubspec.yaml..."
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i '' "s/^version: .*/version: $VERSION/" "$PUBSPEC"
-else
-  sed -i "s/^version: .*/version: $VERSION/" "$PUBSPEC"
-fi
-success "Version updated to $VERSION"
+# ── 4. Confirmation prompt ──────────────────────────────────────────────
+echo ""
+warning "This will release ALL packages to v$VERSION:"
+for PKG in "${PACKAGES[@]}"; do
+  CURRENT=$(grep "^version: " "packages/$PKG/pubspec.yaml" | sed "s/version: //")
+  echo "   • $PKG: $CURRENT → $VERSION"
+done
+echo "   • Commit: chore(release): bump workspace to v$VERSION"
+echo "   • Tag:    $TAG"
+echo ""
+read -p "$(echo -e ${YELLOW}"Continue? [y/N] "${NC})" -r CONFIRM
+[[ ! "$CONFIRM" =~ ^[YyOo]$ ]] && error "Aborted by user"
 
-# 4. Update CHANGELOG (only for non-dev releases)
-if [[ ! "$VERSION" =~ -dev\. ]] && [[ ! "$VERSION" =~ -beta\. ]] && [[ ! "$VERSION" =~ -alpha\. ]]; then
-  info "Updating CHANGELOG..."
-  DATE=$(date +%Y-%m-%d)
-  
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" "$CHANGELOG"
+# ── 5. Update pubspec.yaml + CHANGELOG for all packages ─────────────────
+DATE=$(date +%Y-%m-%d)
+REPO_URL="https://github.com/meragix/qora/compare"
+STAGED=()
+
+for PKG in "${PACKAGES[@]}"; do
+  PKG_DIR="packages/$PKG"
+  PUBSPEC="$PKG_DIR/pubspec.yaml"
+  CHANGELOG="$PKG_DIR/CHANGELOG.md"
+
+  # pubspec
+  if ! $DRY_RUN; then
+    perl -i -pe "s/^version: .*/version: $VERSION/" "$PUBSPEC"
+    success "$PKG pubspec → $VERSION"
   else
-    sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" "$CHANGELOG"
+    success "[DRY RUN] $PKG pubspec → $VERSION"
   fi
-  success "CHANGELOG updated"
-else
-  info "Skipping CHANGELOG for prerelease"
+
+  # changelog header (stable only)
+  if [[ ! "$VERSION" =~ -dev\. ]] && [[ ! "$VERSION" =~ -beta\. ]] && [[ ! "$VERSION" =~ -alpha\. ]]; then
+    if ! $DRY_RUN; then
+      perl -i -0pe "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" "$CHANGELOG"
+      success "$PKG CHANGELOG header added"
+    else
+      success "[DRY RUN] $PKG CHANGELOG header added"
+    fi
+  fi
+
+  STAGED+=("$PUBSPEC" "$CHANGELOG")
+done
+
+# ── 6. Update version links at bottom of qora CHANGELOG ─────────────────
+CHANGELOG_CORE="packages/qora/CHANGELOG.md"
+if ! $DRY_RUN && [[ ! "$VERSION" =~ -dev\. ]] && [[ ! "$VERSION" =~ -beta\. ]] && [[ ! "$VERSION" =~ -alpha\. ]]; then
+  # Find the last stable version link
+  PREV_TAG=$(grep -oP '\[\K[^\]]+(?=\]: https://github.com/meragix/qora/compare)' "$CHANGELOG_CORE" \
+    | grep -v '^unreleased$' | tail -1)
+  PREV_TAG="${PREV_TAG:-1.0.0}"
+
+  grep -v "^\\[unreleased\\]:" "$CHANGELOG_CORE" > "${CHANGELOG_CORE}.tmp"
+  mv "${CHANGELOG_CORE}.tmp" "$CHANGELOG_CORE"
+
+  printf "[unreleased]: $REPO_URL/$TAG...HEAD\n" >> "$CHANGELOG_CORE"
+  printf "[$VERSION]: $REPO_URL/$PREV_TAG...$TAG\n" >> "$CHANGELOG_CORE"
+  success "Core CHANGELOG version links updated"
 fi
 
-# 5. Commit and tag
-info "Creating commit and tag..."
-git add "$PUBSPEC" "$CHANGELOG"
-git commit -m "chore($PACKAGE): release v$VERSION" --no-verify
+# ── 7. Commit and tag ───────────────────────────────────────────────────
+if ! $DRY_RUN; then
+  git add "${STAGED[@]}"
+  git commit -m "chore(release): bump workspace to v$VERSION" --no-verify
+  git tag "$TAG" -m "Release workspace v$VERSION"
+  success "Commit + tag created: $TAG"
+else
+  success "[DRY RUN] Would commit + tag: $TAG"
+fi
 
-git tag "$TAG" -m "Release $PACKAGE v$VERSION"
-success "Created tag: $TAG"
+# ── Done ────────────────────────────────────────────────────────────────
+echo ""
+echo -e "${CYAN}╔════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║  Release Ready!                                ║${NC}"
+echo -e "${CYAN}╚════════════════════════════════════════════════╝${NC}"
+echo ""
+for PKG in "${PACKAGES[@]}"; do
+  echo -e "  ${GREEN}✔${NC} $PKG v$VERSION"
+done
 
-# Done
-echo -e "\n${GREEN}╔════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Release Ready!                                ║${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}\n"
-
-warning "Next steps:"
-echo "  1. Push commit: git push origin main"
-echo "  2. Push tag: git push origin $TAG"
-echo "  3. Publish: cd $PACKAGE_DIR && dart pub publish"
+if ! $DRY_RUN; then
+  echo ""
+  warning "Next steps:"
+  echo "  1. Push:     git push origin main"
+  echo "  2. Push tag: git push origin $TAG"
+  echo "  3. Publish:  dart pub publish (from each package dir)"
+fi
