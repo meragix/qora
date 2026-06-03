@@ -118,7 +118,8 @@ extension QoraStateExtensions<T> on QoraState<T> {
       final b = other;
       return Success(
         data: combiner(a.data, b.data),
-        updatedAt: a.updatedAt.isBefore(b.updatedAt) ? a.updatedAt : b.updatedAt,
+        updatedAt:
+            a.updatedAt.isBefore(b.updatedAt) ? a.updatedAt : b.updatedAt,
       );
     }
 
@@ -390,7 +391,8 @@ class QoraStateUtils {
           : state2.updatedAt;
       return Success(
         data: (state1.data, state2.data, state3.data),
-        updatedAt: state3.updatedAt.isBefore(earliest) ? state3.updatedAt : earliest,
+        updatedAt:
+            state3.updatedAt.isBefore(earliest) ? state3.updatedAt : earliest,
       );
     }
 
