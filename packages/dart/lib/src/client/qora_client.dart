@@ -486,6 +486,11 @@ class QoraClient implements MutationTracker {
           fetcher,
           opts,
           cancelToken: cancelToken,
+        ).then(
+          (_) {},
+          onError: (Object e, StackTrace s) {
+            config.onBackgroundFetchError?.call(e, s, normalized);
+          },
         ),
       );
       return staleData;
@@ -596,6 +601,11 @@ class QoraClient implements MutationTracker {
                   fetcher,
                   opts,
                   cancelToken: cancelToken,
+                ).then(
+                  (_) {},
+                  onError: (Object e, StackTrace s) {
+                    config.onBackgroundFetchError?.call(e, s, normalized);
+                  },
                 ),
               );
             }
@@ -607,7 +617,14 @@ class QoraClient implements MutationTracker {
                   entry.isActive) {
                 depSub?.cancel();
                 depSub = null;
-                unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
+                unawaited(
+                  _doFetch<T>(normalized, entry, fetcher, opts).then(
+                    (_) {},
+                    onError: (Object e, StackTrace s) {
+                      config.onBackgroundFetchError?.call(e, s, normalized);
+                    },
+                  ),
+                );
               }
             });
           }
@@ -620,6 +637,11 @@ class QoraClient implements MutationTracker {
                 fetcher,
                 opts,
                 cancelToken: cancelToken,
+              ).then(
+                (_) {},
+                onError: (Object e, StackTrace s) {
+                  config.onBackgroundFetchError?.call(e, s, normalized);
+                },
               ),
             );
           }
@@ -630,7 +652,14 @@ class QoraClient implements MutationTracker {
         if (opts.refetchInterval != null) {
           localRefetchTimer = Timer.periodic(opts.refetchInterval!, (_) {
             if (!_isDisposed && entry.isActive) {
-              unawaited(_doFetch<T>(normalized, entry, fetcher, opts));
+              unawaited(
+                _doFetch<T>(normalized, entry, fetcher, opts).then(
+                  (_) {},
+                  onError: (Object e, StackTrace s) {
+                    config.onBackgroundFetchError?.call(e, s, normalized);
+                  },
+                ),
+              );
             }
           });
         }

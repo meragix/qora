@@ -80,6 +80,24 @@ class QoraClientConfig {
   /// analytics, or syncing persistent storage.
   final void Function(List<dynamic> key)? onCacheEvict;
 
+  /// Callback invoked when a background fetch triggered by [QoraClient.watchQuery]
+  /// fails.
+  ///
+  /// Background fetches happen inside `unawaited(...)` futures — without this
+  /// callback the re-thrown error would crash the current [Zone]. The error has
+  /// already been stored in the query's [Failure] state; use this callback for
+  /// logging, telemetry, or crash reporting.
+  ///
+  /// ```dart
+  /// onBackgroundFetchError: (error, stackTrace, key) =>
+  ///     crashReporter.report(error, stackTrace, key),
+  /// ```
+  final void Function(
+    Object error,
+    StackTrace? stackTrace,
+    List<dynamic> queryKey,
+  )? onBackgroundFetchError;
+
   /// Global default for whether [QoraClient.watchQuery] should trigger a fetch on the
   /// first subscription, even when fresh cached data already exists.
   ///
@@ -112,6 +130,7 @@ class QoraClientConfig {
     this.debugMode = false,
     this.maxCacheSize,
     this.onCacheEvict,
+    this.onBackgroundFetchError,
     this.refetchOnMount = true,
     this.reconnectStrategy = const ReconnectStrategy(),
   });

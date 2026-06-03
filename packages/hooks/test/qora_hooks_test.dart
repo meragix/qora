@@ -93,27 +93,27 @@ void main() {
       expect(client.getQueryData<String>(['b']), 'data-b');
     });
 
-    // testWidgets('returns Failure on fetcher error', (tester) async {
-    //   final client = QoraClient();
-    //   QoraState<String>? lastState;
-    //
-    //   await tester.pumpWidget(
-    //     _app(
-    //       client,
-    //       HookBuilder(builder: (context) {
-    //         lastState = useQuery<String>(
-    //           key: const ['bad'],
-    //           fetcher: () async => throw Exception('oops'),
-    //           options: const QoraOptions(retryCount: 0),
-    //         );
-    //         return const SizedBox.shrink();
-    //       }),
-    //     ),
-    //   );
-    //
-    //   await tester.pumpAndSettle();
-    //   expect(lastState, isA<Failure<String>>());
-    // });
+    testWidgets('returns Failure on fetcher error', (tester) async {
+      final client = QoraClient();
+      QoraState<String>? lastState;
+
+      await tester.pumpWidget(
+        _app(
+          client,
+          HookBuilder(builder: (context) {
+            lastState = useQuery<String>(
+              key: const ['bad'],
+              fetcher: () async => throw Exception('oops'),
+              options: const QoraOptions(retryCount: 0),
+            );
+            return const SizedBox.shrink();
+          }),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(lastState, isA<Failure<String>>());
+    });
   });
 
   // ── useMutation ────────────────────────────────────────────────────────────
