@@ -54,6 +54,7 @@ jobs:
     uses: ./.github/workflows/_flutter_package.yml
     with:
       package: packages/devtools/ui
+      test-command: "flutter test --platform chrome"
     needs: qora_devtools_shared
     secrets: inherit
 

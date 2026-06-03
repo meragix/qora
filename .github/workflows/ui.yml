@@ -16,11 +16,12 @@ on:
       - ".github/workflows/_flutter_package.yml"
 
 jobs:
-  # Format + analyze + test comme les autres
+  # Format + analyze + test sur Chrome (web-only deps)
   ci:
     uses: ./.github/workflows/_flutter_package.yml
     with:
       package: packages/devtools/ui
+      test-command: "flutter test --platform chrome"
     secrets: inherit
 
   # Build web — vérifie que la compilation ne casse pas

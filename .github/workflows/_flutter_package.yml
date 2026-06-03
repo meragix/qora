@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: "Path to the package (e.g. packages/flutter)"
+      test-command:
+        required: false
+        type: string
+        default: "flutter test --coverage"
+        description: "Test command (override for web-only packages)"
 
 jobs:
   ci:
@@ -37,9 +42,10 @@ jobs:
 
       - name: Test
         working-directory: ${{ inputs.package }}
-        run: flutter test --coverage
+        run: ${{ inputs.test-command }}
 
       - name: Upload coverage
+        if: inputs.test-command == 'flutter test --coverage'
         uses: codecov/codecov-action@v4
         with:
           directory: ${{ inputs.package }}/coverage
