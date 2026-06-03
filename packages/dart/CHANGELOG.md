@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraClientConfig.onBackgroundFetchError` : callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state — use this for logging, telemetry, or crash reporting.
+
+### Fixed
+
+- `QoraClient.watchQuery` : background fetches via `unawaited(_doFetch(...))` re-threw errors that crashed the current async `Zone`; errors are now safely intercepted and forwarded to `onBackgroundFetchError`.
+
 ## [1.0.0] - 2026-06-01
 
 ### Fixed

@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `useQuery` / `useInfiniteQuery` : `Object.hashAll(key)` in `useEffect` dependency array caused hash collisions where different query keys produced the same hash, skipping re-subscription; replaced with a `_QueryKey` wrapper using deep equality.
+
 ## [1.0.0] - 2026-06-01
 
 ### Changed
