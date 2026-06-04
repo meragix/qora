@@ -29,7 +29,7 @@ class UserListScreen extends StatelessWidget {
         fetcher: FakeApi.getUsers,
         options: const QoraOptions(
           staleTime: Duration(minutes: 5),
-          cacheTime: Duration(minutes: 10),
+          gcTime: Duration(minutes: 10),
         ),
         builder: (context, state, fetchStatus) {
           // Top banner: background refetch or offline indicator

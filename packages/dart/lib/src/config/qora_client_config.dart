@@ -18,7 +18,7 @@ import 'qora_options.dart';
 ///   config: QoraClientConfig(
 ///     defaultOptions: QoraOptions(
 ///       staleTime: Duration(minutes: 5),
-///       cacheTime: Duration(minutes: 10),
+///       gcTime: Duration(minutes: 10),
 ///       retryCount: 2,
 ///     ),
 ///     debugMode: kDebugMode,

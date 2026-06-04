@@ -146,10 +146,10 @@ class _QueryInspectorState extends State<QueryInspector>
                         if (detail.staleAt != null)
                           InspectorMetaRow(
                               'Stale At:', detail.staleAt!.fmtDateTime()),
-                        if (detail.cacheTimeMs != null)
+                        if (detail.gcTimeMs != null)
                           InspectorMetaRow(
-                            'Cache Time:',
-                            '${(detail.cacheTimeMs! / 1000).round()}s',
+                            'GC Time:',
+                            '${(detail.gcTimeMs! / 1000).round()}s',
                           ),
                         if (detail.fetchDurationMs != null)
                           InspectorMetaRow(

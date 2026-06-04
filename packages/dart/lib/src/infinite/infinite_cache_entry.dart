@@ -29,7 +29,7 @@ class InfiniteCacheEntry<TData, TPageParam> {
   int _subscriberCount = 0;
 
   /// Garbage-collection timer, scheduled after the last subscriber
-  /// unsubscribes and [QoraOptions.cacheTime] has elapsed.
+  /// unsubscribes and [QoraOptions.gcTime] has elapsed.
   Timer? gcTimer;
 
   final StreamController<InfiniteQueryState<TData, TPageParam>> _controller;
@@ -105,10 +105,10 @@ class InfiniteCacheEntry<TData, TPageParam> {
   /// Refresh [lastAccessedAt] to prevent premature eviction.
   void touch() => lastAccessedAt = DateTime.now();
 
-  /// Returns `true` when the entry has been idle longer than [cacheTime]
+  /// Returns `true` when the entry has been idle longer than [gcTime]
   /// and is safe to garbage-collect.
-  bool shouldEvict(Duration cacheTime) =>
-      DateTime.now().difference(lastAccessedAt) > cacheTime;
+  bool shouldEvict(Duration gcTime) =>
+      DateTime.now().difference(lastAccessedAt) > gcTime;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 

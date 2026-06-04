@@ -11,7 +11,7 @@ void main() {
     config: QoraClientConfig(
       defaultOptions: const QoraOptions(
         staleTime: Duration(minutes: 5),
-        cacheTime: Duration(minutes: 10),
+        gcTime: Duration(minutes: 10),
         retryCount: 3,
         networkMode: NetworkMode.online,
       ),

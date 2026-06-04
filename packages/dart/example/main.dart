@@ -68,7 +68,7 @@ Future<void> main() async {
     config: QoraClientConfig(
       defaultOptions: const QoraOptions(
         staleTime: Duration(minutes: 5),
-        cacheTime: Duration(minutes: 10),
+        gcTime: Duration(minutes: 10),
         retryCount: 2,
       ),
       debugMode: false, // set to true to see cache logs
