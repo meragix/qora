@@ -22,7 +22,7 @@ Déclarez les données dont vous avez besoin. Qora les récupère, les met en ca
   variant: outline
   class: rounded-full
   ---
-  v1.0.0 est disponible
+  v1.1.0 est disponible
   :::
 
 #links
