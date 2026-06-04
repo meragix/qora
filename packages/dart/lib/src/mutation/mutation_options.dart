@@ -15,6 +15,7 @@ import 'mutation_state.dart';
 ///
 /// ```dart
 /// MutationOptions<Post, String, List<Post>?>(
+///   invalidates: [['posts']],
 ///   onMutate: (title) async {
 ///     // 1. Snapshot current data
 ///     final previous = client.getQueryData<List<Post>>(['posts']);
@@ -30,10 +31,6 @@ import 'mutation_state.dart';
 ///     // Rollback on failure
 ///     client.restoreQueryData(['posts'], previous);
 ///   },
-///   onSuccess: (post, variables, _) async {
-///     // Invalidate to refetch fresh server data
-///     client.invalidate(['posts']);
-///   },
 /// )
 /// ```
 ///
@@ -41,13 +38,11 @@ import 'mutation_state.dart';
 ///
 /// ```dart
 /// MutationOptions<Post, String, void>(
+///   invalidates: [['posts']],
 ///   networkMode: NetworkMode.online,
 ///   offlineQueue: true,
 ///   // Optional — show an immediate optimistic result while offline.
 ///   optimisticResponse: (title) => Post.draft(title),
-///   onSuccess: (post, variables, _) async {
-///     client.invalidate(['posts']);
-///   },
 /// )
 /// ```
 class MutationOptions<TData, TVariables, TContext> {
@@ -154,6 +149,30 @@ class MutationOptions<TData, TVariables, TContext> {
   /// sync" visual indicator (e.g. greyed text, clock icon).
   final TData Function(TVariables variables)? optimisticResponse;
 
+  /// List of query keys to automatically invalidate after a successful
+  /// mutation.
+  ///
+  /// Each key is passed to [QoraClient.invalidate] after [onSuccess]
+  /// completes, triggering a refetch of any active queries whose key matches.
+  ///
+  /// This replaces the common manual pattern:
+  ///
+  /// ```dart
+  /// // Before - manual invalidation in onSuccess:
+  /// onSuccess: (data, vars, _) async { client.invalidate(['posts']); }
+  ///
+  /// // After - automatic via options:
+  /// invalidates: [['posts']],
+  /// ```
+  ///
+  /// Works with offline queue replay as well, queries are invalidated on
+  /// successful replay, not on the initial optimistic emit.
+  ///
+  /// Requires a [QoraClient] or an [invalidateQuery] callback to be wired
+  /// via [MutationController] - [QoraMutationBuilder] and [useMutation] do
+  /// this automatically when a [QoraScope] ancestor is present.
+  final List<Object>? invalidates;
+
   const MutationOptions({
     this.onMutate,
     this.onSuccess,
@@ -164,5 +183,6 @@ class MutationOptions<TData, TVariables, TContext> {
     this.networkMode = NetworkMode.online,
     this.offlineQueue = false,
     this.optimisticResponse,
+    this.invalidates,
   });
 }
