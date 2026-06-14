@@ -217,6 +217,8 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       // Wire offline support when a QoraScope with connectivity is present.
       isOnline: client != null ? () => client.isOnline : null,
       offlineQueue: client?.offlineMutationQueue,
+      invalidateQuery:
+          client != null ? (key) async => client.invalidate(key) : null,
     );
     _state = _controller!.state;
   }

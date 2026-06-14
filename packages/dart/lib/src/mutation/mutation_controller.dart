@@ -139,6 +139,17 @@ class MutationController<TData, TVariables, TContext> {
   /// executing the mutator. [QoraClient] replays the queue on reconnect.
   final OfflineMutationQueue? offlineQueue;
 
+  /// Callback to invalidate a single query key on successful mutation.
+  ///
+  /// Wired automatically by [QoraMutationBuilder] and [useMutation] from
+  /// the nearest [QoraClient]. When `null`, [MutationOptions.invalidates]
+  /// is a no-op.
+  ///
+  /// ```dart
+  /// invalidateQuery: (key) => client.invalidate(key),
+  /// ```
+  final Future<void> Function(Object key)? invalidateQuery;
+
   final StreamController<MutationState<TData, TVariables>> _streamController =
       StreamController<MutationState<TData, TVariables>>.broadcast();
 
@@ -154,6 +165,7 @@ class MutationController<TData, TVariables, TContext> {
     this.metadata,
     this.isOnline,
     this.offlineQueue,
+    this.invalidateQuery,
   });
 
   /// The current state of this mutation.
@@ -313,7 +325,14 @@ class MutationController<TData, TVariables, TContext> {
       // 4a. onSuccess
       await options?.onSuccess?.call(data, variables, context);
 
-      // 4b. onSettled (success branch)
+      // 4b. Auto-invalidate queries declared in invalidates
+      if (options?.invalidates case final keys? when invalidateQuery != null) {
+        for (final key in keys) {
+          await invalidateQuery!(key);
+        }
+      }
+
+      // 4c. onSettled (success branch)
       await options?.onSettled?.call(data, null, variables, context);
 
       return data;
