@@ -15,6 +15,10 @@ dependencies:
   qora_flutter:
     path: ../../packages/flutter
 
+dependency_overrides:
+  qora:
+    path: ../../packages/dart
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

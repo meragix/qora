@@ -9,7 +9,7 @@ void main() {
     config: const QoraClientConfig(
       defaultOptions: QoraOptions(
         staleTime: Duration(minutes: 5),
-        cacheTime: Duration(minutes: 10),
+        gcTime: Duration(minutes: 10),
       ),
       debugMode: kDebugMode,
     ),

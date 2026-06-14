@@ -520,7 +520,7 @@ class QoraClient implements MutationTracker {
   /// - **Polling**: if [QoraOptions.refetchInterval] is set, the query is
   ///   automatically refetched at that cadence while subscribed.
   /// - **GC on unsubscribe**: when the last subscriber cancels, a GC timer
-  ///   is scheduled; the entry is removed after [QoraOptions.cacheTime].
+  ///   is scheduled; the entry is removed after [QoraOptions.gcTime].
   ///
   /// ```dart
   /// StreamBuilder<QoraState<User>>(
@@ -1693,7 +1693,7 @@ class QoraClient implements MutationTracker {
           _tracker.needsSerialization ? _serializeForTracker(data, opts) : null,
           'success',
           staleTimeMs: opts.staleTime.inMilliseconds,
-          gcTimeMs: opts.cacheTime.inMilliseconds,
+          gcTimeMs: opts.gcTime.inMilliseconds,
           observerCount: entry.subscriberCount,
           retryCount: result.attempts,
           // Propagate the declarative dependency key so DevTools trackers can
@@ -1858,7 +1858,7 @@ class QoraClient implements MutationTracker {
     final existing = _cache.get<T>(key);
 
     if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.cacheTime) &&
+      if (existing.shouldEvict(config.defaultOptions.gcTime) &&
           !existing.isActive) {
         _log('Lazy evict: $key');
         _cache.remove(key);
@@ -1890,13 +1890,13 @@ class QoraClient implements MutationTracker {
   }
 
   /// Schedule garbage collection for an [InfiniteCacheEntry] after
-  /// [QoraOptions.cacheTime].
+  /// [QoraOptions.gcTime].
   void _scheduleInfiniteGC(
     List<dynamic> key,
     InfiniteCacheEntry<dynamic, dynamic> entry,
   ) {
     entry.gcTimer?.cancel();
-    entry.gcTimer = Timer(config.defaultOptions.cacheTime, () {
+    entry.gcTimer = Timer(config.defaultOptions.gcTime, () {
       if (!entry.isActive) {
         _infiniteCache.remove(key);
         _log('GC removed infinite: $key');
@@ -1904,7 +1904,7 @@ class QoraClient implements MutationTracker {
     });
   }
 
-  /// Schedule garbage collection for [key] after [QoraOptions.cacheTime].
+  /// Schedule garbage collection for [key] after [QoraOptions.gcTime].
   ///
   /// Only removes the entry if it still has no subscribers when the timer
   /// fires. Cancels any previously scheduled GC timer for the same entry.
@@ -1913,7 +1913,7 @@ class QoraClient implements MutationTracker {
     if (entry == null || entry.isActive) return;
 
     entry.gcTimer?.cancel();
-    entry.gcTimer = Timer(config.defaultOptions.cacheTime, () {
+    entry.gcTimer = Timer(config.defaultOptions.gcTime, () {
       if (!entry.isActive) {
         _cache.remove(key);
         _log('GC removed: $key');
@@ -1930,7 +1930,7 @@ class QoraClient implements MutationTracker {
   ///
   /// Benefits over `Timer.periodic(1 minute)`:
   /// - Zero allocation in the common case (nothing to evict).
-  /// - Entries are collected as promptly as their `cacheTime` allows.
+  /// - Entries are collected as promptly as their \`gcTime\` allows.
   /// - The event loop is not loaded at a fixed cadence regardless of need.
   void _startEvictionTimer() {
     _scheduleNextEviction();
@@ -1940,13 +1940,13 @@ class QoraClient implements MutationTracker {
   void _scheduleNextEviction() {
     if (_isDisposed) return;
 
-    final cacheTime = config.defaultOptions.cacheTime;
+    final gcTime = config.defaultOptions.gcTime;
     DateTime? earliest;
 
     for (final entry in _cache.entries) {
       final e = entry.value;
       if (e.isActive) continue;
-      final expiry = e.lastAccessedAt.add(cacheTime);
+      final expiry = e.lastAccessedAt.add(gcTime);
       if (earliest == null || expiry.isBefore(earliest)) {
         earliest = expiry;
       }
@@ -1975,12 +1975,12 @@ class QoraClient implements MutationTracker {
   /// Zero-allocation fast path: the removal list is only allocated when at
   /// least one expired entry is found.
   void _evictExpiredEntries() {
-    final cacheTime = config.defaultOptions.cacheTime;
+    final gcTime = config.defaultOptions.gcTime;
     List<List<dynamic>>? toRemove;
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (!e.isActive && e.shouldEvict(cacheTime)) {
+      if (!e.isActive && e.shouldEvict(gcTime)) {
         (toRemove ??= []).add(entry.key);
       }
     }

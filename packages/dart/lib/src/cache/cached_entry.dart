@@ -40,7 +40,7 @@ class CacheEntry<T> {
   Timer? refetchTimer;
 
   /// Garbage-collection timer, scheduled after the last subscriber
-  /// unsubscribes and [QoraOptions.cacheTime] has elapsed.
+  /// unsubscribes and [QoraOptions.gcTime] has elapsed.
   Timer? gcTimer;
 
   final StreamController<QoraState<T>> _controller;
@@ -156,9 +156,9 @@ class CacheEntry<T> {
   }
 
   /// Returns `true` when the entry has been idle (no access) longer than
-  /// [cacheTime] and is safe to garbage-collect.
-  bool shouldEvict(Duration cacheTime) =>
-      DateTime.now().difference(lastAccessedAt) > cacheTime;
+  /// [gcTime] and is safe to garbage-collect.
+  bool shouldEvict(Duration gcTime) =>
+      DateTime.now().difference(lastAccessedAt) > gcTime;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 

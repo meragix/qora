@@ -43,7 +43,13 @@ class QoraOptions {
   /// A query is inactive when it has no [QoraClient.watchQuery] subscribers. Once the GC
   /// timer fires, the entry is removed and the next access will trigger a
   /// fresh fetch. Default: 5 minutes.
-  final Duration cacheTime;
+  ///
+  /// Previously named `cacheTime`.
+  final Duration gcTime;
+
+  /// Deprecated - use [gcTime] instead.
+  @Deprecated('Use gcTime instead')
+  Duration get cacheTime => gcTime;
 
   /// Whether this query is allowed to execute.
   ///
@@ -275,7 +281,7 @@ class QoraOptions {
 
   const QoraOptions({
     this.staleTime = Duration.zero,
-    this.cacheTime = const Duration(minutes: 5),
+    this.gcTime = const Duration(minutes: 5),
     this.enabled = true,
     this.retryCount = 3,
     this.retryDelay = const Duration(seconds: 1),
@@ -313,7 +319,7 @@ class QoraOptions {
     if (other == null) return this;
     return QoraOptions(
       staleTime: other.staleTime,
-      cacheTime: other.cacheTime,
+      gcTime: other.gcTime,
       enabled: other.enabled,
       retryCount: other.retryCount,
       retryDelay: other.retryDelay,

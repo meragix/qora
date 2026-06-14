@@ -4,7 +4,7 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 ///
 /// Derived from a [QueryEvent] snapshot; exposes computed fields that the
 /// inspector panel renders directly — query key, status, cached data,
-/// and cache timing metadata (updatedAt, staleAt, cacheTime, observers).
+/// and cache timing metadata (updatedAt, staleAt, gcTime, observers).
 class QueryDetail {
   /// Serialised query key (e.g. `'["user","42"]'`).
   final String key;
@@ -35,8 +35,8 @@ class QueryDetail {
   /// Timestamp after which data is considered stale, or `null` if never stale.
   final DateTime? staleAt;
 
-  /// Cache time (GC delay after last unsubscribe) in milliseconds.
-  final int? cacheTimeMs;
+  /// GC time (cache retention after last unsubscribe) in milliseconds.
+  final int? gcTimeMs;
 
   /// Number of active observers at the time of the last fetch.
   final int observerCount;
@@ -65,7 +65,7 @@ class QueryDetail {
     this.createdAt,
     required this.updatedAt,
     this.staleAt,
-    this.cacheTimeMs,
+    this.gcTimeMs,
     this.observerCount = 0,
     this.retryCount,
     this.eventType = QueryEventType.updated,
@@ -92,7 +92,7 @@ class QueryDetail {
       createdAt: event.createdAtMs!.toNullOrDateTime(),
       updatedAt: updatedAt,
       staleAt: staleAt,
-      cacheTimeMs: event.gcTimeMs,
+      gcTimeMs: event.gcTimeMs,
       observerCount: event.observerCount,
       retryCount: event.retryCount,
       eventType: event.type,
