@@ -107,10 +107,16 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
   final optionsRef = useRef(options);
   optionsRef.value = options;
 
+  // Read QoraClient for auto-invalidation (optional — null if no QoraScope).
+  final context = useContext();
+  final client = QoraScope.maybeOf(context);
+
   final controller = useMemoized(
     () => MutationController<TData, TVariables, void>(
       mutator: (v) => mutatorRef.value(v),
       options: optionsRef.value,
+      invalidateQuery:
+          client != null ? (key) async => client.invalidate(key) : null,
     ),
     [],
   );

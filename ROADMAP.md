@@ -22,15 +22,13 @@ This document outlines the planned direction for Qora. Priorities shift based on
 
 ---
 
-## 🚀 v1.1: Core & Performance *(next 4 weeks)*
-
-*High-confidence items built regardless of community signal.*
+## ✅ v1.1: Core & Performance *(shipped)*
 
 | Feature | Rationale |
 |---|---|
 | **Query cancellation** | Cancel in-flight fetches when the last subscriber disposes. Prevents ghost updates and wasted bandwidth. |
 | **Retry policy API** | Expose configurable retry count, delay, backoff multiplier, and `retryCondition` callback. Currently hardcoded. |
-| **Mutation → auto-invalidation** | Automatically refetch queries affected by a mutation with `QoraMutationOptions(invalidates: [QueryKey])`. The #1 workflow gap today. |
+| **Mutation → auto-invalidation** | ✅ `MutationOptions(invalidates: [QueryKey])` — shipped in v1.1.0. |
 | **Conditional fetching** | Skip fetch when `queryKey` is null. Enables dependent queries: "wait for user ID, then fetch posts." |
 | **Polling (refreshInterval)** | `QoraOptions(refreshInterval: Duration(seconds: 30))`. Automatic periodic refetch for dashboards and live feeds. |
 

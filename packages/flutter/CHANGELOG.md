@@ -3,13 +3,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `QoraMutationBuilder` now wires `invalidateQuery` from `QoraClient`, enabling `MutationOptions.invalidates` in Flutter widgets without manual setup.
+
 ## [1.1.0] - 2026-06-04
 
 ### Changed
 
 - Bump version to 1.1.0 to align with `qora` core package for the v1.1.0 release.
-
-## [Unreleased]
 
 ## [1.0.0] - 2026-06-01
 
