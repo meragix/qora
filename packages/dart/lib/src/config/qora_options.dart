@@ -100,6 +100,22 @@ class QoraOptions {
   /// ```
   final Duration Function(int attemptIndex)? retryDelayCalculator;
 
+  /// Predicate that determines whether a failed fetch should be retried.
+  ///
+  /// Receives the error and the zero-based attempt index that just failed.
+  /// Return `false` to skip further retries for this error.
+  ///
+  /// When `null` (default), all failures up to [retryCount] are retried.
+  ///
+  /// ```dart
+  /// QoraOptions(
+  ///   retryCount: 3,
+  ///   retryCondition: (error, attempt) =>
+  ///       error is SocketException || attempt == 0,
+  /// )
+  /// ```
+  final bool Function(Object error, int attemptIndex)? retryCondition;
+
   /// Whether to refetch this query when the app regains window focus.
   ///
   /// Requires a `LifecycleManager` to be configured on the [QoraClient].
@@ -270,6 +286,7 @@ class QoraOptions {
     this.retryCount = 3,
     this.retryDelay = const Duration(seconds: 1),
     this.retryDelayCalculator,
+    this.retryCondition,
     this.refetchOnWindowFocus = true,
     this.refetchOnReconnect = true,
     this.refetchInterval,
@@ -307,6 +324,7 @@ class QoraOptions {
       retryCount: other.retryCount,
       retryDelay: other.retryDelay,
       retryDelayCalculator: other.retryDelayCalculator ?? retryDelayCalculator,
+      retryCondition: other.retryCondition ?? retryCondition,
       refetchOnWindowFocus: other.refetchOnWindowFocus,
       refetchOnReconnect: other.refetchOnReconnect,
       refetchInterval: other.refetchInterval ?? refetchInterval,

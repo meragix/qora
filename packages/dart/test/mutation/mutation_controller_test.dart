@@ -701,6 +701,95 @@ void main() {
         const MutationFailure<String, String>(error: 'e', variables: 'v'),
       );
     });
+
+    // ── Auto-invalidation (invalidates) ───────────────────────────────────
+
+    test('invalidates calls invalidateQuery for each key on success', () async {
+      final invalidated = <Object>[];
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        options: const MutationOptions(
+          invalidates: [
+            ['posts'],
+            ['users'],
+          ],
+        ),
+        invalidateQuery: (key) async {
+          invalidated.add(key);
+        },
+      );
+      addTearDown(controller.dispose);
+
+      await controller.mutate('x');
+
+      expect(invalidated, hasLength(2));
+      expect(invalidated[0], ['posts']);
+      expect(invalidated[1], ['users']);
+    });
+
+    test('invalidates does not fire on failure', () async {
+      var invalidated = false;
+
+      final controller = MutationController<String, String, void>(
+        mutator: (_) async => throw Exception('fail'),
+        options: const MutationOptions(
+          invalidates: [
+            ['posts'],
+          ],
+        ),
+        invalidateQuery: (key) async {
+          invalidated = true;
+        },
+      );
+      addTearDown(controller.dispose);
+
+      await controller.mutate('x');
+
+      expect(invalidated, isFalse);
+    });
+
+    test('invalidates is a no-op when invalidateQuery is null', () async {
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        options: const MutationOptions(
+          invalidates: [
+            ['posts'],
+          ],
+        ),
+        // invalidateQuery is intentionally null
+      );
+      addTearDown(controller.dispose);
+
+      // Should not throw — just no-op.
+      await controller.mutate('x');
+
+      expect(controller.state.isSuccess, isTrue);
+    });
+
+    test('invalidates fires before onSettled', () async {
+      final callOrder = <String>[];
+
+      final controller = MutationController<String, String, void>(
+        mutator: (v) async => v,
+        options: MutationOptions(
+          invalidates: [
+            ['posts'],
+          ],
+          onSettled: (_, __, ___, ____) async {
+            callOrder.add('onSettled');
+          },
+        ),
+        invalidateQuery: (key) async {
+          callOrder.add('invalidate');
+        },
+      );
+      addTearDown(controller.dispose);
+
+      await controller.mutate('x');
+
+      expect(callOrder, ['invalidate', 'onSettled']);
+    });
   });
 }
 

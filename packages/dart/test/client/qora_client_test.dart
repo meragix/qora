@@ -121,5 +121,97 @@ void main() {
 
       expect(key4 == key5, true);
     });
+
+    // ── RetryCondition ──────────────────────────────────────────────────
+
+    test('retryCondition returning false skips retries', () async {
+      var attempts = 0;
+
+      await expectLater(
+        client.fetchQuery<String>(
+          key: QoraKey(['retry-condition-skip']),
+          fetcher: () async {
+            attempts++;
+            throw Exception('persistent error');
+          },
+          options: const QoraOptions(
+            retryCount: 3,
+            retryDelay: Duration(milliseconds: 1),
+            retryCondition: null, // default — will retry all
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(attempts, 4); // 1 initial + 3 retries
+
+      attempts = 0;
+
+      await expectLater(
+        client.fetchQuery<String>(
+          key: QoraKey(['retry-condition-skip-2']),
+          fetcher: () async {
+            attempts++;
+            throw Exception('no retry');
+          },
+          options: QoraOptions(
+            retryCount: 3,
+            retryDelay: const Duration(milliseconds: 1),
+            retryCondition: (error, attempt) => false,
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(attempts, 1); // only initial attempt, no retries
+    });
+
+    test('retryCondition returning true allows retries', () async {
+      var attempts = 0;
+
+      await expectLater(
+        client.fetchQuery<String>(
+          key: QoraKey(['retry-condition-allow']),
+          fetcher: () async {
+            attempts++;
+            throw Exception('retry me');
+          },
+          options: QoraOptions(
+            retryCount: 2,
+            retryDelay: const Duration(milliseconds: 1),
+            retryCondition: (error, attempt) => true,
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(attempts, 3); // 1 initial + 2 retries
+    });
+
+    test('retryCondition with selective error filtering', () async {
+      var attempts = 0;
+
+      await expectLater(
+        client.fetchQuery<String>(
+          key: QoraKey(['retry-condition-selective']),
+          fetcher: () async {
+            attempts++;
+            throw ArgumentError('bad request');
+          },
+          options: QoraOptions(
+            retryCount: 3,
+            retryDelay: const Duration(milliseconds: 1),
+            // Only retry FormatException — not ArgumentError
+            retryCondition: (error, attempt) => error is FormatException,
+          ),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        attempts,
+        1,
+      ); // ArgumentError does not match FormatException → skip retry
+    });
   });
 }
