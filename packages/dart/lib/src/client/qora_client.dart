@@ -1803,6 +1803,14 @@ class QoraClient implements MutationTracker {
       } catch (error) {
         lastError = error;
         if (attempt < opts.retryCount) {
+          if (opts.retryCondition != null &&
+              !opts.retryCondition!(error, attempt)) {
+            _log(
+              'Skipping retry for $key — retryCondition returned false '
+              '(attempt ${attempt + 1}/${opts.retryCount})',
+            );
+            break;
+          }
           final delay = opts.getRetryDelay(attempt);
           _log(
             'Retry ${attempt + 1}/${opts.retryCount} in ${delay.inMilliseconds} ms',
