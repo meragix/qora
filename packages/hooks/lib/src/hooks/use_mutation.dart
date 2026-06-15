@@ -117,6 +117,8 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
       options: optionsRef.value,
       invalidateQuery:
           client != null ? (key) async => client.invalidate(key) : null,
+      invalidateTags:
+          client != null ? (tags) async => client.invalidateTags(tags) : null,
     ),
     [],
   );

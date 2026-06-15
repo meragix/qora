@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MutationOptions.retryCondition`: predicate to determine whether a failed mutation should be retried, matching the existing `QoraOptions.retryCondition`.
 - `MutationOptions.invalidates`: declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
 - `MutationController.invalidateQuery`: callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
+- **Tag-based invalidation**: decouple cache invalidation from query keys using logical tags. Queries declare tags they provide via `QoraOptions.providesTags`, and mutations declare tags they invalidate via `MutationOptions.invalidatesTags`. Wildcard matching applies: invalidating `QueryTag('post')` refetches ALL queries providing any tag of that type, regardless of id. Includes new `QueryTag` class, `QoraClient.invalidateTags()` method, and `MutationController.invalidateTags` callback.
 
 ### Changed
 

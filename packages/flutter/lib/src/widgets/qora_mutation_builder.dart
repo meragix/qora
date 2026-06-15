@@ -219,6 +219,8 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       offlineQueue: client?.offlineMutationQueue,
       invalidateQuery:
           client != null ? (key) async => client.invalidate(key) : null,
+      invalidateTags:
+          client != null ? (tags) async => client.invalidateTags(tags) : null,
     );
     _state = _controller!.state;
   }
