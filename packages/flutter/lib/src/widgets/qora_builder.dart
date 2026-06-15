@@ -163,7 +163,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     _initClient();
     if (_client == prev && prev != null) return;
     _subscribe();
-    if (widget.enabled) unawaited(_executeFetch());
+    _executeIfNeeded();
   }
 
   @override
@@ -173,12 +173,12 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     if (widget.client != oldWidget.client) {
       _initClient();
       _subscribe();
-      if (widget.enabled) unawaited(_executeFetch());
+      _executeIfNeeded();
     } else if (widget.queryKey != oldWidget.queryKey) {
       _subscribe();
-      if (widget.enabled) unawaited(_executeFetch());
+      _executeIfNeeded();
     } else if (widget.enabled && !oldWidget.enabled) {
-      unawaited(_executeFetch());
+      _executeIfNeeded();
     }
   }
 
@@ -193,6 +193,21 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     final newClient = widget.client ?? QoraScope.of(context);
     if (_client != newClient) {
       _client = newClient;
+    }
+  }
+
+  void _executeIfNeeded() {
+    if (!widget.enabled) return;
+    final client = _client;
+    if (client == null) return;
+
+    final opts = client.config.defaultOptions.merge(widget.options);
+    final shouldRefetchOnMount = opts.refetchOnMount ?? true;
+    final state = client.getQueryState<T>(widget.queryKey);
+    final isFirstFetch = state is Initial<T>;
+
+    if (isFirstFetch || shouldRefetchOnMount) {
+      unawaited(_executeFetch());
     }
   }
 
@@ -333,14 +348,16 @@ class QoraStateBuilder<T> extends StatefulWidget {
 }
 
 class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
-  late QoraClient _client;
+  QoraClient? _client;
   StreamSubscription<QoraState<T>>? _subscription;
   QoraState<T> _state = Initial<T>();
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final prev = _client;
     _initClient();
+    if (_client == prev && prev != null) return;
     _subscribe();
   }
 
@@ -367,7 +384,7 @@ class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
 
   void _subscribe() {
     _subscription?.cancel();
-    _subscription = _client.watchState<T>(widget.queryKey).listen(
+    _subscription = _client?.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
         setState(() => _state = state);

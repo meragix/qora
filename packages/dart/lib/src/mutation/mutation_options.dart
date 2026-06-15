@@ -104,6 +104,14 @@ class MutationOptions<TData, TVariables, TContext> {
   /// Uses exponential backoff: attempt 0 → 1 s, attempt 1 → 2 s, etc.
   final Duration retryDelay;
 
+  /// Predicate that determines whether a failed mutation should be retried.
+  ///
+  /// Receives the error and the zero-based attempt index that just failed.
+  /// Return `false` to skip further retries for this error.
+  ///
+  /// When `null` (default), all failures up to [retryCount] are retried.
+  final bool Function(Object error, int attemptIndex)? retryCondition;
+
   /// Controls how this mutation behaves when the device is offline.
   ///
   /// - [NetworkMode.online] (default) — if offline and [offlineQueue] is
@@ -180,6 +188,7 @@ class MutationOptions<TData, TVariables, TContext> {
     this.onSettled,
     this.retryCount = 0,
     this.retryDelay = const Duration(seconds: 1),
+    this.retryCondition,
     this.networkMode = NetworkMode.online,
     this.offlineQueue = false,
     this.optimisticResponse,
