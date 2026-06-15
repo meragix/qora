@@ -27,7 +27,7 @@ void main() {
               final map = raw as Map<String, dynamic>;
               return <String, dynamic>{
                 'fullName': map['name'],
-                'yearsOld': map['age']
+                'yearsOld': map['age'],
               };
             },
           ),
