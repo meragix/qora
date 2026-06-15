@@ -317,9 +317,10 @@ class PersistQoraClient extends QoraClient {
       final serializer = _serializersByName[envelope.typeName];
       if (serializer == null) {
         _persistLog(
-          'No serializer for "${envelope.typeName}" — skipping "$storageKey". '
+          'No serializer for "${envelope.typeName}" — deleting "$storageKey". '
           'Call registerSerializer<${envelope.typeName}>() before hydrate().',
         );
+        await _storage.delete(storageKey);
         continue;
       }
 
