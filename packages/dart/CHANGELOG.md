@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MutationOptions.invalidates` : declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
 - `MutationController.invalidateQuery` : callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
 
+### Changed
+
+- **BREAKING**: `PersistQoraClient.persistDuration` and `PersistQoraClient.persistQuery(ttl: ...)` now accept a nullable `Duration?`.
+  - `null` now means "persist indefinitely" (never expire by TTL).
+  - `Duration.zero` now means "disable persistence" (expire immediately).
+  - Previously, `Duration.zero` meant "persist indefinitely", which was counter-intuitive.
+
 ### Fixed
 
 - `QoraClient.watchQuery` : fixed a timing bug where the initial `Loading` state was dropped before the stream subscriber was fully attached.

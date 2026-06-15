@@ -32,11 +32,10 @@ class _StorageEntry {
     this.ttlMs,
   });
 
-  bool isExpired(Duration fallbackTtl) {
-    final effectiveMs = ttlMs ?? fallbackTtl.inMilliseconds;
-    if (effectiveMs == 0) return false; // Duration.zero → never expires
+  bool isExpired() {
+    if (ttlMs == null) return false; // null → never expires
     final age = DateTime.now().millisecondsSinceEpoch - persistedAtMs;
-    return age > effectiveMs;
+    return age > ttlMs!;
   }
 
   Map<String, dynamic> toMap() => {
@@ -131,7 +130,7 @@ class _StorageEntry {
 /// ```
 class PersistQoraClient extends QoraClient {
   final StorageAdapter _storage;
-  final Duration _persistDuration;
+  final Duration? _persistDuration;
 
   /// `typeName  → serializer`  (looked up during [hydrate] and [_persistEntry])
   final Map<String, QoraSerializer<dynamic>> _serializersByName = {};
@@ -145,11 +144,12 @@ class PersistQoraClient extends QoraClient {
   /// [hydrate].
   ///
   /// [persistDuration] is the default TTL written to [StorageAdapter] for
-  /// every persisted entry. Pass [Duration.zero] to persist indefinitely
-  /// (rely on explicit [removeQuery] / [evictFromStorage] for cleanup).
+  /// every persisted entry. If `null`, entries are persisted indefinitely
+  /// (they never expire by TTL). Pass `Duration.zero` to disable persistence
+  /// (entries expire immediately).
   PersistQoraClient({
     required StorageAdapter storage,
-    Duration persistDuration = const Duration(days: 7),
+    Duration? persistDuration = const Duration(days: 7),
     super.config,
     super.tracker,
   })  : _storage = storage,
@@ -306,7 +306,7 @@ class PersistQoraClient extends QoraClient {
         continue;
       }
 
-      if (envelope.isExpired(_persistDuration)) {
+      if (envelope.isExpired()) {
         _persistLog(
           'Expired "${envelope.typeName}" at "$storageKey" — deleting',
         );
@@ -424,9 +424,7 @@ class PersistQoraClient extends QoraClient {
       typeName: typeName,
       data: serialized,
       persistedAtMs: DateTime.now().millisecondsSinceEpoch,
-      // Duration.zero → null so isExpired() returns false (indefinite).
-      ttlMs:
-          effectiveTtl.inMilliseconds == 0 ? null : effectiveTtl.inMilliseconds,
+      ttlMs: effectiveTtl?.inMilliseconds,
     );
 
     final storageKey = _encodeStorageKey(key);
