@@ -255,6 +255,32 @@ class QoraOptions {
   /// ```
   final Object? dependsOn;
 
+  /// Whether to preserve referential equality for unchanged nested data
+  /// across fetches.
+  ///
+  /// When enabled (default), every successful fetch compares the new data
+  /// against the existing cache using deep equality. If the data is
+  /// structurally unchanged, the previous data reference is kept. This
+  /// prevents unnecessary widget rebuilds in deeply nested UIs: widgets
+  /// that check `identical(oldData, newData)` or rely on `==` can skip
+  /// re-rendering when the data hasn't actually changed.
+  ///
+  /// The comparison is recursive for [Map], [List], and [Set]. For custom
+  /// model classes, `==` and `hashCode` must be overridden for reliable
+  /// detection.
+  ///
+  /// Disable this only if you have very large data structures and the
+  /// deep-equality check becomes a measured bottleneck.
+  ///
+  /// ```dart
+  /// // Enabled (default)
+  /// QoraOptions(structuralSharing: true),
+  ///
+  /// // Disabled: always emit new references on every fetch
+  /// QoraOptions(structuralSharing: false),
+  /// ```
+  final bool structuralSharing;
+
   /// Optional serializer used by DevTools to display query data as structured
   /// JSON.
   ///
@@ -296,6 +322,7 @@ class QoraOptions {
     this.initialDataUpdatedAt,
     this.placeholderData,
     this.dependsOn,
+    this.structuralSharing = true,
     this.toJson,
   });
 
@@ -334,6 +361,7 @@ class QoraOptions {
       initialDataUpdatedAt: other.initialDataUpdatedAt ?? initialDataUpdatedAt,
       placeholderData: other.placeholderData ?? placeholderData,
       dependsOn: other.dependsOn ?? dependsOn,
+      structuralSharing: other.structuralSharing,
       toJson: other.toJson ?? toJson,
     );
   }

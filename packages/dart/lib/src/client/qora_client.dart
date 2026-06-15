@@ -24,6 +24,7 @@ import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/tracking/no_op_tracker.dart';
 import 'package:qora/src/tracking/qora_tracker.dart';
 import 'package:qora/src/utils/qora_exception.dart';
+import 'package:qora/src/utils/structural_sharing.dart';
 
 /// The central engine of Qora: manages queries, cache, deduplication,
 /// retries, reactive state, and network-aware pausing / reconnect replay.
@@ -820,8 +821,13 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
     final entry = _getOrCreateEntry<T>(normalized);
-    entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
-    _tracker.onOptimisticUpdate(_stringKey(normalized), data);
+    final existingData = entry.state.dataOrNull;
+    final opts = config.defaultOptions;
+    final sharedData = opts.structuralSharing && existingData != null
+        ? structuralShare(existingData, data)
+        : data;
+    entry.updateState(Success<T>(data: sharedData, updatedAt: DateTime.now()));
+    _tracker.onOptimisticUpdate(_stringKey(normalized), sharedData);
     _log('setQueryData: $normalized');
   }
 
@@ -1008,7 +1014,23 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
     final entry = _getOrCreateInfiniteEntry<TData, TPageParam>(normalized);
-    entry.updateState(state);
+
+    // Apply structural sharing on InfiniteData within InfiniteSuccess.
+    final sharedState = config.defaultOptions.structuralSharing &&
+            state is InfiniteSuccess<TData, TPageParam> &&
+            entry.state is InfiniteSuccess<TData, TPageParam>
+        ? InfiniteSuccess(
+            data: structuralShare(
+              (entry.state as InfiniteSuccess<TData, TPageParam>).data,
+              state.data,
+            ),
+            hasNextPage: state.hasNextPage,
+            hasPreviousPage: state.hasPreviousPage,
+            updatedAt: state.updatedAt,
+          ) as InfiniteQueryState<TData, TPageParam>
+        : state;
+
+    entry.updateState(sharedState);
     _tracker.onQueryFetched(
       _stringKey(normalized),
       state is InfiniteSuccess<TData, TPageParam> ? state.data : null,
@@ -1060,10 +1082,16 @@ class QoraClient implements MutationTracker {
         (currentState is InfiniteSuccess<TData, TPageParam> &&
             currentState.hasPreviousPage);
 
+    final shouldShare = config.defaultOptions.structuralSharing;
+    final sharedData =
+        shouldShare && currentState is InfiniteSuccess<TData, TPageParam>
+            ? structuralShare(currentState.data, data)
+            : data;
+
     updateInfiniteQueryState<TData, TPageParam>(
       key,
       InfiniteSuccess(
-        data: data,
+        data: sharedData,
         hasNextPage: effectiveHasNext,
         hasPreviousPage: effectiveHasPrev,
         updatedAt: DateTime.now(),
@@ -1425,6 +1453,16 @@ class QoraClient implements MutationTracker {
         Success<T>(data: data, updatedAt: updatedAt ?? DateTime.now()),
       );
       _log('Hydrated: $normalized');
+    } else if (entry.state is Success<T>) {
+      final existingData = entry.state.dataOrNull;
+      final opts = config.defaultOptions;
+      final sharedData = opts.structuralSharing && existingData != null
+          ? structuralShare(existingData, data)
+          : data;
+      entry.updateState(
+        Success<T>(data: sharedData, updatedAt: updatedAt ?? DateTime.now()),
+      );
+      _log('Hydrated (non-initial): $normalized');
     }
   }
 
@@ -1721,7 +1759,12 @@ class QoraClient implements MutationTracker {
         }
 
         entry.lastOptions = opts;
-        entry.updateState(Success<T>(data: data, updatedAt: DateTime.now()));
+        final sharedData = opts.structuralSharing && previousData != null
+            ? structuralShare(previousData, data)
+            : data;
+        entry.updateState(
+          Success<T>(data: sharedData, updatedAt: DateTime.now()),
+        );
         _tracker.onQueryFetched(
           _stringKey(key),
           // Serialization is skipped for NoOpTracker (production default) so
