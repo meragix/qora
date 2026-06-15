@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
 
   http: ^1.2.0
-  hive_flutter: ^1.1.0
+  hive_flutter: ^1.2.0
   qora_flutter:
     path: ../../packages/flutter
   qora_devtools_overlay:

@@ -22,7 +22,7 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
   variant: outline
   class: rounded-full
   ---
-  v1.1.0 is now available
+  v1.2.0 is now available
   :::
 
 #links
