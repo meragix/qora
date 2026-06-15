@@ -88,7 +88,7 @@ done
 
 # ── 3. Run tests ────────────────────────────────────────────────────────
 info "Running tests..."
-for PKG in qora; do
+for PKG in dart; do
   PKG_DIR="packages/$PKG"
   if $DRY_RUN; then
     (cd "$PKG_DIR" && dart test) 2>/dev/null || true
