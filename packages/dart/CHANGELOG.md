@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `QoraClient.clearCache` : clears the in-memory cache only, without affecting persistent storage. Useful for resetting memory state (e.g. on user logout) while keeping offline storage intact.
 - `MutationOptions.invalidates` : declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
 - `MutationController.invalidateQuery` : callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
 

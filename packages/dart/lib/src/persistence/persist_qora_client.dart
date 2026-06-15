@@ -372,7 +372,6 @@ class PersistQoraClient extends QoraClient {
   @override
   void clear() {
     super.clear();
-    clearHydrationQueue();
     unawaited(clearStorage());
   }
 

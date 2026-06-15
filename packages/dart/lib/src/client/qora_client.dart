@@ -1174,13 +1174,10 @@ class QoraClient implements MutationTracker {
     }
   }
 
-  /// Remove all cached queries and cancel all pending requests.
-  ///
-  /// ```dart
-  /// // On user logout: clear all cached data.
-  /// client.clear();
-  /// ```
-  void clear() {
+  /// Clear the in-memory cache only. Persisted storage is untouched.
+  /// Use [clear] to wipe both (if using persistence), or [clearStorage]
+  /// to wipe storage only.
+  void clearCache() {
     _assertNotDisposed();
     _cache.clear();
     for (final entry in _infiniteCache.values) {
@@ -1190,8 +1187,22 @@ class QoraClient implements MutationTracker {
     _pendingRequests.clear();
     _emitFetchingCount();
     _pausedFetches.clear();
+    clearHydrationQueue();
     _tracker.onCacheCleared();
-    _log('Cache cleared');
+    _log('Memory cache cleared');
+  }
+
+  /// Remove all cached queries and cancel all pending requests.
+  ///
+  /// For [QoraClient], this wipes the in-memory cache (identical to [clearCache]).
+  /// For `PersistQoraClient`, this wipes BOTH in-memory cache and storage.
+  ///
+  /// ```dart
+  /// // On user logout: clear all cached data.
+  /// client.clear();
+  /// ```
+  void clear() {
+    clearCache();
   }
 
   // ── Fetch observability ───────────────────────────────────────────────────
