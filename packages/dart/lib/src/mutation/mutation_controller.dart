@@ -4,6 +4,7 @@ import 'package:qora/src/client/qora_client.dart';
 import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/network/offline_mutation_queue.dart';
 import 'package:qora/src/network/pending_mutation.dart';
+import 'package:qora/src/tag/query_tag.dart';
 import 'package:qora/src/utils/query_function.dart';
 
 import 'mutation_options.dart';
@@ -150,6 +151,17 @@ class MutationController<TData, TVariables, TContext> {
   /// ```
   final Future<void> Function(Object key)? invalidateQuery;
 
+  /// Callback to invalidate queries by tag on successful mutation.
+  ///
+  /// Wired automatically by [QoraMutationBuilder] and [useMutation] from
+  /// the nearest [QoraClient]. When `null`, [MutationOptions.invalidatesTags]
+  /// is a no-op.
+  ///
+  /// ```dart
+  /// invalidateTags: (tags) => client.invalidateTags(tags),
+  /// ```
+  final Future<void> Function(List<QueryTag> tags)? invalidateTags;
+
   final StreamController<MutationState<TData, TVariables>> _streamController =
       StreamController<MutationState<TData, TVariables>>.broadcast();
 
@@ -166,6 +178,7 @@ class MutationController<TData, TVariables, TContext> {
     this.isOnline,
     this.offlineQueue,
     this.invalidateQuery,
+    this.invalidateTags,
   });
 
   /// The current state of this mutation.
@@ -332,7 +345,13 @@ class MutationController<TData, TVariables, TContext> {
         }
       }
 
-      // 4c. onSettled (success branch)
+      // 4c. Auto-invalidate tags declared in invalidatesTags
+      if (options?.invalidatesTags case final tags?
+          when invalidateTags != null) {
+        await invalidateTags!(tags);
+      }
+
+      // 4d. onSettled (success branch)
       await options?.onSettled?.call(data, null, variables, context);
 
       return data;

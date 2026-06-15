@@ -1,6 +1,7 @@
 import 'package:qora/src/client/qora_client.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/network/network_mode.dart';
+import 'package:qora/src/tag/query_tag.dart';
 
 import 'mutation_controller.dart';
 import 'mutation_state.dart';
@@ -181,6 +182,22 @@ class MutationOptions<TData, TVariables, TContext> {
   /// this automatically when a [QoraScope] ancestor is present.
   final List<Object>? invalidates;
 
+  /// Tags to invalidate after a successful mutation.
+  ///
+  /// When the mutation succeeds, every query that provides a matching tag is
+  /// automatically refetched. This works alongside [invalidates] (which targets
+  /// query keys directly) and is processed after it.
+  ///
+  /// Wildcard matching applies: invalidating `QueryTag('post')` refetches ALL
+  /// queries that provide any tag of type `'post'`, regardless of id.
+  ///
+  /// ```dart
+  /// MutationOptions(
+  ///   invalidatesTags: [QueryTag('post')], // all post queries
+  /// )
+  /// ```
+  final List<QueryTag>? invalidatesTags;
+
   const MutationOptions({
     this.onMutate,
     this.onSuccess,
@@ -193,5 +210,6 @@ class MutationOptions<TData, TVariables, TContext> {
     this.offlineQueue = false,
     this.optimisticResponse,
     this.invalidates,
+    this.invalidatesTags,
   });
 }

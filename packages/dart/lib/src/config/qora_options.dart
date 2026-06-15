@@ -3,6 +3,7 @@ import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/tag/query_tag.dart';
 import 'package:qora/src/tracking/qora_tracker.dart';
 
 /// Per-query configuration that overrides global [QoraClientConfig] defaults.
@@ -281,6 +282,26 @@ class QoraOptions {
   /// ```
   final bool structuralSharing;
 
+  /// Tags that this query provides for tag-based cache invalidation.
+  ///
+  /// When a mutation invalidates a matching tag (via
+  /// [MutationOptions.invalidatesTags]), all queries that provide that tag are
+  /// automatically refetched — regardless of their query key.
+  ///
+  /// This decouples invalidation logic from query-key structure, making it
+  /// easier to invalidate related queries across different key patterns:
+  ///
+  /// ```dart
+  /// // A query that provides tags
+  /// QoraOptions(
+  ///   providesTags: [
+  ///     QueryTag('post', postId.toString()),
+  ///     QueryTag('author', authorId.toString()),
+  ///   ],
+  /// )
+  /// ```
+  final List<QueryTag>? providesTags;
+
   /// Optional serializer used by DevTools to display query data as structured
   /// JSON.
   ///
@@ -323,6 +344,7 @@ class QoraOptions {
     this.placeholderData,
     this.dependsOn,
     this.structuralSharing = true,
+    this.providesTags,
     this.toJson,
   });
 
@@ -362,6 +384,7 @@ class QoraOptions {
       placeholderData: other.placeholderData ?? placeholderData,
       dependsOn: other.dependsOn ?? dependsOn,
       structuralSharing: other.structuralSharing,
+      providesTags: other.providesTags ?? providesTags,
       toJson: other.toJson ?? toJson,
     );
   }

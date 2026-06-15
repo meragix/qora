@@ -21,6 +21,7 @@ import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/network/offline_mutation_queue.dart';
 import 'package:qora/src/persistence/persist_qora_client.dart';
 import 'package:qora/src/state/qora_state.dart';
+import 'package:qora/src/tag/query_tag.dart';
 import 'package:qora/src/tracking/no_op_tracker.dart';
 import 'package:qora/src/tracking/qora_tracker.dart';
 import 'package:qora/src/utils/qora_exception.dart';
@@ -159,6 +160,12 @@ class QoraClient implements MutationTracker {
   /// Populated by [queueHydration]; consumed (and removed) lazily by
   /// [_applyPendingHydration] on the first typed API call for that key.
   final Map<String, _HydrationEntry> _pendingHydration = {};
+
+  /// Tag index: serialised tag → set of string keys that provide that tag.
+  ///
+  /// Populated by [_registerTags] after each successful fetch, and cleaned
+  /// up by [_unregisterTags] when a query is removed or evicted.
+  final Map<String, Set<String>> _tagIndex = {};
 
   /// Dedicated cache for infinite (paginated) queries.
   ///
@@ -928,6 +935,49 @@ class QoraClient implements MutationTracker {
     }
   }
 
+  /// Invalidate all queries that provide any of the given [tags].
+  ///
+  /// Wildcard matching: a tag without an [id] matches ALL queries providing
+  /// any tag of that [type] (both with and without ids). A tag with an [id]
+  /// only matches queries that provide that exact tag.
+  ///
+  /// ```dart
+  /// // Refetch ALL queries tagged with 'post' (any id).
+  /// client.invalidateTags([QueryTag('post')]);
+  ///
+  /// // Refetch only queries tagged with 'post:123'.
+  /// client.invalidateTags([QueryTag('post', '123')]);
+  /// ```
+  Future<void> invalidateTags(List<QueryTag> tags) async {
+    _assertNotDisposed();
+    final matched = <String>{};
+    for (final tag in tags) {
+      // Wildcard: tag without id matches all serialised forms starting with
+      // 'type:' or equal to 'type'.
+      if (tag.id == null) {
+        for (final entry in _tagIndex.entries) {
+          if (entry.key == tag.type || entry.key.startsWith('${tag.type}:')) {
+            matched.addAll(entry.value);
+          }
+        }
+      } else {
+        final serialised = tag.serialised;
+        final keys = _tagIndex[serialised];
+        if (keys != null) {
+          matched.addAll(keys);
+        }
+      }
+    }
+    for (final sk in matched) {
+      try {
+        final key = jsonDecode(sk) as List<dynamic>;
+        invalidate(key);
+      } catch (_) {
+        // If the key cannot be decoded, skip it gracefully.
+      }
+    }
+  }
+
   // ── Read ─────────────────────────────────────────────────────────────────
 
   /// Returns the cached data for [key], or `null` if unavailable.
@@ -1167,6 +1217,7 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final sk = _stringKey(normalized);
     _cache.remove(normalized);
+    _unregisterTags(sk);
     _pendingRequests.remove(sk);
     _emitFetchingCount();
     _pausedFetches.remove(sk);
@@ -1208,6 +1259,7 @@ class QoraClient implements MutationTracker {
   void clearCache() {
     _assertNotDisposed();
     _cache.clear();
+    _tagIndex.clear();
     for (final entry in _infiniteCache.values) {
       entry.dispose();
     }
@@ -1530,6 +1582,7 @@ class QoraClient implements MutationTracker {
     _lifecycleSubscription?.cancel();
     _lifecycleSubscription = null;
     _cache.clear();
+    _tagIndex.clear();
     for (final entry in _infiniteCache.values) {
       entry.dispose();
     }
@@ -1672,6 +1725,32 @@ class QoraClient implements MutationTracker {
     }
   }
 
+  // ── Tag registry ──────────────────────────────────────────────────────────
+
+  /// Register the [tags] provided by the query identified by [sk] (string key).
+  ///
+  /// Called after each successful fetch so that the tag index is always
+  /// consistent with the latest [QoraOptions.providesTags].
+  ///
+  /// Previous tags for the same key are replaced (not accumulated).
+  void _registerTags(String sk, List<QueryTag> tags) {
+    _unregisterTags(sk);
+    for (final tag in tags) {
+      _tagIndex.putIfAbsent(tag.serialised, () => <String>{}).add(sk);
+    }
+  }
+
+  /// Remove all tag registrations for the query identified by [sk].
+  ///
+  /// Called when a query is removed, evicted, or re-registered with new tags.
+  void _unregisterTags(String sk) {
+    for (final entry in _tagIndex.values) {
+      entry.remove(sk);
+    }
+    // Clean up empty sets.
+    _tagIndex.removeWhere((_, v) => v.isEmpty);
+  }
+
   // ── Core fetch ────────────────────────────────────────────────────────────
 
   /// Core fetch implementation with deduplication, network-mode awareness,
@@ -1759,6 +1838,13 @@ class QoraClient implements MutationTracker {
         }
 
         entry.lastOptions = opts;
+        if (opts.providesTags != null) {
+          _registerTags(sk, opts.providesTags!);
+        } else {
+          // If the new options don't provide tags, ensure stale tags from a
+          // previous fetch with different options are cleaned up.
+          _unregisterTags(sk);
+        }
         final sharedData = opts.structuralSharing && previousData != null
             ? structuralShare(previousData, data)
             : data;
