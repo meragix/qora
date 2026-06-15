@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 
 - `QoraMutationBuilder` now wires `invalidateQuery` from `QoraClient`, enabling `MutationOptions.invalidates` in Flutter widgets without manual setup.
 
+### Fixed
+
+- `QoraBuilder` : `refetchOnMount` is now correctly honored; it prevents network requests on mount if the cached data is fresh (or based on the `refetchOnMount` flag) mirroring the `watchQuery` core logic.
+
 ## [1.1.0] - 2026-06-04
 
 ### Changed
