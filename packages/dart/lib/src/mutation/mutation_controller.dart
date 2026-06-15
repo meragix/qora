@@ -436,6 +436,10 @@ class MutationController<TData, TVariables, TContext> {
         lastStackTrace = st;
 
         if (attempt < retryCount) {
+          if (options?.retryCondition != null &&
+              !options!.retryCondition!(e, attempt)) {
+            break;
+          }
           final delay = retryDelay * (1 << attempt); // exponential backoff
           await Future<void>.delayed(delay);
         }
