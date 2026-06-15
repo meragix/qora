@@ -10,12 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `structuralSharing` : new `QoraOptions.structuralSharing` field (default `true`). Preserves referential equality for unchanged nested data across fetches. When a fetch returns data that is deeply equal to the existing cache, Qora retains the previous data reference. This prevents unnecessary widget rebuilds in deeply nested UIs. Supported on all cache write paths: `fetchQuery`, `setQueryData`, `setInfiniteQueryData`, `updateInfiniteQueryState`, and `hydrateQuery`.
-- `structuralShare<T>(T a, T b)` : utility function exported from `package:qora/qora.dart`. Compares two values with deep equality (recursive for Map, List, Set) and returns `a` when they are equal, preserving referential identity.
-- `QoraClient.clearCache` : clears the in-memory cache only, without affecting persistent storage. Useful for resetting memory state (e.g. on user logout) while keeping offline storage intact.
-- `MutationOptions.retryCondition` : predicate to determine whether a failed mutation should be retried, matching the existing `QoraOptions.retryCondition`.
-- `MutationOptions.invalidates` : declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
-- `MutationController.invalidateQuery` : callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
+- `structuralSharing`: new `QoraOptions.structuralSharing` field (default `true`). Preserves referential equality for unchanged nested data across fetches. When a fetch returns data that is deeply equal to the existing cache, Qora retains the previous data reference. This prevents unnecessary widget rebuilds in deeply nested UIs. Supported on all cache write paths: `fetchQuery`, `setQueryData`, `setInfiniteQueryData`, `updateInfiniteQueryState`, and `hydrateQuery`.
+- `structuralShare<T>(T a, T b)`: utility function exported from `package:qora/qora.dart`. Compares two values with deep equality (recursive for Map, List, Set) and returns `a` when they are equal, preserving referential identity.
+- `QoraClient.clearCache`: clears the in-memory cache only, without affecting persistent storage. Useful for resetting memory state (e.g. on user logout) while keeping offline storage intact.
+- `MutationOptions.retryCondition`: predicate to determine whether a failed mutation should be retried, matching the existing `QoraOptions.retryCondition`.
+- `MutationOptions.invalidates`: declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
+- `MutationController.invalidateQuery`: callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
 
 ### Changed
 
@@ -26,138 +26,138 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `QoraClient.watchQuery` : fixed a timing bug where the initial `Loading` state was dropped before the stream subscriber was fully attached.
-- `PersistQoraClient.hydrate` : orphaned storage entries with no registered serializer are now deleted immediately instead of accumulating indefinitely.
+- `QoraClient.watchQuery`: fixed a timing bug where the initial `Loading` state was dropped before the stream subscriber was fully attached.
+- `PersistQoraClient.hydrate`: orphaned storage entries with no registered serializer are now deleted immediately instead of accumulating indefinitely.
 
 ## [1.1.0] - 2026-06-04
 
 ### Added
 
-- `QoraClientConfig.onBackgroundFetchError` : callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state — use this for logging, telemetry, or crash reporting.
-- `pubspec.yaml` : added `topics` field.
+- `QoraClientConfig.onBackgroundFetchError`: callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state — use this for logging, telemetry, or crash reporting.
+- `pubspec.yaml`: added `topics` field.
 
 ### Fixed
 
-- `QoraClient.watchQuery` : background fetches via `unawaited(_doFetch(...))` re-threw errors that crashed the current async `Zone`; errors are now safely intercepted and forwarded to `onBackgroundFetchError`.
-- `combine` / `combineList` / `combine2` / `combine3` : `updatedAt` now correctly preserves the oldest timestamp from the input `Success` states using `isBefore`, ensuring `staleTime` logic remains accurate.
-- `debounceLoading` : naive `Future.delayed` inside `await for` blocked the entire stream — a Success arriving during the delay was blocked behind the Loading yield. Rewritten with a `StreamTransformer` + `Timer` so non-Loading states cancel any pending Loading timer and pass through immediately, preventing flickering spinners on fast requests.
-- `registerSerializer` : `assert(name != null)` only fired in debug builds, silently corrupting persisted data in release builds with obfuscation. Changed to `ArgumentError` that always throws.
-- `_onAppResumed` : iterated directly over `_cache.entries` without snapshotting, risking concurrent modification if entries changed during iteration. Added `.toList()`.
+- `QoraClient.watchQuery`: background fetches via `unawaited(_doFetch(...))` re-threw errors that crashed the current async `Zone`; errors are now safely intercepted and forwarded to `onBackgroundFetchError`.
+- `combine` / `combineList` / `combine2` / `combine3`: `updatedAt` now correctly preserves the oldest timestamp from the input `Success` states using `isBefore`, ensuring `staleTime` logic remains accurate.
+- `debounceLoading`: naive `Future.delayed` inside `await for` blocked the entire stream, a Success arriving during the delay was blocked behind the Loading yield. Rewritten with a `StreamTransformer` + `Timer` so non-Loading states cancel any pending Loading timer and pass through immediately, preventing flickering spinners on fast requests.
+- `registerSerializer`: `assert(name != null)` only fired in debug builds, silently corrupting persisted data in release builds with obfuscation. Changed to `ArgumentError` that always throws.
+- `_onAppResumed`: iterated directly over `_cache.entries` without snapshotting, risking concurrent modification if entries changed during iteration. Added `.toList()`.
 
 ### Changed
 
 - `mapSuccess` renamed to `mapData` because it also transforms `Loading` and `Failure` states when they hold `previousData`.
 - `debounceLoading` renamed to `delayLoading` to better reflect its behaviour.
-- `QueryFunction`, `MutatorFunction`, `InfiniteQueryFunction` : translated docstrings from French to English (legacy oversight).
+- `QueryFunction`, `MutatorFunction`, `InfiniteQueryFunction`: translated docstrings from French to English (legacy oversight).
 
 ## [1.0.0] - 2026-06-01
 
 ### Fixed
 
-- `Failure.hashCode` : fixed a bug where `Failure` states incorrectly computed their hash using the `Error` type instead of their own type.
-- `QoraClient.watchFetchStatus` : fixed a potential memory leak where the local `StreamController` was not properly closed on cancel.
-- `QoraState` docs : corrected outdated docstrings referencing `Error` instead of `Failure`.
+- `Failure.hashCode`: fixed a bug where `Failure` states incorrectly computed their hash using the `Error` type instead of their own type.
+- `QoraClient.watchFetchStatus`: fixed a potential memory leak where the local `StreamController` was not properly closed on cancel.
+- `QoraState` docs: corrected outdated docstrings referencing `Error` instead of `Failure`.
 
 ## [0.9.0] - 2026-06-01
 
 ### Added
 
-- `QoraClient.hasActiveWatcher(Object key)` : returns `true` when the cache entry for `key` has at least one active `watchQuery` subscriber. DevTools gateways use this to distinguish "refetch will fire a real network call" from "entry is stale but no fetcher is in scope".
-- `QoraTracker.needsSerialization` : `bool` getter on the tracker interface; `QoraClient` skips `_serializeForTracker` entirely when `false`, eliminating JSON serialization overhead for `NoOpTracker` in production builds.
-- `NoOpTracker.needsSerialization` : returns `false`; zero-cost guard so production apps never pay the serialization cost.
-- `QoraClient.attachLifecycleManager(LifecycleManager)` : wires a lifecycle manager post-construction; `QoraScope` now calls this so `refetchOnWindowFocus` actually triggers background revalidation on app resume.
-- Smart eviction timer : replaced `Timer.periodic(1 min)` with a self-scheduling one-shot `Timer` that fires exactly when the earliest inactive entry expires; reduces idle wakeups to zero for long cache-time configurations.
+- `QoraClient.hasActiveWatcher(Object key)`: returns `true` when the cache entry for `key` has at least one active `watchQuery` subscriber. DevTools gateways use this to distinguish "refetch will fire a real network call" from "entry is stale but no fetcher is in scope".
+- `QoraTracker.needsSerialization`: `bool` getter on the tracker interface; `QoraClient` skips `_serializeForTracker` entirely when `false`, eliminating JSON serialization overhead for `NoOpTracker` in production builds.
+- `NoOpTracker.needsSerialization`: returns `false`; zero-cost guard so production apps never pay the serialization cost.
+- `QoraClient.attachLifecycleManager(LifecycleManager)`: wires a lifecycle manager post-construction; `QoraScope` now calls this so `refetchOnWindowFocus` actually triggers background revalidation on app resume.
+- Smart eviction timer: replaced `Timer.periodic(1 min)` with a self-scheduling one-shot `Timer` that fires exactly when the earliest inactive entry expires; reduces idle wakeups to zero for long cache-time configurations.
 
 ### Changed
 
-- **`MutationEvent` → `MutationUpdate`** *(breaking)* : eliminates the name collision with the `MutationEvent` wire-protocol type in `qora_devtools_shared`. Affected public APIs: `QoraClient.mutationEvents → Stream<MutationUpdate>`, `QoraClient.activeMutations → Map<String, MutationUpdate>`.
-- `QoraTracker.onQueryFetched` : added `String? dependsOnKey` named parameter (forwarded from `QoraOptions.dependsOn`); allows DevTools to draw real query→query dependency edges. Existing custom trackers must add the nullable parameter (ignored by `NoOpTracker`).
+- **`MutationEvent` → `MutationUpdate`** *(breaking)*: eliminates the name collision with the `MutationEvent` wire-protocol type in `qora_devtools_shared`. Affected public APIs: `QoraClient.mutationEvents → Stream<MutationUpdate>`, `QoraClient.activeMutations → Map<String, MutationUpdate>`.
+- `QoraTracker.onQueryFetched`: added `String? dependsOnKey` named parameter (forwarded from `QoraOptions.dependsOn`); allows DevTools to draw real query→query dependency edges. Existing custom trackers must add the nullable parameter (ignored by `NoOpTracker`).
 
 ### Fixed
 
-- `QueryCache.get<T>` : replaced silent `as CacheEntry<T>?` cast with an `is!` check that throws a descriptive `StateError` naming both the registered and requested types; catches key/type conflicts at the misuse site, not deep in a stream listener.
-- `QoraClient.removeQuery` : was leaking a `StreamController` in `_fetchStatusBus`; now calls `_fetchStatusBus.remove(sk)?.close()` on eviction.
-- `QoraClient.watchQuery` polling timer : two concurrent subscriptions on the same key could cancel each other's `refetchInterval` timers via shared `entry.refetchTimer`; timer is now local to each generator invocation, cancelled in its own `finally` block.
-- `QoraClient._toJsonSafe` : `on NoSuchMethodError` was incorrect (`Error`, not `Exception`); restructured to a single `catch (e)` with an `is NoSuchMethodError` guard inside.
-- `QoraScope` lifecycle wiring : `initState` called `lifecycleManager.start()` but never passed the manager to `QoraClient`; `refetchOnWindowFocus` was dead code; fixed by calling `client.attachLifecycleManager()`.
-- `PersistQoraClient.registerSerializer<T>` : added `assert(name != null)` guard with a descriptive message for obfuscated builds where `T.toString()` produces mangled identifiers.
-- `_evictExpiredEntries` : replaced unconditional `.toList()` with a lazy `List?` only allocated when entries need removal.
+- `QueryCache.get<T>`: replaced silent `as CacheEntry<T>?` cast with an `is!` check that throws a descriptive `StateError` naming both the registered and requested types; catches key/type conflicts at the misuse site, not deep in a stream listener.
+- `QoraClient.removeQuery`: was leaking a `StreamController` in `_fetchStatusBus`; now calls `_fetchStatusBus.remove(sk)?.close()` on eviction.
+- `QoraClient.watchQuery` polling timer: two concurrent subscriptions on the same key could cancel each other's `refetchInterval` timers via shared `entry.refetchTimer`; timer is now local to each generator invocation, cancelled in its own `finally` block.
+- `QoraClient._toJsonSafe`: `on NoSuchMethodError` was incorrect (`Error`, not `Exception`); restructured to a single `catch (e)` with an `is NoSuchMethodError` guard inside.
+- `QoraScope` lifecycle wiring: `initState` called `lifecycleManager.start()` but never passed the manager to `QoraClient`; `refetchOnWindowFocus` was dead code; fixed by calling `client.attachLifecycleManager()`.
+- `PersistQoraClient.registerSerializer<T>`: added `assert(name != null)` guard with a descriptive message for obfuscated builds where `T.toString()` produces mangled identifiers.
+- `_evictExpiredEntries`: replaced unconditional `.toList()` with a lazy `List?` only allocated when entries need removal.
 
 ## [0.8.0] - 2026-03-12
 
 ### Added
 
-- `CacheEntry.setError(Object error)` : transitions an entry to `Failure<T>` using the entry's own reified `T`; eliminates the `Failure<dynamic>` cast error that occurred when `debugSetQueryError` used an untyped cache lookup.
-- `CacheEntry.markStale()` : sets an internal `_forcedStale` flag without pushing any state update to observers; `isStale()` now returns `true` whenever `_forcedStale` is set, regardless of `staleTime`; the flag is cleared by `updateState()`.
-- `QoraClient.markStale(Object key)` : silently flags a cache entry stale without transitioning to `Loading` or triggering an immediate refetch; active observers see no change; the next `fetchQuery` / `watchQuery` mount will see `isStale() == true` and trigger an SWR background revalidation.
-- `QoraTracker.onQueryRemoved(String key)` : hook called when `removeQuery` evicts a cache entry; `NoOpTracker` ships an empty override.
-- `QoraTracker.onQueryMarkedStale(String key)` : hook called when `markStale` silently flags an entry; differs from `onQueryInvalidated` in that no state transition or timeline fetch entry is implied; `NoOpTracker` ships an empty override.
+- `CacheEntry.setError(Object error)`: transitions an entry to `Failure<T>` using the entry's own reified `T`; eliminates the `Failure<dynamic>` cast error that occurred when `debugSetQueryError` used an untyped cache lookup.
+- `CacheEntry.markStale()`: sets an internal `_forcedStale` flag without pushing any state update to observers; `isStale()` now returns `true` whenever `_forcedStale` is set, regardless of `staleTime`; the flag is cleared by `updateState()`.
+- `QoraClient.markStale(Object key)`: silently flags a cache entry stale without transitioning to `Loading` or triggering an immediate refetch; active observers see no change; the next `fetchQuery` / `watchQuery` mount will see `isStale() == true` and trigger an SWR background revalidation.
+- `QoraTracker.onQueryRemoved(String key)`: hook called when `removeQuery` evicts a cache entry; `NoOpTracker` ships an empty override.
+- `QoraTracker.onQueryMarkedStale(String key)`: hook called when `markStale` silently flags an entry; differs from `onQueryInvalidated` in that no state transition or timeline fetch entry is implied; `NoOpTracker` ships an empty override.
 
 ### Fixed
 
-- `QoraClient.debugSetQueryError()` : previously called `_cache.get<dynamic>()` and pushed `Failure<dynamic>` into a `StreamController<QoraState<T>>`, causing a `TypeError` at runtime; now uses `_cache.peek()` and delegates to `CacheEntry.setError()` so the `Failure` is instantiated with the correct reified `T`.
-- `QoraClient.removeQuery()` : did not notify the tracker; now calls `_tracker.onQueryRemoved(sk)` so DevTools overlays remove the corresponding row immediately.
+- `QoraClient.debugSetQueryError()`: previously called `_cache.get<dynamic>()` and pushed `Failure<dynamic>` into a `StreamController<QoraState<T>>`, causing a `TypeError` at runtime; now uses `_cache.peek()` and delegates to `CacheEntry.setError()` so the `Failure` is instantiated with the correct reified `T`.
+- `QoraClient.removeQuery()`: did not notify the tracker; now calls `_tracker.onQueryRemoved(sk)` so DevTools overlays remove the corresponding row immediately.
 
 ## [0.7.0] - 2026-03-03
 
 ### Added
 
-- `CancelToken` : cooperative cancellation for `fetchQuery`, `watchQuery`, and `prefetch`; state restored to pre-fetch snapshot on cancellation
-- `QoraCancelException` : thrown to the caller when a fetch is cancelled via `CancelToken`
-- `QoraTracker.onQueryCancelled(String key)` : hook called when a fetch is cancelled; `NoOpTracker` ships an empty override
-- `QueryFilter` typedef : `bool Function(String key, QoraState<dynamic> state, QoraOptions? lastOptions)` : richer invalidation predicate
-- `QoraClient.invalidateQueries({required QueryFilter filter})` : bulk invalidation using `QueryFilter`
-- `CacheEntry.lastOptions` : records the options from the last successful fetch; used by `invalidateQueries`
-- `QoraOptions.dependsOn` : declares a query dependency; `watchQuery` fires reactively when the dependency resolves, `fetchQuery` throws `StateError` if unresolved, `prefetch` silently skips
-- `QoraClient.queueHydration(key, data, {updatedAt})` : enqueue a pre-deserialized value for lazy typed injection; shared hydration mechanism for `PersistQoraClient` and `SsrHydrator`
-- `QoraClient.removeHydrationEntry(key)` : `@protected`; removes a pending hydration entry
-- `QoraClient.clearHydrationQueue()` : `@protected`; clears all pending hydration entries
-- `SsrHydrator` : Flutter Web SSR hydrator; reads `window.__QORA_STATE__`, validates strictly, and calls `queueHydration()`; XSS-safe via `dartify()` and per-deserializer try/catch; no-op stub on non-web platforms
-- `QoraTracker.onQueryFetching(String key)` : hook called when a query transitions to `Loading`; pairs with `onQueryFetched` for fetch-duration tracking; `NoOpTracker` ships an empty override
-- `InfiniteData<TData, TPageParam>` : immutable container for paginated pages; `append()`, `prepend()`, `dropFirst()`, `dropLast()`, `flatten()`
-- `InfiniteQueryState<TData, TPageParam>` : sealed state machine: `InfiniteInitial`, `InfiniteLoading`, `InfiniteSuccess`, `InfiniteFailure`
-- `InfiniteQueryOptions<TData, TPageParam>` : pagination config: `initialPageParam`, `getNextPageParam`, `getPreviousPageParam`, `maxPages`
-- `InfiniteQueryObserver<TData, TPageParam>` : pagination engine: `fetch()`, `fetchNextPage()`, `fetchPreviousPage()`, `refetch()`
-- `InfiniteQueryFunction<TData, TPageParam>` typedef : `Future<TData> Function(TPageParam pageParam)`
+- `CancelToken`: cooperative cancellation for `fetchQuery`, `watchQuery`, and `prefetch`; state restored to pre-fetch snapshot on cancellation
+- `QoraCancelException`: thrown to the caller when a fetch is cancelled via `CancelToken`
+- `QoraTracker.onQueryCancelled(String key)`: hook called when a fetch is cancelled; `NoOpTracker` ships an empty override
+- `QueryFilter` typedef: `bool Function(String key, QoraState<dynamic> state, QoraOptions? lastOptions)`: richer invalidation predicate
+- `QoraClient.invalidateQueries({required QueryFilter filter})`: bulk invalidation using `QueryFilter`
+- `CacheEntry.lastOptions`: records the options from the last successful fetch; used by `invalidateQueries`
+- `QoraOptions.dependsOn`: declares a query dependency; `watchQuery` fires reactively when the dependency resolves, `fetchQuery` throws `StateError` if unresolved, `prefetch` silently skips
+- `QoraClient.queueHydration(key, data, {updatedAt})`: enqueue a pre-deserialized value for lazy typed injection; shared hydration mechanism for `PersistQoraClient` and `SsrHydrator`
+- `QoraClient.removeHydrationEntry(key)`: `@protected`; removes a pending hydration entry
+- `QoraClient.clearHydrationQueue()`: `@protected`; clears all pending hydration entries
+- `SsrHydrator`: Flutter Web SSR hydrator; reads `window.__QORA_STATE__`, validates strictly, and calls `queueHydration()`; XSS-safe via `dartify()` and per-deserializer try/catch; no-op stub on non-web platforms
+- `QoraTracker.onQueryFetching(String key)`: hook called when a query transitions to `Loading`; pairs with `onQueryFetched` for fetch-duration tracking; `NoOpTracker` ships an empty override
+- `InfiniteData<TData, TPageParam>`: immutable container for paginated pages; `append()`, `prepend()`, `dropFirst()`, `dropLast()`, `flatten()`
+- `InfiniteQueryState<TData, TPageParam>`: sealed state machine: `InfiniteInitial`, `InfiniteLoading`, `InfiniteSuccess`, `InfiniteFailure`
+- `InfiniteQueryOptions<TData, TPageParam>`: pagination config: `initialPageParam`, `getNextPageParam`, `getPreviousPageParam`, `maxPages`
+- `InfiniteQueryObserver<TData, TPageParam>`: pagination engine: `fetch()`, `fetchNextPage()`, `fetchPreviousPage()`, `refetch()`
+- `InfiniteQueryFunction<TData, TPageParam>` typedef: `Future<TData> Function(TPageParam pageParam)`
 - `QoraClient.watchInfiniteState`, `getInfiniteQueryState`, `getInfiniteQueryData`, `setInfiniteQueryData`, `updateInfiniteQueryState`, `invalidateInfiniteQuery`
 
 ### Changed
 
-- `PersistQoraClient` hydration delegated to `QoraClient` : hydration infrastructure lifted to the base class; `PersistQoraClient.hydrate()` now calls `queueHydration()`; the six typed overrides removed
+- `PersistQoraClient` hydration delegated to `QoraClient`: hydration infrastructure lifted to the base class; `PersistQoraClient.hydrate()` now calls `queueHydration()`; the six typed overrides removed
 
 ## [0.6.0] - 2026-03-02
 
 ### Added
 
-- `NetworkMode` : per-query enum (`online` / `always` / `offlineFirst`)
-- `FetchStatus` : second-axis enum (`fetching` / `paused` / `idle`); observable via `QoraClient.watchFetchStatus(key)`
-- `ReconnectStrategy` : thundering-herd prevention on reconnect: `maxConcurrent` + `jitter`; named constructors `instant()` and `conservative()`
-- `OfflineMutationQueue` : FIFO queue for offline writes; replays on reconnect; `stopOnFirstError` flag; `OfflineReplayResult` surface
-- `PendingMutation` : type-erased queued-write container
-- `QoraOfflineException` : thrown by `fetchQuery` when offline with no cached data
-- `QoraClient.attachConnectivityManager()` : late-attach a `ConnectivityManager`; called automatically by `QoraScope`
-- `QoraClient.isOnline` / `networkStatus` : real-time connectivity getters
-- `QoraClient.watchFetchStatus(key)` : stream of `FetchStatus` transitions
-- `QoraClient.offlineMutationQueue` : shared `OfflineMutationQueue` instance
-- `MutationSuccess.isOptimistic` : `true` when the mutation was queued offline with an `optimisticResponse`
-- `MutationOptions.offlineQueue` : opt a mutation into the `OfflineMutationQueue`
-- `MutationOptions.optimisticResponse` : synthetic `TData` for immediate UI feedback
-- `QoraClientConfig.reconnectStrategy` : global reconnect strategy; defaults to 5 concurrent / 100 ms jitter
-- `QoraOptions.networkMode` : per-query `NetworkMode`; defaults to `NetworkMode.online`
+- `NetworkMode`: per-query enum (`online` / `always` / `offlineFirst`)
+- `FetchStatus`: second-axis enum (`fetching` / `paused` / `idle`); observable via `QoraClient.watchFetchStatus(key)`
+- `ReconnectStrategy`: thundering-herd prevention on reconnect: `maxConcurrent` + `jitter`; named constructors `instant()` and `conservative()`
+- `OfflineMutationQueue`: FIFO queue for offline writes; replays on reconnect; `stopOnFirstError` flag; `OfflineReplayResult` surface
+- `PendingMutation`: type-erased queued-write container
+- `QoraOfflineException`: thrown by `fetchQuery` when offline with no cached data
+- `QoraClient.attachConnectivityManager()`: late-attach a `ConnectivityManager`; called automatically by `QoraScope`
+- `QoraClient.isOnline` / `networkStatus`: real-time connectivity getters
+- `QoraClient.watchFetchStatus(key)`: stream of `FetchStatus` transitions
+- `QoraClient.offlineMutationQueue`: shared `OfflineMutationQueue` instance
+- `MutationSuccess.isOptimistic`: `true` when the mutation was queued offline with an `optimisticResponse`
+- `MutationOptions.offlineQueue`: opt a mutation into the `OfflineMutationQueue`
+- `MutationOptions.optimisticResponse`: synthetic `TData` for immediate UI feedback
+- `QoraClientConfig.reconnectStrategy`: global reconnect strategy; defaults to 5 concurrent / 100 ms jitter
+- `QoraOptions.networkMode`: per-query `NetworkMode`; defaults to `NetworkMode.online`
 
 ## [0.5.0] - 2026-03-01
 
 ### Added
 
-- `PersistQoraClient` : `QoraClient` subclass that persists query results to a `StorageAdapter` and restores them on startup
-- `StorageAdapter` : abstract key/value interface; ships with `InMemoryStorageAdapter`
-- `QoraSerializer<T>` : `toJson`/`fromJson` pair for a type
-- `PersistQoraClient.registerSerializer<T>` : register a serializer; accepts optional `name` for obfuscation safety
-- `PersistQoraClient.hydrate()` : reads storage, validates TTL, queues valid entries for lazy hydration
-- `PersistQoraClient.persistQuery<T>` : force-persist the current cached value with an optional TTL override
-- `PersistQoraClient.evictFromStorage` / `clearStorage` : storage-only eviction
-- `QoraClient.hydrateQuery<T>` : inject a typed `Success<T>` with a custom `updatedAt` into an `Initial` entry
-- `QoraClient.onFetchSuccess<T>` : `@protected` hook called after every successful fetch; used by `PersistQoraClient` to auto-persist
+- `PersistQoraClient`: `QoraClient` subclass that persists query results to a `StorageAdapter` and restores them on startup
+- `StorageAdapter`: abstract key/value interface; ships with `InMemoryStorageAdapter`
+- `QoraSerializer<T>`: `toJson`/`fromJson` pair for a type
+- `PersistQoraClient.registerSerializer<T>`: register a serializer; accepts optional `name` for obfuscation safety
+- `PersistQoraClient.hydrate()`: reads storage, validates TTL, queues valid entries for lazy hydration
+- `PersistQoraClient.persistQuery<T>`: force-persist the current cached value with an optional TTL override
+- `PersistQoraClient.evictFromStorage` / `clearStorage`: storage-only eviction
+- `QoraClient.hydrateQuery<T>`: inject a typed `Success<T>` with a custom `updatedAt` into an `Initial` entry
+- `QoraClient.onFetchSuccess<T>`: `@protected` hook called after every successful fetch; used by `PersistQoraClient` to auto-persist
 
 ### Fixed
 
@@ -167,26 +167,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `QoraTracker` : abstract observability interface with lifecycle hooks for queries, mutations, and cache events
-- `NoOpTracker` : default `const` implementation with zero overhead
-- `QoraClient(tracker:)` : optional tracker injection; defaults to `NoOpTracker`
+- `QoraTracker`: abstract observability interface with lifecycle hooks for queries, mutations, and cache events
+- `NoOpTracker`: default `const` implementation with zero overhead
+- `QoraClient(tracker:)`: optional tracker injection; defaults to `NoOpTracker`
 
 ## [0.3.0] - 2026-02-25
 
 ### Added
 
-- `MutationController<TData, TVariables, TContext>` : manages the full mutation lifecycle: `Idle → Pending → Success | Failure`
-- `MutationState<TData, TVariables>` : sealed class: `MutationIdle`, `MutationPending`, `MutationSuccess`, `MutationFailure`; each carries typed `variables`
-- `MutationOptions<TData, TVariables, TContext>` : lifecycle callbacks: `onMutate`, `onSuccess`, `onError`, `onSettled`; `retryCount` / `retryDelay`
+- `MutationController<TData, TVariables, TContext>`: manages the full mutation lifecycle: `Idle → Pending → Success | Failure`
+- `MutationState<TData, TVariables>`: sealed class: `MutationIdle`, `MutationPending`, `MutationSuccess`, `MutationFailure`; each carries typed `variables`
+- `MutationOptions<TData, TVariables, TContext>`: lifecycle callbacks: `onMutate`, `onSuccess`, `onError`, `onSettled`; `retryCount` / `retryDelay`
 - `MutatorFunction<TData, TVariables>` typedef
-- `MutationTracker` : abstract interface implemented by `QoraClient`; decouples `MutationController` from the client
-- `MutationEvent` : type-erased event on every mutation state transition; `mutatorId`, `status`, `data`, `error`, `variables`, `metadata`, `timestamp`
-- `QoraClient` implements `MutationTracker` : `mutationEvents` stream, `activeMutations` snapshot; `debugInfo()` now includes `active_mutations`
-- `MutationController.metadata` : `Map<String, Object?>?` forwarded to every `MutationEvent`
-- `MutationController.id` : unique `mutation_N` identifier
-- `MutationStateExtensions` : `fold<R>()` and `status` getter
-- `MutationStatus` enum : `idle | pending | success | error`
-- `MutationStateStreamExtensions` : `whereSuccess()`, `whereError()`, `dataOrNull()`
+- `MutationTracker`: abstract interface implemented by `QoraClient`; decouples `MutationController` from the client
+- `MutationEvent`: type-erased event on every mutation state transition; `mutatorId`, `status`, `data`, `error`, `variables`, `metadata`, `timestamp`
+- `QoraClient` implements `MutationTracker`: `mutationEvents` stream, `activeMutations` snapshot; `debugInfo()` now includes `active_mutations`
+- `MutationController.metadata`: `Map<String, Object?>?` forwarded to every `MutationEvent`
+- `MutationController.id`: unique `mutation_N` identifier
+- `MutationStateExtensions`: `fold<R>()` and `status` getter
+- `MutationStatus` enum: `idle | pending | success | error`
+- `MutationStateStreamExtensions`: `whereSuccess()`, `whereError()`, `dataOrNull()`
 
 ### Changed
 
@@ -194,28 +194,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `MutationController.stream` race condition : events emitted synchronously before the first microtask were lost; fixed with a `StreamController` whose `onListen` runs synchronously
+- `MutationController.stream` race condition: events emitted synchronously before the first microtask were lost; fixed with a `StreamController` whose `onListen` runs synchronously
 
 ## [0.2.0] - 2026-02-22
 
 ### Added
 
-- `watchState<T>(key)` : observe-only stream; no fetch triggered
-- `prefetch<T>()` : pre-warm the cache before navigation; no-op if already fresh
-- `restoreQueryData<T>(key, snapshot)` : roll back an optimistic update
-- `removeQuery(key)` : evict a single query and cancel any in-flight request
-- `clear()` : evict all queries and cancel all in-flight requests
-- `cachedKeys` : all currently cached normalised query keys
-- `debugInfo()` : cache and pending-request count snapshot
+- `watchState<T>(key)`: observe-only stream; no fetch triggered
+- `prefetch<T>()`: pre-warm the cache before navigation; no-op if already fresh
+- `restoreQueryData<T>(key, snapshot)`: roll back an optimistic update
+- `removeQuery(key)`: evict a single query and cancel any in-flight request
+- `clear()`: evict all queries and cancel all in-flight requests
+- `cachedKeys`: all currently cached normalised query keys
+- `debugInfo()`: cache and pending-request count snapshot
 
 ### Changed
 
-- `QoraState<T>` rewritten as a sealed class : `Initial | Loading | Success | Failure`; `Loading` and `Failure` carry `previousData`
-- Polymorphic key system : all APIs now accept `Object` (plain `List<dynamic>` or `QoraKey`); deep structural equality
-- `KeyCacheMap` : custom map with deep recursive equality and order-independent map-key comparison
+- `QoraState<T>` rewritten as a sealed class: `Initial | Loading | Success | Failure`; `Loading` and `Failure` carry `previousData`
+- Polymorphic key system: all APIs now accept `Object` (plain `List<dynamic>` or `QoraKey`); deep structural equality
+- `KeyCacheMap`: custom map with deep recursive equality and order-independent map-key comparison
 - `invalidate(key)` replaces `invalidateQuery(key)`
 - `invalidateWhere(predicate)` replaces `invalidateQueries(predicate)`
-- Package structure reorganised : `cache/`, `config/`, `client/`, `key/`, `state/`, `utils/`
+- Package structure reorganised: `cache/`, `config/`, `client/`, `key/`, `state/`, `utils/`
 
 ### Fixed
 
