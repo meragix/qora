@@ -22,7 +22,7 @@ Part of the [Qora monorepo](https://github.com/meragix/qora).
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.0.0
+  qora_flutter: ^1.2.0
 ```
 
 `qora_flutter` automatically includes `qora` and `connectivity_plus` as dependencies; no extra packages needed.

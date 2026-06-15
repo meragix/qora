@@ -5,7 +5,7 @@
 <a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/likes/qora_hooks" alt="likes"></a>
 <a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/points/qora_hooks" alt="pub points"></a>
 
-`flutter_hooks` integration for [Qora](https://github.com/meragix/qora) : provides `useQuery`, `useMutation`, `useInfiniteQuery`, and `useQueryClient`.
+`flutter_hooks` integration for [Qora](https://github.com/meragix/qora): provides `useQuery`, `useMutation`, `useInfiniteQuery`, and `useQueryClient`.
 
 Part of the [Qora monorepo](https://github.com/meragix/qora).
 
@@ -19,8 +19,8 @@ Add both `qora_flutter` and `qora_hooks` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.0.0
-  qora_hooks: ^1.0.0
+  qora_flutter: ^1.2.0
+  qora_hooks: ^1.2.0
   flutter_hooks: ^0.20.0
 ```
 
@@ -68,7 +68,7 @@ class UserScreen extends HookWidget {
 
 ### `useMutation<TData, TVariables>`
 
-`TData` is the type returned by the mutator. `TVariables` is the type passed to `mutation.mutate()` : typically a payload class or record.
+`TData` is the type returned by the mutator. `TVariables` is the type passed to `mutation.mutate()`: typically a payload class or record.
 
 ```dart
 class EditProfileScreen extends HookWidget {
