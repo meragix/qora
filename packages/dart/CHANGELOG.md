@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-15
+
 ### Added
 
 - `structuralSharing`: new `QoraOptions.structuralSharing` field (default `true`). Preserves referential equality for unchanged nested data across fetches. When a fetch returns data that is deeply equal to the existing cache, Qora retains the previous data reference. This prevents unnecessary widget rebuilds in deeply nested UIs. Supported on all cache write paths: `fetchQuery`, `setQueryData`, `setInfiniteQueryData`, `updateInfiniteQueryState`, and `hydrateQuery`.
@@ -236,7 +238,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
-[unreleased]: https://github.com/meragix/qora/compare/1.1.0...HEAD
 [1.1.0]: https://github.com/meragix/qora/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/meragix/qora/compare/0.9.0...1.0.0
 [0.9.0]: https://github.com/meragix/qora/compare/0.8.0...0.9.0
@@ -248,3 +249,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/meragix/qora/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0
+[unreleased]: https://github.com/meragix/qora/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/meragix/qora/compare/1.0.0...1.2.0
