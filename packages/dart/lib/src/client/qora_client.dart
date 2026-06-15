@@ -1819,7 +1819,10 @@ class QoraClient implements MutationTracker {
 
     final previousState = entry.state;
     final previousData = entry.state.dataOrNull;
-    entry.updateState(Loading<T>(previousData: previousData));
+    final shouldKeepData = opts.keepPreviousData && previousData != null;
+    if (!shouldKeepData) {
+      entry.updateState(Loading<T>(previousData: previousData));
+    }
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
@@ -1894,13 +1897,17 @@ class QoraClient implements MutationTracker {
         transformErr = opts.transformError!(transformErr);
       }
       final mapped = _mapError(transformErr, stackTrace);
-      entry.updateState(
-        Failure<T>(
-          error: mapped,
-          stackTrace: stackTrace,
-          previousData: previousData,
-        ),
-      );
+      if (opts.keepPreviousData && previousData != null) {
+        // Stay in Success with old data; the caller still gets the thrown error.
+      } else {
+        entry.updateState(
+          Failure<T>(
+            error: mapped,
+            stackTrace: stackTrace,
+            previousData: previousData,
+          ),
+        );
+      }
       _pendingRequests.remove(sk);
       _emitFetchingCount();
       _emitFetchStatus(sk, FetchStatus.idle);

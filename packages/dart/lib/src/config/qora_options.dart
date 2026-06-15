@@ -322,6 +322,27 @@ class QoraOptions {
   /// transform takes precedence for specific queries before the global mapper.
   final Object Function(Object error)? transformError;
 
+  /// When `true`, the previous data stays visible while the next fetch is in
+  /// progress, suppressing the `Success → Loading → Success` transition.
+  ///
+  /// Useful for offset-based pagination: keep the current page visible while
+  /// fetching the next one. The entry stays in [Success] during the fetch and
+  /// on fetch failure, so the UI never flashes a loading spinner.
+  ///
+  /// ```dart
+  /// fetchQuery<List<Post>>(
+  ///   key: ['posts', 'page', page],
+  ///   fetcher: () => api.getPosts(page: page, limit: 20),
+  ///   options: QoraOptions(
+  ///     keepPreviousData: true,
+  ///     staleTime: Duration.zero,
+  ///   ),
+  /// );
+  /// ```
+  ///
+  /// Default: `false`.
+  final bool keepPreviousData;
+
   /// Tags that this query provides for tag-based cache invalidation.
   ///
   /// When a mutation invalidates a matching tag (via
@@ -384,6 +405,7 @@ class QoraOptions {
     this.placeholderData,
     this.dependsOn,
     this.structuralSharing = true,
+    this.keepPreviousData = false,
     this.providesTags,
     this.toJson,
     this.transform,
@@ -426,6 +448,7 @@ class QoraOptions {
       placeholderData: other.placeholderData ?? placeholderData,
       dependsOn: other.dependsOn ?? dependsOn,
       structuralSharing: other.structuralSharing,
+      keepPreviousData: other.keepPreviousData,
       providesTags: other.providesTags ?? providesTags,
       toJson: other.toJson ?? toJson,
       transform: other.transform ?? transform,
