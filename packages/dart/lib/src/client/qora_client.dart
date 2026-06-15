@@ -25,7 +25,7 @@ import 'package:qora/src/tracking/no_op_tracker.dart';
 import 'package:qora/src/tracking/qora_tracker.dart';
 import 'package:qora/src/utils/qora_exception.dart';
 
-/// The central engine of Qora — manages queries, cache, deduplication,
+/// The central engine of Qora: manages queries, cache, deduplication,
 /// retries, reactive state, and network-aware pausing / reconnect replay.
 ///
 /// ## Initialisation
@@ -222,8 +222,8 @@ class QoraClient implements MutationTracker {
 
   /// Creates a [QoraClient].
   ///
-  /// [config] — global defaults applied to every query and mutation.
-  /// [tracker] — observability hook for DevTools / logging.  Defaults to
+  /// [config]: global defaults applied to every query and mutation.
+  /// [tracker]: observability hook for DevTools / logging.  Defaults to
   /// [NoOpTracker] (zero overhead).  Inject a `VmTracker` in debug/profile
   /// builds to stream events to Flutter DevTools.
   ///
@@ -231,7 +231,7 @@ class QoraClient implements MutationTracker {
   /// // production
   /// final client = QoraClient();
   ///
-  /// // debug — enable DevTools
+  /// // debug: enable DevTools
   /// final client = QoraClient(tracker: VmTracker());
   /// ```
   QoraClient({QoraClientConfig? config, QoraTracker? tracker})
@@ -260,7 +260,7 @@ class QoraClient implements MutationTracker {
   /// The current network status as reported by the attached
   /// [ConnectivityManager].
   ///
-  /// [NetworkStatus.unknown] when no manager has been attached — queries and
+  /// [NetworkStatus.unknown] when no manager has been attached: queries and
   /// mutations always execute in that case.
   NetworkStatus get networkStatus => _networkStatus;
 
@@ -282,7 +282,7 @@ class QoraClient implements MutationTracker {
   /// changes.
   ///
   /// Called by [QoraScope] after the manager is started. Re-attaching a new
-  /// manager is safe — the previous subscription is cancelled first.
+  /// manager is safe: the previous subscription is cancelled first.
   ///
   /// ```dart
   /// // Typically done by QoraScope; only needed for advanced DI setups.
@@ -304,10 +304,10 @@ class QoraClient implements MutationTracker {
   /// [QoraOptions.refetchOnWindowFocus] is `true` **and** whose data is stale
   /// is transitioned to `Loading(previousData: ...)`. This causes any mounted
   /// [QoraBuilder] (which listens via [watchState]) to call [fetchQuery] and
-  /// trigger a background revalidation — exactly the SWR on-focus pattern.
+  /// trigger a background revalidation: exactly the SWR on-focus pattern.
   ///
   /// Called by [QoraScope] after [LifecycleManager.start]. Re-attaching a new
-  /// manager is safe — the previous subscription is cancelled first.
+  /// manager is safe: the previous subscription is cancelled first.
   ///
   /// ```dart
   /// // Done automatically by QoraScope when lifecycleManager is provided.
@@ -328,7 +328,7 @@ class QoraClient implements MutationTracker {
   /// [NoOpTracker] is still in place).
   ///
   /// Calling this when a non-default tracker is already installed is a
-  /// programming error — it asserts in debug mode to surface the mistake early.
+  /// programming error: it asserts in debug mode to surface the mistake early.
   /// Reassigning trackers at runtime leads to lost events (the first tracker
   /// stops receiving hooks silently).
   ///
@@ -414,7 +414,7 @@ class QoraClient implements MutationTracker {
   ///   replay on reconnect.
   /// - If no cached data, throws [QoraOfflineException].
   ///
-  /// Concurrent calls with the same key are **deduplicated** — they all
+  /// Concurrent calls with the same key are **deduplicated**: they all
   /// await the same in-flight future. Failed fetches are retried with
   /// exponential backoff up to [QoraOptions.retryCount] times.
   ///
@@ -445,7 +445,7 @@ class QoraClient implements MutationTracker {
       throw StateError('Query is disabled: $normalized');
     }
 
-    // dependsOn — throw immediately if the dependency has no data yet.
+    // dependsOn: throw immediately if the dependency has no data yet.
     // Use watchQuery for reactive dependent queries.
     if (opts.dependsOn != null) {
       final depNorm = normalizeKey(opts.dependsOn!);
@@ -465,20 +465,20 @@ class QoraClient implements MutationTracker {
     // Apply initialData / placeholderData to brand-new [Initial] entries.
     _applyInitialData<T>(entry, opts);
 
-    // ① Fresh cache hit — return immediately, no network call.
+    // ① Fresh cache hit: return immediately, no network call.
     if (entry.state is Success<T> && !entry.isStale(opts.staleTime)) {
       _log('Cache HIT (fresh): $normalized');
       entry.touch();
       return (entry.state as Success<T>).data;
     }
 
-    // ② Stale-While-Revalidate — return stale data, refetch in background.
+    // ② Stale-While-Revalidate: return stale data, refetch in background.
     if (entry.state is Success<T>) {
-      // Capture data BEFORE _doFetch — the method synchronously transitions
+      // Capture data BEFORE _doFetch: the method synchronously transitions
       // the entry to Loading, so reading entry.state after the call would cast
       // a Loading<T> as Success<T> and throw.
       final staleData = (entry.state as Success<T>).data;
-      _log('Cache HIT (stale): $normalized — revalidating in background');
+      _log('Cache HIT (stale): $normalized: revalidating in background');
       unawaited(
         _doFetch<T>(
           normalized,
@@ -496,7 +496,7 @@ class QoraClient implements MutationTracker {
       return staleData;
     }
 
-    // ③ Cache miss — fetch and await.
+    // ③ Cache miss: fetch and await.
     return _doFetch<T>(
       normalized,
       entry,
@@ -515,8 +515,8 @@ class QoraClient implements MutationTracker {
   /// - **Auto-fetch on mount**: triggers a fetch if data is missing or stale
   ///   (controlled by [QoraOptions.refetchOnMount] and
   ///   [QoraClientConfig.refetchOnMount]).
-  /// - **Reactive updates**: state changes from *any* source — [fetchQuery],
-  ///   [setQueryData], [invalidate] — are pushed to all active streams.
+  /// - **Reactive updates**: state changes from *any* source: [fetchQuery],
+  ///   [setQueryData], [invalidate]: are pushed to all active streams.
   /// - **Polling**: if [QoraOptions.refetchInterval] is set, the query is
   ///   automatically refetched at that cadence while subscribed.
   /// - **GC on unsubscribe**: when the last subscriber cancels, a GC timer
@@ -557,20 +557,20 @@ class QoraClient implements MutationTracker {
     // so isFirstFetch reflects the pre-populated state correctly.
     _applyInitialData<T>(entry, opts);
 
-    // Register subscriber — prevents GC while stream is active.
+    // Register subscriber: prevents GC while stream is active.
     entry.addSubscriber();
     entry.gcTimer?.cancel();
 
-    // Dependency subscription — cancelled in finally.
+    // Dependency subscription: cancelled in finally.
     StreamSubscription<QoraState<dynamic>>? depSub;
 
-    // Local polling timer — owned exclusively by this watcher instance.
+    // Local polling timer: owned exclusively by this watcher instance.
     //
     // Previously this was stored on `entry.refetchTimer` (shared mutable
     // field). When two callers subscribed to the same key concurrently, the
     // second setup cancelled the first caller's timer and replaced it with its
     // own. When the first caller's stream was cancelled, its finally-block then
-    // cancelled the second caller's timer — leaving the second caller without
+    // cancelled the second caller's timer: leaving the second caller without
     // polling for the rest of its lifetime.
     //
     // By keeping the timer local, each watcher independently manages its own
@@ -592,7 +592,7 @@ class QoraClient implements MutationTracker {
           final depEntry = _getOrCreateEntry<dynamic>(depNorm);
 
           if (depEntry.state.dataOrNull != null) {
-            // Dependency already resolved — proceed with normal fetch logic.
+            // Dependency already resolved: proceed with normal fetch logic.
             if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
               // Defer the fetch to the next event-loop iteration so that
               // `yield* entry.stream` below has time to attach its subscriber
@@ -623,7 +623,7 @@ class QoraClient implements MutationTracker {
               );
             }
           } else {
-            // Dependency not yet ready — subscribe and fire when it resolves.
+            // Dependency not yet ready: subscribe and fire when it resolves.
             depSub = depEntry.stream.listen((depState) {
               if (depState.dataOrNull != null &&
                   !_isDisposed &&
@@ -673,7 +673,7 @@ class QoraClient implements MutationTracker {
           }
         }
 
-        // Setup polling interval — stored in a local variable, not on the
+        // Setup polling interval: stored in a local variable, not on the
         // shared entry, to prevent cross-watcher timer cancellation.
         if (opts.refetchInterval != null) {
           localRefetchTimer = Timer.periodic(opts.refetchInterval!, (_) {
@@ -765,7 +765,7 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final opts = config.defaultOptions.merge(options);
 
-    // dependsOn — silently skip if dependency not resolved (doc contract).
+    // dependsOn: silently skip if dependency not resolved (doc contract).
     if (opts.dependsOn != null) {
       final depNorm = normalizeKey(opts.dependsOn!);
       if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) {
@@ -806,7 +806,7 @@ class QoraClient implements MutationTracker {
   /// ```dart
   /// final snapshot = client.getQueryData<User>(['users', userId]);
   ///
-  /// // Optimistic update — UI reflects change immediately.
+  /// // Optimistic update: UI reflects change immediately.
   /// client.setQueryData(['users', userId], updatedUser);
   ///
   /// try {
@@ -961,7 +961,7 @@ class QoraClient implements MutationTracker {
   /// Immediately emits the current state to the subscriber (replay semantics),
   /// then forwards every future [updateInfiniteQueryState] call.
   ///
-  /// Subscribing keeps the underlying [InfiniteCacheEntry] alive — the GC
+  /// Subscribing keeps the underlying [InfiniteCacheEntry] alive: the GC
   /// timer is suspended until the last subscriber cancels.
   ///
   /// Used by [InfiniteQueryObserver] and [InfiniteQueryBuilder]; you can also
@@ -1074,7 +1074,7 @@ class QoraClient implements MutationTracker {
   /// Reset an infinite query to [InfiniteInitial], signalling observers to
   /// re-fetch from the first page.
   ///
-  /// Equivalent to [invalidate] for regular queries — the cache entry is kept
+  /// Equivalent to [invalidate] for regular queries: the cache entry is kept
   /// alive (observers receive [InfiniteInitial] and can call `fetch()` again)
   /// rather than being removed entirely.
   void invalidateInfiniteQuery(Object key) {
@@ -1155,7 +1155,7 @@ class QoraClient implements MutationTracker {
   /// Unlike [invalidate], this does **not** transition the entry to a
   /// [Loading] state and does **not** trigger an immediate refetch on mounted
   /// [QoraBuilder] widgets.  The stale flag is consumed on the next
-  /// [fetchQuery] or [watchQuery] mount — the SWR logic will then trigger a
+  /// [fetchQuery] or [watchQuery] mount: the SWR logic will then trigger a
   /// background revalidation while the UI continues to show the previous data.
   ///
   /// ```dart
@@ -1177,7 +1177,7 @@ class QoraClient implements MutationTracker {
   /// Remove all cached queries and cancel all pending requests.
   ///
   /// ```dart
-  /// // On user logout — clear all cached data.
+  /// // On user logout: clear all cached data.
   /// client.clear();
   /// ```
   void clear() {
@@ -1198,7 +1198,7 @@ class QoraClient implements MutationTracker {
 
   /// The number of query requests currently in flight.
   ///
-  /// Useful as an initial value for hooks — read this synchronously, then
+  /// Useful as an initial value for hooks: read this synchronously, then
   /// subscribe to [fetchingCountStream] for reactive updates.
   ///
   /// ```dart
@@ -1223,7 +1223,7 @@ class QoraClient implements MutationTracker {
   /// Real-time stream of all mutation state changes from tracked
   /// [MutationController]s.
   ///
-  /// Emits a [MutationUpdate] on every state transition — including reset to
+  /// Emits a [MutationUpdate] on every state transition: including reset to
   /// [MutationIdle]. For the current snapshot on initial connect, read
   /// [activeMutations] first.
   ///
@@ -1245,7 +1245,7 @@ class QoraClient implements MutationTracker {
   /// This means [activeMutations] never accumulates "ghost" entries for
   /// completed mutations. For completed events, subscribe to [mutationEvents].
   ///
-  /// Use this on DevTools connect to see what is currently in-flight — then
+  /// Use this on DevTools connect to see what is currently in-flight: then
   /// subscribe to [mutationEvents] for real-time state changes.
   ///
   /// ```dart
@@ -1315,13 +1315,13 @@ class QoraClient implements MutationTracker {
     }
 
     if (state.isIdle || event.isFinished) {
-      // Idle (reset) or finished (success/failure) — purge from snapshot so
+      // Idle (reset) or finished (success/failure): purge from snapshot so
       // activeMutations only ever contains currently-running (pending) entries.
       // The event is still emitted on the stream so subscribers see every
       // transition, including completions.
       _activeMutations.remove(id);
     } else {
-      // MutationPending — add / update in the snapshot.
+      // MutationPending: add / update in the snapshot.
       _activeMutations[id] = event;
     }
 
@@ -1333,7 +1333,7 @@ class QoraClient implements MutationTracker {
 
   @override
   void untrackMutation(String id) {
-    // Called on dispose — remove silently, no event emitted.
+    // Called on dispose: remove silently, no event emitted.
     _activeMutations.remove(id);
   }
 
@@ -1371,7 +1371,7 @@ class QoraClient implements MutationTracker {
   // ── Persistence hooks ────────────────────────────────────────────────────
 
   /// Extension point for subclasses. Called synchronously after every
-  /// successful fetch inside [_doFetch] — covering both direct fetches and
+  /// successful fetch inside [_doFetch]: covering both direct fetches and
   /// SWR background revalidations.
   ///
   /// The default implementation is a no-op. Override in [PersistQoraClient]
@@ -1390,7 +1390,7 @@ class QoraClient implements MutationTracker {
   /// restore persisted data before the first network request.
   ///
   /// Behaviour:
-  /// - **No-op** when the entry already has a non-[Initial] state — avoids
+  /// - **No-op** when the entry already has a non-[Initial] state: avoids
   ///   overwriting a live in-flight fetch (race condition on slow storage).
   /// - Passing the original `persistedAt` as [updatedAt] lets
   ///   [QoraOptions.staleTime] determine freshness correctly: if the data is
@@ -1431,7 +1431,7 @@ class QoraClient implements MutationTracker {
   /// entry is created with the correct [T] from the start.
   ///
   /// [data] must be the already-deserialized Dart object (not raw JSON).
-  /// [updatedAt] is used for stale-time calculation — defaults to epoch (always
+  /// [updatedAt] is used for stale-time calculation: defaults to epoch (always
   /// stale, triggers SWR revalidation on first mount).
   void queueHydration(
     Object key,
@@ -1507,7 +1507,7 @@ class QoraClient implements MutationTracker {
   // ── Network callbacks ─────────────────────────────────────────────────────
 
   void _onAppResumed() {
-    _log('App resumed — checking stale queries for refetchOnWindowFocus');
+    _log('App resumed: checking stale queries for refetchOnWindowFocus');
     for (final mapEntry in _cache.entries.toList()) {
       final entry = mapEntry.value;
       final opts = entry.lastOptions;
@@ -1537,7 +1537,7 @@ class QoraClient implements MutationTracker {
   }
 
   Future<void> _onReconnect() async {
-    _log('Reconnected — replaying ${_pausedFetches.length} paused queries '
+    _log('Reconnected: replaying ${_pausedFetches.length} paused queries '
         'and ${_offlineMutationQueue.length} queued mutations');
 
     // Replay queries in batches to avoid the thundering herd.
@@ -1640,7 +1640,7 @@ class QoraClient implements MutationTracker {
   }) {
     final sk = _stringKey(key);
 
-    // Pre-flight cancellation check — before dedup and offline checks.
+    // Pre-flight cancellation check: before dedup and offline checks.
     if (cancelToken?.isCancelled == true) {
       _tracker.onQueryCancelled(sk);
       return Future.error(QoraCancelException(sk));
@@ -1680,7 +1680,7 @@ class QoraClient implements MutationTracker {
           await _doFetch<T>(key, entry, fetcher, opts);
         };
         _emitFetchStatus(sk, FetchStatus.paused);
-        _log('offlineFirst — serving cache, queuing refetch: $key');
+        _log('offlineFirst: serving cache, queuing refetch: $key');
         return Future.value(cached as T);
       }
       // No cache → fall through to normal pause.
@@ -1699,7 +1699,7 @@ class QoraClient implements MutationTracker {
         _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (result) {
         final data = result.value;
-        // Mid-flight cancellation — discard result, restore pre-fetch state.
+        // Mid-flight cancellation: discard result, restore pre-fetch state.
         if (cancelToken?.isCancelled == true) {
           entry.updateState(previousState);
           _pendingRequests.remove(sk);
@@ -1745,7 +1745,7 @@ class QoraClient implements MutationTracker {
         _tracker.onQueryCancelled(sk);
         throw QoraCancelException(sk); // ignore: only_throw_errors
       }
-      // QoraCancelException thrown from the .then() callback — re-throw as-is.
+      // QoraCancelException thrown from the .then() callback: re-throw as-is.
       if (error is QoraCancelException) {
         throw error; // ignore: only_throw_errors
       }
@@ -1832,7 +1832,7 @@ class QoraClient implements MutationTracker {
           if (opts.retryCondition != null &&
               !opts.retryCondition!(error, attempt)) {
             _log(
-              'Skipping retry for $key — retryCondition returned false '
+              'Skipping retry for $key: retryCondition returned false '
               '(attempt ${attempt + 1}/${opts.retryCount})',
             );
             break;
@@ -1859,7 +1859,7 @@ class QoraClient implements MutationTracker {
   /// keeping the placeholder ephemeral.
   ///
   /// A runtime type mismatch between the provided value and `<T>` is silently
-  /// ignored — the entry remains [Initial] and fetches normally.
+  /// ignored: the entry remains [Initial] and fetches normally.
   void _applyInitialData<T>(CacheEntry<T> entry, QoraOptions opts) {
     if (entry.state is! Initial<T>) return;
 
@@ -1980,7 +1980,7 @@ class QoraClient implements MutationTracker {
 
     Duration delay;
     if (earliest == null) {
-      // No inactive entries — safety-net heartbeat.
+      // No inactive entries: safety-net heartbeat.
       delay = const Duration(minutes: 1);
     } else {
       final d = earliest.difference(DateTime.now());
@@ -2030,7 +2030,7 @@ class QoraClient implements MutationTracker {
   /// Stable string key derived from a normalised key list.
   ///
   /// Used to key [_pendingRequests] (a plain [Map]) without needing deep
-  /// equality — list [toString] is deterministic for primitives.
+  /// equality: list [toString] is deterministic for primitives.
   String _stringKey(List<dynamic> key) => jsonEncode(key);
 
   void _assertNotDisposed() {
@@ -2040,10 +2040,10 @@ class QoraClient implements MutationTracker {
   /// Converts [data] into a JSON-safe value for the DevTools tracker.
   ///
   /// Resolution order:
-  /// 1. [opts.toJson] — explicit serializer, always wins.
-  /// 2. Recursively walks `List` and `Map` — serializes each element.
-  /// 3. Dynamic `toJson()` call — works for `json_serializable`/`freezed` models.
-  /// 4. Structured fallback — never throws; always returns a diagnostic map.
+  /// 1. [opts.toJson]: explicit serializer, always wins.
+  /// 2. Recursively walks `List` and `Map`: serializes each element.
+  /// 3. Dynamic `toJson()` call: works for `json_serializable`/`freezed` models.
+  /// 4. Structured fallback: never throws; always returns a diagnostic map.
   ///
   /// Only called when [QoraTracker.needsSerialization] is `true`.
   Object? _serializeForTracker(Object? data, QoraOptions opts) {
@@ -2062,7 +2062,7 @@ class QoraClient implements MutationTracker {
       return data.map((k, v) => MapEntry(k.toString(), _toJsonSafe(v)));
     }
 
-    // Attempt dynamic dispatch to toJson() — the standard contract for
+    // Attempt dynamic dispatch to toJson(): the standard contract for
     // json_serializable / freezed / built_value generated models.
     try {
       final result = (data as dynamic).toJson();
@@ -2079,7 +2079,7 @@ class QoraClient implements MutationTracker {
       };
     } catch (e) {
       if (e is NoSuchMethodError) {
-        // Model has no toJson() — structured fallback, not a crash.
+        // Model has no toJson(): structured fallback, not a crash.
         return {
           '__type': data.runtimeType.toString(),
           '__value': data.toString(),
@@ -2087,7 +2087,7 @@ class QoraClient implements MutationTracker {
               'Add toJson() or pass QoraOptions(toJson: (d) => d.toJson())',
         };
       }
-      // toJson() exists but threw — surface the error in DevTools instead of
+      // toJson() exists but threw: surface the error in DevTools instead of
       // silently discarding it. This makes serialization failures visible and
       // actionable without crashing the app.
       _log('_toJsonSafe: toJson() threw for ${data.runtimeType}: $e');

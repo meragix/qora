@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MutationOptions.invalidates` : declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
 - `MutationController.invalidateQuery` : callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
 
+### Fixed
+
+- `QoraClient.watchQuery` : fixed a timing bug where the initial `Loading` state was dropped before the stream subscriber was fully attached.
+- `PersistQoraClient.hydrate` : orphaned storage entries with no registered serializer are now deleted immediately instead of accumulating indefinitely.
+
 ## [1.1.0] - 2026-06-04
 
 ### Added
