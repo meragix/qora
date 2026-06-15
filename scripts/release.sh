@@ -50,7 +50,7 @@ TAG=${1:-}
 [[ -z "$TAG" ]] && error "Missing version. Use --help for usage."
 
 # Strip optional qora- prefix for convenience, then validate
-TAG="${TAG#qora-}"
+# TAG="${TAG#qora-}"
 
 VERSION_REGEX='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$'
 [[ ! "$TAG" =~ $VERSION_REGEX ]] && error "Invalid version. Expected semver (e.g. 1.1.0 or 1.2.0-dev.1)"
@@ -58,7 +58,7 @@ VERSION_REGEX='^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$'
 VERSION="$TAG"
 
 # All packages released together
-PACKAGES=("qora" "qora_flutter" "qora_hooks")
+PACKAGES=("dart" "flutter" "hooks")
 
 echo -e "${CYAN}╔════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║  Workspace Release v$VERSION"
@@ -143,7 +143,7 @@ for PKG in "${PACKAGES[@]}"; do
 done
 
 # ── 6. Update version links at bottom of qora CHANGELOG ─────────────────
-CHANGELOG_CORE="packages/qora/CHANGELOG.md"
+CHANGELOG_CORE="packages/dart/CHANGELOG.md"
 if ! $DRY_RUN && [[ ! "$VERSION" =~ -dev\. ]] && [[ ! "$VERSION" =~ -beta\. ]] && [[ ! "$VERSION" =~ -alpha\. ]]; then
   # Find the last stable version link
   PREV_TAG=$(grep -oP '\[\K[^\]]+(?=\]: https://github.com/meragix/qora/compare)' "$CHANGELOG_CORE" \
