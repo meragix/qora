@@ -594,19 +594,32 @@ class QoraClient implements MutationTracker {
           if (depEntry.state.dataOrNull != null) {
             // Dependency already resolved — proceed with normal fetch logic.
             if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
+              // Defer the fetch to the next event-loop iteration so that
+              // `yield* entry.stream` below has time to attach its subscriber
+              // to `_controller` before `_doFetch` calls
+              // `entry.updateState(Loading(...))` / `_controller.add(...)`.
+              // Without this deferral the Loading transition is emitted to a
+              // broadcast controller that has no listeners yet and is silently
+              // dropped, causing the watcher to jump directly from Initial to
+              // Success (or to miss the Loading state entirely).
               unawaited(
-                _doFetch<T>(
-                  normalized,
-                  entry,
-                  fetcher,
-                  opts,
-                  cancelToken: cancelToken,
-                ).then(
-                  (_) {},
-                  onError: (Object e, StackTrace s) {
-                    config.onBackgroundFetchError?.call(e, s, normalized);
-                  },
-                ),
+                Future<void>.delayed(Duration.zero, () {
+                  if (_isDisposed || !entry.isActive) return;
+                  unawaited(
+                    _doFetch<T>(
+                      normalized,
+                      entry,
+                      fetcher,
+                      opts,
+                      cancelToken: cancelToken,
+                    ).then(
+                      (_) {},
+                      onError: (Object e, StackTrace s) {
+                        config.onBackgroundFetchError?.call(e, s, normalized);
+                      },
+                    ),
+                  );
+                }),
               );
             }
           } else {
@@ -630,19 +643,32 @@ class QoraClient implements MutationTracker {
           }
         } else {
           if (isFirstFetch || (shouldRefetchOnMount && isStale)) {
+            // Defer the fetch to the next event-loop iteration so that
+            // `yield* entry.stream` below has time to attach its subscriber
+            // to `_controller` before `_doFetch` calls
+            // `entry.updateState(Loading(...))` / `_controller.add(...)`.
+            // Without this deferral the Loading transition is emitted to a
+            // broadcast controller that has no listeners yet and is silently
+            // dropped, causing the watcher to jump directly from Initial to
+            // Success (or to miss the Loading state entirely).
             unawaited(
-              _doFetch<T>(
-                normalized,
-                entry,
-                fetcher,
-                opts,
-                cancelToken: cancelToken,
-              ).then(
-                (_) {},
-                onError: (Object e, StackTrace s) {
-                  config.onBackgroundFetchError?.call(e, s, normalized);
-                },
-              ),
+              Future<void>.delayed(Duration.zero, () {
+                if (_isDisposed || !entry.isActive) return;
+                unawaited(
+                  _doFetch<T>(
+                    normalized,
+                    entry,
+                    fetcher,
+                    opts,
+                    cancelToken: cancelToken,
+                  ).then(
+                    (_) {},
+                    onError: (Object e, StackTrace s) {
+                      config.onBackgroundFetchError?.call(e, s, normalized);
+                    },
+                  ),
+                );
+              }),
             );
           }
         }

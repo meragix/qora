@@ -173,13 +173,28 @@ void main() {
       await sub.cancel();
 
       // With stale initialData the sequence is:
-      //   Loading(previousData: 'placeholder')  ← _doFetch sets Loading,
-      //                                            carrying the placeholder
-      //   Success('network')                    ← fetch completes
+      //   Success('placeholder')               ← initial state emitted immediately
+      //   Loading(previousData: 'placeholder') ← _doFetch sets Loading,
+      //                                           carrying the placeholder
+      //   Success('network')                   ← fetch completes
       expect(states.isNotEmpty, isTrue);
-      expect(states.first, isA<Loading<String>>());
+      // First state is the pre-populated placeholder (correct: emitted before
+      // the deferred SWR fetch starts).
+      expect(states.first, isA<Success<String>>());
       expect(
-        (states.first as Loading<String>).previousData,
+        (states.first as Success<String>).data,
+        'placeholder',
+        reason: 'initialData placeholder is the first emitted state',
+      );
+      // The SWR Loading state carries the placeholder as previousData.
+      final loadingState = states.whereType<Loading<String>>().firstOrNull;
+      expect(
+        loadingState,
+        isNotNull,
+        reason: 'SWR refetch should emit a Loading state',
+      );
+      expect(
+        loadingState?.previousData,
         'placeholder',
         reason: 'placeholder is surfaced via Loading.previousData (SWR)',
       );
