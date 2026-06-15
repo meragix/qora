@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - `QoraBuilder` : `refetchOnMount` is now correctly honored; it prevents network requests on mount if the cached data is fresh (or based on the `refetchOnMount` flag) mirroring the `watchQuery` core logic.
+- `QoraStateBuilder` & `QoraPrefetch`: fixed a Flutter framework crash (`dependOnInheritedWidgetOfExactType` called before `initState` completed) by correctly deferring the `QoraScope` lookup to `didChangeDependencies`.
 
 ## [1.1.0] - 2026-06-04
 

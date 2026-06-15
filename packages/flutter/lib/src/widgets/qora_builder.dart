@@ -348,14 +348,16 @@ class QoraStateBuilder<T> extends StatefulWidget {
 }
 
 class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
-  late QoraClient _client;
+  QoraClient? _client;
   StreamSubscription<QoraState<T>>? _subscription;
   QoraState<T> _state = Initial<T>();
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final prev = _client;
     _initClient();
+    if (_client == prev && prev != null) return;
     _subscribe();
   }
 
@@ -382,7 +384,7 @@ class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
 
   void _subscribe() {
     _subscription?.cancel();
-    _subscription = _client.watchState<T>(widget.queryKey).listen(
+    _subscription = _client?.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
         setState(() => _state = state);

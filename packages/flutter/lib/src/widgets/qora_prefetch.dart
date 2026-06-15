@@ -61,13 +61,17 @@ class QoraPrefetch<T> extends StatefulWidget {
 }
 
 class _QoraPrefetchState<T> extends State<QoraPrefetch<T>> {
-  late QoraClient _client;
+  QoraClient? _client;
 
   @override
-  void initState() {
-    super.initState();
-    _client = widget.client ?? QoraScope.of(context);
-    _trigger();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_client == null) {
+      _client = widget.client ?? QoraScope.of(context);
+      _trigger();
+    } else {
+      _client = widget.client ?? QoraScope.of(context);
+    }
   }
 
   @override
@@ -81,7 +85,7 @@ class _QoraPrefetchState<T> extends State<QoraPrefetch<T>> {
 
   void _trigger() {
     _client
-        .prefetch<T>(
+        ?.prefetch<T>(
           key: widget.queryKey,
           fetcher: widget.fetcher,
           options: widget.options,
