@@ -128,6 +128,7 @@ void main() {
     });
 
     test('fetchQuery preserves reference for unchanged data', () async {
+      // ignore: unused_local_variable
       var callCount = 0;
       final key = QoraKey(['test']);
 
@@ -347,6 +348,7 @@ void main() {
 
     test('stream emits with shared data still notify subscribers', () async {
       final key = QoraKey(['test']);
+      // ignore: unused_local_variable
       var callCount = 0;
 
       Future<String> fetcher() async {

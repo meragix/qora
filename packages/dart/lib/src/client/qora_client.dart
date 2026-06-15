@@ -1763,7 +1763,8 @@ class QoraClient implements MutationTracker {
             ? structuralShare(previousData, data)
             : data;
         entry.updateState(
-            Success<T>(data: sharedData, updatedAt: DateTime.now()));
+          Success<T>(data: sharedData, updatedAt: DateTime.now()),
+        );
         _tracker.onQueryFetched(
           _stringKey(key),
           // Serialization is skipped for NoOpTracker (production default) so
