@@ -282,6 +282,46 @@ class QoraOptions {
   /// ```
   final bool structuralSharing;
 
+  /// Transform function applied to successful fetch data before it enters the
+  /// cache.
+  ///
+  /// Use this to decouple data transformation from the fetcher: the fetcher
+  /// returns raw data (e.g. JSON-decoded maps), and [transform] converts it
+  /// into the final model. This makes both the fetcher and the transform
+  /// independently testable.
+  ///
+  /// The transform runs **before** structural sharing, so changes to the
+  /// transformed data are correctly detected against the cached entry.
+  ///
+  /// ```dart
+  /// fetchQuery<User>(
+  ///   key: ['user', id],
+  ///   fetcher: () => api.getUser(id), // raw Map<String, dynamic>
+  ///   options: QoraOptions(
+  ///     transform: (raw) => User.fromJson(raw as Map<String, dynamic>),
+  ///   ),
+  /// );
+  /// ```
+  final Object Function(Object? data)? transform;
+
+  /// Transform function applied to fetch errors before they enter the cache.
+  ///
+  /// Receives the raw error thrown by the fetcher (after all retries).
+  /// Return a different error type to normalise errors across your API layer:
+  ///
+  /// ```dart
+  /// QoraOptions(
+  ///   transformError: (error) => switch (error) {
+  ///     DioException(e: final err) => AppError.fromDio(err),
+  ///     _ => AppError.unknown(error.toString()),
+  ///   },
+  /// )
+  /// ```
+  ///
+  /// Runs **before** [QoraClientConfig.errorMapper], so the per-query
+  /// transform takes precedence for specific queries before the global mapper.
+  final Object Function(Object error)? transformError;
+
   /// Tags that this query provides for tag-based cache invalidation.
   ///
   /// When a mutation invalidates a matching tag (via
@@ -346,6 +386,8 @@ class QoraOptions {
     this.structuralSharing = true,
     this.providesTags,
     this.toJson,
+    this.transform,
+    this.transformError,
   });
 
   /// Returns the retry delay for the given zero-based [attemptIndex].
@@ -386,6 +428,8 @@ class QoraOptions {
       structuralSharing: other.structuralSharing,
       providesTags: other.providesTags ?? providesTags,
       toJson: other.toJson ?? toJson,
+      transform: other.transform ?? transform,
+      transformError: other.transformError ?? transformError,
     );
   }
 }

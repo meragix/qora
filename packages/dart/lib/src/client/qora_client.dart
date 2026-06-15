@@ -1889,7 +1889,11 @@ class QoraClient implements MutationTracker {
       if (error is QoraCancelException) {
         throw error; // ignore: only_throw_errors
       }
-      final mapped = _mapError(error, stackTrace);
+      var transformErr = error;
+      if (opts.transformError != null) {
+        transformErr = opts.transformError!(transformErr);
+      }
+      final mapped = _mapError(transformErr, stackTrace);
       entry.updateState(
         Failure<T>(
           error: mapped,
@@ -1964,7 +1968,10 @@ class QoraClient implements MutationTracker {
     while (attempt <= opts.retryCount) {
       try {
         _log('Fetching $key (attempt ${attempt + 1}/${opts.retryCount + 1})');
-        final value = await fetcher();
+        var value = await fetcher();
+        if (opts.transform != null) {
+          value = opts.transform!(value as Object) as T;
+        }
         return (value: value, attempts: attempt);
       } catch (error) {
         lastError = error;
