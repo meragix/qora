@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MutationOptions.invalidates`: declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
 - `MutationController.invalidateQuery`: callback wired automatically by `QoraMutationBuilder` and `useMutation` from the nearest `QoraScope`.
 - **Tag-based invalidation**: decouple cache invalidation from query keys using logical tags. Queries declare tags they provide via `QoraOptions.providesTags`, and mutations declare tags they invalidate via `MutationOptions.invalidatesTags`. Wildcard matching applies: invalidating `QueryTag('post')` refetches ALL queries providing any tag of that type, regardless of id. Includes new `QueryTag` class, `QoraClient.invalidateTags()` method, and `MutationController.invalidateTags` callback.
+- **Transformation pipeline**: `QoraOptions.transform` and `QoraOptions.transformError` let you decouple data transformation from the fetcher. `transform` runs after a successful fetch (before the data enters the cache and before structural sharing). `transformError` runs after all retries fail (before the error enters the cache and before `QoraClientConfig.errorMapper`). Both the fetcher and the transform functions are independently testable.
 
 ### Changed
 
