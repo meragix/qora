@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `structuralSharing` : new `QoraOptions.structuralSharing` field (default `true`). Preserves referential equality for unchanged nested data across fetches. When a fetch returns data that is deeply equal to the existing cache, Qora retains the previous data reference. This prevents unnecessary widget rebuilds in deeply nested UIs. Supported on all cache write paths: `fetchQuery`, `setQueryData`, `setInfiniteQueryData`, `updateInfiniteQueryState`, and `hydrateQuery`.
+- `structuralShare<T>(T a, T b)` : utility function exported from `package:qora/qora.dart`. Compares two values with deep equality (recursive for Map, List, Set) and returns `a` when they are equal, preserving referential identity.
 - `QoraClient.clearCache` : clears the in-memory cache only, without affecting persistent storage. Useful for resetting memory state (e.g. on user logout) while keeping offline storage intact.
 - `MutationOptions.retryCondition` : predicate to determine whether a failed mutation should be retried, matching the existing `QoraOptions.retryCondition`.
 - `MutationOptions.invalidates` : declare a list of query keys to automatically invalidate after a successful mutation. Replaces the common manual `client.invalidate()` call in `onSuccess`.
