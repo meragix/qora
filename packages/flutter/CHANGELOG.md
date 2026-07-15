@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraBuilder.select` and `useQuery.select`: optional parameter to derive a computed value from the query data. The widget/hook only rebuilds when the selected value changes (referential equality), improving performance for large datasets (#22).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

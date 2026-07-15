@@ -68,6 +68,16 @@ import 'package:qora/qora.dart';
 ///   },
 /// )
 /// ```
+/// ## Derived subscriptions with `select`
+///
+/// ```dart
+/// QoraBuilder<List<User>>(
+///   queryKey: ['users'],
+///   fetcher: () => api.getUsers(),
+///   select: (users) => users.length,     // only rebuild when count changes
+///   builder: (context, state, fetchStatus) => Text('${state.dataOrNull} users'),
+/// )
+/// ```
 class QoraBuilder<T> extends StatefulWidget {
   /// The query key — either a [QoraKey] or a plain [List].
   ///
@@ -129,11 +139,26 @@ class QoraBuilder<T> extends StatefulWidget {
   /// ```
   final bool keepPreviousData;
 
+  /// When provided, the widget only rebuilds when the value returned by
+  /// [select] changes (compared via `==`). Use this to avoid unnecessary
+  /// rebuilds when only a subset of the data is needed.
+  ///
+  /// ```dart
+  /// QoraBuilder<List<User>>(
+  ///   queryKey: ['users'],
+  ///   fetcher: () => api.getUsers(),
+  ///   select: (users) => users.length,
+  ///   builder: (context, state, fetchStatus) => Text('${state.dataOrNull} users'),
+  /// )
+  /// ```
+  final Object? Function(T data)? select;
+
   const QoraBuilder({
     super.key,
     required this.queryKey,
     required this.fetcher,
     required this.builder,
+    this.select,
     this.options,
     this.client,
     this.enabled = true,
@@ -154,6 +179,19 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   /// Tracks the last successfully fetched value so that [keepPreviousData]
   /// can augment [Loading] / [Failure] states.
   T? _lastKnownData;
+
+  /// Tracks the last selected value, used to skip rebuilds when [select] is
+  /// provided and the derived value has not changed.
+  Object? _lastSelected;
+
+  bool _shouldRebuild(QoraState<T> newState) {
+    if (widget.select == null) return true;
+    final data = newState.dataOrNull;
+    final newSelected = data != null ? widget.select!(data) : null;
+    if (_lastSelected == newSelected) return false;
+    _lastSelected = newSelected;
+    return true;
+  }
 
   @override
   void didChangeDependencies() {
@@ -222,6 +260,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     _stateSub = client.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
+        if (!_shouldRebuild(state)) return;
         setState(() {
           _state = state;
           if (state is Success<T>) _lastKnownData = state.data;

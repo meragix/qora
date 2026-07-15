@@ -34,25 +34,49 @@ import 'use_query_client.dart';
 ///   }
 /// }
 /// ```
+///
+/// Use [select] to derive a computed value from the data and avoid
+/// unnecessary rebuilds:
+///
+/// ```dart
+/// final count = useQuery<List<User>>(
+///   key: ['users'],
+///   fetcher: () => api.getUsers(),
+///   select: (users) => users.length,
+/// );
+/// // Only rebuilds when count changes.
+/// ```
 QoraState<T> useQuery<T>({
   required List<Object?> key,
   required Future<T> Function() fetcher,
   QoraOptions? options,
+  Object? Function(T data)? select,
 }) {
   final client = useQueryClient();
 
   // Initialise from cache — avoids a loading flash when data is already fresh.
   final state = useState<QoraState<T>>(client.getQueryState<T>(key));
+  final lastSelected = useRef<Object?>(null);
 
   // Re-subscribe whenever the key changes.
   useEffect(() {
     final sub = client
         .watchQuery<T>(
-          key: key,
-          fetcher: fetcher,
-          options: options,
-        )
-        .listen((newState) => state.value = newState);
+      key: key,
+      fetcher: fetcher,
+      options: options,
+    )
+        .listen((newState) {
+      if (select != null) {
+        final data = newState.dataOrNull;
+        if (data != null) {
+          final newSelected = select(data);
+          if (lastSelected.value == newSelected) return;
+          lastSelected.value = newSelected;
+        }
+      }
+      state.value = newState;
+    });
 
     return sub.cancel;
   }, [QueryKey(key)]);

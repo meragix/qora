@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraBuilder.select` and `useQuery.select`: optional parameter for derived data subscriptions. Widgets only rebuild when the selected value changes, improving performance for large datasets (#22).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
