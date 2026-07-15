@@ -69,13 +69,13 @@ class QoraClientTrackingGateway implements TrackingGateway {
     final hasWatcher = _client.hasActiveWatcher(key);
     // invalidate() marks stale and, for active watchers, triggers _doFetch
     // immediately via the watchQuery stream's internal listener.
-    _client.invalidate(key);
+    _client.invalidate(key: key);
     return hasWatcher;
   }
 
   @override
   bool invalidate(String queryKey) {
-    _client.invalidate(_decodeKey(queryKey));
+    _client.invalidate(key: _decodeKey(queryKey));
     return true;
   }
 

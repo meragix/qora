@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraClient.invalidate(prefix:)` : named parameter that invalidates all query keys starting with the given prefix, removing the need for custom predicate callbacks when working with grouped keys (#23).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

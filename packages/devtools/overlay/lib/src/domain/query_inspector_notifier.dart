@@ -66,10 +66,10 @@ class QueryInspectorNotifier extends ChangeNotifier {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /// Marks the selected query stale, causing active observers to refetch.
-  void refetch() => _withKey(_client!.invalidate);
+  void refetch() => _withKey((k) => _client!.invalidate(key: k));
 
   /// Marks the selected query as stale (same effect as [refetch] in Qora).
-  void invalidate() => _withKey(_client!.invalidate);
+  void invalidate() => _withKey((k) => _client!.invalidate(key: k));
 
   /// Removes the selected query from the cache entirely.
   void remove() => _withKey(_client!.removeQuery);

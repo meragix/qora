@@ -108,7 +108,7 @@ class UserListScreen extends HookWidget {
             icon: const Icon(Icons.refresh),
             // Manually invalidate so the next render triggers a background
             // revalidation while showing the stale list (SWR).
-            onPressed: () => client.invalidate(const ['users']),
+            onPressed: () => client.invalidate(key: const ['users']),
           ),
         ],
       ),
@@ -126,7 +126,7 @@ class UserListScreen extends HookWidget {
             : _UserListView(users: data),
         Failure(:final error) => _ErrorView(
             message: '$error',
-            onRetry: () => client.invalidate(const ['users']),
+            onRetry: () => client.invalidate(key: const ['users']),
           ),
       },
     );
@@ -151,7 +151,7 @@ class EditProfileScreen extends HookWidget {
       options: MutationOptions(
         onSuccess: (user, _, __) async {
           // Invalidate the user query so it re-fetches with the new name.
-          client.invalidate(['users', user.id]);
+          client.invalidate(key: ['users', user.id]);
         },
       ),
     );
@@ -273,7 +273,7 @@ class ProfileScreen extends HookWidget {
       mutator: (name) => ApiService.updateUser(userId, name),
       options: MutationOptions(
         onSuccess: (user, _, __) async {
-          client.invalidate(['users', userId]);
+          client.invalidate(key: ['users', userId]);
         },
       ),
     );
@@ -290,7 +290,7 @@ class ProfileScreen extends HookWidget {
           _ProfileBody(user: data, mutation: updateMutation),
         Failure(:final error) => _ErrorView(
             message: '$error',
-            onRetry: () => client.invalidate(['users', userId]),
+            onRetry: () => client.invalidate(key: ['users', userId]),
           ),
       },
     );

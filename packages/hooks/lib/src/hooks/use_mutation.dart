@@ -75,7 +75,7 @@ class MutationHandle<TData, TVariables> {
 ///       mutator: (input) => Api.updateUser(input),
 ///       options: MutationOptions(
 ///         onSuccess: (user, _, __) async {
-///           QoraScope.of(context).invalidate(['users', user.id]);
+///           QoraScope.of(context).invalidate(key: ['users', user.id]);
 ///         },
 ///       ),
 ///     );
@@ -116,7 +116,7 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
       mutator: (v) => mutatorRef.value(v),
       options: optionsRef.value,
       invalidateQuery:
-          client != null ? (key) async => client.invalidate(key) : null,
+          client != null ? (key) async => client.invalidate(key: key) : null,
       invalidateTags:
           client != null ? (tags) async => client.invalidateTags(tags) : null,
     ),

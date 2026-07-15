@@ -222,7 +222,7 @@ class UserDetailScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.qora.invalidate(['users', userId]),
+            onPressed: () => context.qora.invalidate(key: ['users', userId]),
           ),
         ],
       ),
@@ -246,7 +246,7 @@ class UserDetailScreen extends StatelessWidget {
               ),
             Failure(:final error, previousData: null) => _ErrorScreen(
                 message: '$error',
-                onRetry: () => context.qora.invalidate(['users', userId]),
+                onRetry: () => context.qora.invalidate(key: ['users', userId]),
               ),
             Failure(:final error, :final previousData?) => Column(
                 children: [

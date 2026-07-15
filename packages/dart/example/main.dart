@@ -185,7 +185,7 @@ Future<void> main() async {
 
   // ── 9. Invalidate a single query ─────────────────────────────────────────
 
-  client.invalidate(['posts']);
+  client.invalidate(key: ['posts']);
 
   // ── 10. Remove from cache & dispose ──────────────────────────────────────
 

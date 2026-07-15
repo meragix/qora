@@ -71,7 +71,7 @@ class FeedScreen extends StatelessWidget {
                   Text('${state.error}', textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: () => context.qora.invalidate(const ['posts']),
+                    onPressed: () => context.qora.invalidate(key: const ['posts']),
                     child: const Text('Retry'),
                   ),
                 ],
