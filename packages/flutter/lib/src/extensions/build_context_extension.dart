@@ -7,12 +7,15 @@ import 'package:qora_flutter/qora_flutter.dart';
 ///
 /// ```dart
 /// // Invalidate a specific query after a mutation
-/// context.qora.invalidate(['posts', postId]);
+/// context.qora.invalidate(key: ['posts', postId]);
 ///
 /// // Invalidate all queries matching a predicate
 /// context.qora.invalidateWhere((key) => key.firstOrNull == 'users');
 ///
-/// // Optimistic update
+/// // Direct cache write (optimistic update)
+/// context.mutate<Todo>(['todos', todoId], todo.copyWith(done: true));
+///
+/// // Optimistic update with rollback
 /// final snapshot = context.qora.getQueryData<User>(['user', userId]);
 /// context.qora.setQueryData(['user', userId], updatedUser);
 /// try {
@@ -51,4 +54,17 @@ extension QoraBuildContextExtension on BuildContext {
     QoraOptions? options,
   }) =>
       qora.prefetch<T>(key: key, fetcher: fetcher, options: options);
+
+  /// Write data directly to the cache without requiring a fetcher.
+  ///
+  /// Shortcut for `context.qora.mutate(key, data)`. Triggers UI updates
+  /// for all active subscribers watching [key].
+  ///
+  /// ```dart
+  /// ElevatedButton(
+  ///   onPressed: () => context.mutate<Todo>(['todos', id], todo.copyWith(done: true)),
+  ///   child: const Text('Done'),
+  /// )
+  /// ```
+  void mutate<T>(Object key, T data) => qora.mutate<T>(key, data);
 }
