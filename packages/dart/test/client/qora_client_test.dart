@@ -214,4 +214,131 @@ void main() {
       ); // ArgumentError does not match FormatException → skip retry
     });
   });
+
+  group('Prefix operations', () {
+    late QoraClient client;
+
+    setUp(() {
+      client = QoraClient();
+    });
+
+    tearDown(() {
+      client.clear();
+    });
+
+    group('invalidate with prefix', () {
+      test('invalidates all keys matching prefix', () async {
+        await client.fetchQuery<String>(
+          key: ['posts', '1'],
+          fetcher: () async => 'post 1',
+        );
+        await client.fetchQuery<String>(
+          key: ['posts', '2'],
+          fetcher: () async => 'post 2',
+        );
+        await client.fetchQuery<String>(
+          key: ['users', '1'],
+          fetcher: () async => 'user 1',
+        );
+
+        client.invalidate(prefix: ['posts']);
+
+        // Posts are invalidated: their state transitions to Loading.
+        final post1 = client.getQueryState<String>(['posts', '1']);
+        final post2 = client.getQueryState<String>(['posts', '2']);
+        final user1 = client.getQueryState<String>(['users', '1']);
+
+        // After invalidation, entries transition to Loading(previousData: ...).
+        // The data is still accessible via dataOrNull because previousData is set.
+        // But isSuccess should be false for invalidated entries.
+        expect(
+          post1.isSuccess,
+          isFalse,
+          reason: 'post 1 should be invalidated',
+        );
+        expect(
+          post2.isSuccess,
+          isFalse,
+          reason: 'post 2 should be invalidated',
+        );
+        expect(
+          user1.isSuccess,
+          isTrue,
+          reason: 'users key should NOT be invalidated',
+        );
+      });
+
+      test('matches single-element prefix', () async {
+        await client.fetchQuery<String>(
+          key: ['posts'],
+          fetcher: () async => 'all posts',
+        );
+        await client.fetchQuery<String>(
+          key: ['posts', '1'],
+          fetcher: () async => 'post 1',
+        );
+
+        client.invalidate(prefix: ['posts']);
+
+        expect(client.getQueryState<String>(['posts']).isSuccess, isFalse);
+        expect(client.getQueryState<String>(['posts', '1']).isSuccess, isFalse);
+      });
+
+      test('empty prefix invalidates everything', () async {
+        await client.fetchQuery<String>(
+          key: ['a'],
+          fetcher: () async => 'a',
+        );
+        await client.fetchQuery<String>(
+          key: ['b'],
+          fetcher: () async => 'b',
+        );
+
+        client.invalidate(prefix: []);
+
+        expect(client.getQueryState<String>(['a']).isSuccess, isFalse);
+        expect(client.getQueryState<String>(['b']).isSuccess, isFalse);
+      });
+
+      test('prefix longer than key never matches', () async {
+        await client.fetchQuery<String>(
+          key: ['a'],
+          fetcher: () async => 'a',
+        );
+
+        client.invalidate(prefix: ['a', 'b']);
+
+        expect(
+          client.getQueryState<String>(['a']).isSuccess,
+          isTrue,
+          reason: 'prefix longer than key should not match',
+        );
+      });
+
+      test('no match returns silently', () {
+        client.invalidate(prefix: ['nonexistent']);
+        // No exception thrown, no keys found.
+      });
+
+      test('mixed key types match by value equality', () async {
+        await client.fetchQuery<String>(
+          key: ['users', 42],
+          fetcher: () async => 'user 42',
+        );
+        await client.fetchQuery<String>(
+          key: ['users', 99],
+          fetcher: () async => 'user 99',
+        );
+
+        client.invalidate(prefix: ['users', 42]);
+
+        expect(client.getQueryState<String>(['users', 42]).isSuccess, isFalse);
+        expect(
+          client.getQueryState<String>(['users', 99]).isSuccess,
+          isTrue,
+          reason: 'only exact prefix match should be invalidated',
+        );
+      });
+    });
+  });
 }

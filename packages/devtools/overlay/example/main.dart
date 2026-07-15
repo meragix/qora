@@ -142,7 +142,7 @@ class _UserListScreenState extends State<UserListScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              widget.client.invalidate(const ['users']);
+              widget.client.invalidate(key: const ['users']);
               _load();
             },
           ),
@@ -209,7 +209,7 @@ class _UpdateUserScreenState extends State<UpdateUserScreen> {
       mutator: (name) => ApiService.updateUser(1, name),
       options: MutationOptions(
         onSuccess: (user, _, __) async {
-          widget.client.invalidate(const ['users']);
+          widget.client.invalidate(key: const ['users']);
         },
       ),
     );
@@ -292,7 +292,7 @@ class _OptimisticScreenState extends State<OptimisticScreen> {
     try {
       // 3. Perform the real network call.
       await ApiService.updateUser(1, 'Alice');
-      widget.client.invalidate(const ['users', 1]);
+      widget.client.invalidate(key: const ['users', 1]);
       setState(() => _status = 'confirmed ✓');
     } catch (_) {
       // 4. Rollback on failure — snapshot restores the pre-optimistic state.

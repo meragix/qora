@@ -866,18 +866,36 @@ class QoraClient implements MutationTracker {
   /// await api.createPost(payload);
   /// client.invalidate(['posts']);
   /// ```
-  void invalidate(Object key) {
+  ///
+  /// Pass [prefix] to invalidate all queries whose key starts with the given
+  /// prefix. When [prefix] is provided, [key] is ignored.
+  ///
+  /// ```dart
+  /// // Invalidate all post-related queries: ['posts'], ['posts', id], etc.
+  /// client.invalidate(prefix: ['posts']);
+  /// ```
+  void invalidate({Object? key, List<dynamic>? prefix}) {
     _assertNotDisposed();
-    final normalized = normalizeKey(key);
+
+    if (prefix != null) {
+      final matched = _cache.findKeys((k) => _matchesPrefix(k, prefix));
+      for (final k in matched) {
+        _invalidateOne(k);
+      }
+      return;
+    }
+
+    if (key != null) {
+      _invalidateOne(normalizeKey(key));
+    }
+  }
+
+  void _invalidateOne(List<dynamic> normalized) {
     final entry = _cache.get<dynamic>(normalized);
 
     if (entry != null) {
       _log('Invalidating: $normalized');
-
-      // We delegate the invalidation to the entry.
-      // The entry 'QueryEntry<T>' already knows its 'T'.
       entry.invalidate();
-
       _pendingRequests.remove(_stringKey(normalized));
       _emitFetchingCount();
       _tracker.onQueryInvalidated(_stringKey(normalized));
@@ -900,7 +918,7 @@ class QoraClient implements MutationTracker {
     // Collect first to avoid concurrent modification.
     final matched = _cache.findKeys(predicate);
     for (final key in matched) {
-      invalidate(key);
+      invalidate(key: key);
     }
   }
 
@@ -931,7 +949,7 @@ class QoraClient implements MutationTracker {
       return filter(_stringKey(key), entry.state, entry.lastOptions);
     });
     for (final key in matched) {
-      invalidate(key);
+      invalidate(key: key);
     }
   }
 
@@ -971,7 +989,7 @@ class QoraClient implements MutationTracker {
     for (final sk in matched) {
       try {
         final key = jsonDecode(sk) as List<dynamic>;
-        invalidate(key);
+        invalidate(key: key);
       } catch (_) {
         // If the key cannot be decoded, skip it gracefully.
       }
@@ -2171,6 +2189,19 @@ class QoraClient implements MutationTracker {
         _log('Evicted: $key');
       }
     }
+  }
+
+  /// Returns `true` when [key] starts with every element of [prefix].
+  ///
+  /// An empty [prefix] matches every key. A [prefix] longer than [key] never
+  /// matches. Elements are compared with `==` in order.
+  static bool _matchesPrefix(List<dynamic> key, List<dynamic> prefix) {
+    if (prefix.isEmpty) return true;
+    if (prefix.length > key.length) return false;
+    for (var i = 0; i < prefix.length; i++) {
+      if (key[i] != prefix[i]) return false;
+    }
+    return true;
   }
 
   /// Map a raw error through [QoraClientConfig.errorMapper] if configured.

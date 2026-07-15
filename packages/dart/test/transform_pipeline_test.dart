@@ -56,7 +56,7 @@ void main() {
         expect(firstData, {'transformed': 1});
 
         // Invalidate so second fetch actually re-fetches
-        client.invalidate(key);
+        client.invalidate(key: key);
 
         // Second fetch with same raw data → same transformed result
         await client.fetchQuery<Map<String, dynamic>>(
@@ -97,7 +97,7 @@ void main() {
         expect(firstData, {'transformed': 1});
 
         // Invalidate so second fetch actually re-fetches
-        client.invalidate(key);
+        client.invalidate(key: key);
 
         // Second fetch with different raw data → different transformed result
         await client.fetchQuery<Map<String, dynamic>>(

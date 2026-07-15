@@ -35,7 +35,7 @@ class ProfileScreen extends HookWidget {
       mutator: api.updateUser,
       options: MutationOptions(
         onSuccess: (_, _, _) async {
-          client.invalidate(['users', userId]);
+          client.invalidate(key: ['users', userId]);
           if (context.mounted) {
             ScaffoldMessenger.of(
               context,
@@ -64,7 +64,7 @@ class ProfileScreen extends HookWidget {
         ),
         Failure(:final error, previousData: null) => _ErrorView(
           error: error,
-          onRetry: () => client.invalidate(['users', userId]),
+          onRetry: () => client.invalidate(key: ['users', userId]),
         ),
         _ => _ProfileBody(
           user: userQuery.dataOrNull!,

@@ -25,7 +25,7 @@ class UserDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refetch',
-            onPressed: () => context.qora.invalidate(['users', userId]),
+            onPressed: () => context.qora.invalidate(key: ['users', userId]),
           ),
         ],
       ),
@@ -60,7 +60,7 @@ class UserDetailScreen extends StatelessWidget {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                       onPressed: () =>
-                          context.qora.invalidate(['users', userId]),
+                          context.qora.invalidate(key: ['users', userId]),
                     ),
                   ],
                 ),
@@ -97,7 +97,7 @@ class UserDetailScreen extends StatelessWidget {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                       onPressed: () =>
-                          context.qora.invalidate(['users', userId]),
+                          context.qora.invalidate(key: ['users', userId]),
                     ),
                   ],
                 ),

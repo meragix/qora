@@ -58,7 +58,7 @@ class TodoScreen extends StatelessWidget {
                   Text('$error', textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: () => context.qora.invalidate(const ['todos']),
+                    onPressed: () => context.qora.invalidate(key: const ['todos']),
                     child: const Text('Retry'),
                   ),
                 ],
@@ -172,7 +172,7 @@ class _TodoTileWithMutations extends StatelessWidget {
         offlineQueue: true,
         optimisticResponse: (input) =>
             todo.copyWith(completed: input.completed),
-        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
+        onSuccess: (_, _, _) async => context.qora.invalidate(key: const ['todos']),
       ),
       builder: (context, toggleState, toggle) {
         return QoraMutationBuilder<void, DeleteTodoInput, void>(
@@ -181,7 +181,7 @@ class _TodoTileWithMutations extends StatelessWidget {
           options: MutationOptions(
             offlineQueue: true,
             onSuccess: (_, _, _) async =>
-                context.qora.invalidate(const ['todos']),
+                context.qora.invalidate(key: const ['todos']),
           ),
           builder: (context, deleteState, delete) {
             final displayTodo =
@@ -240,7 +240,7 @@ class _AddTodoFab extends StatelessWidget {
         },
         onError: (_, _, prev) async =>
             context.qora.restoreQueryData(const ['todos'], prev),
-        onSuccess: (_, _, _) async => context.qora.invalidate(const ['todos']),
+        onSuccess: (_, _, _) async => context.qora.invalidate(key: const ['todos']),
       ),
       builder: (context, state, mutate) {
         final isQueued = state.isPending;

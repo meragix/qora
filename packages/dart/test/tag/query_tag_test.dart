@@ -224,7 +224,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // Invalidate so second fetch goes through _doFetch (cache miss route).
-      client.invalidate(QoraKey(['post', 1]));
+      client.invalidate(key: QoraKey(['post', 1]));
 
       // Second fetch with different tags — replaces [post:1, draft] with [post:1, published].
       await client.fetchQuery<Map<String, dynamic>>(
