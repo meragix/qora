@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Route-level prefetching guide covering GoRouter redirects, AutoRoute resolvers, and cache-first vs network-first strategies with error handling patterns (#25).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
