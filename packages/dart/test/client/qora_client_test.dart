@@ -1,6 +1,7 @@
 import 'package:qora/src/client/qora_client.dart';
 import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/state/qora_state.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -212,6 +213,61 @@ void main() {
         attempts,
         1,
       ); // ArgumentError does not match FormatException → skip retry
+    });
+  });
+
+  group('mutate', () {
+    late QoraClient client;
+
+    setUp(() {
+      client = QoraClient();
+    });
+
+    tearDown(() {
+      client.clear();
+    });
+
+    test('writes data to cache and triggers stream update', () async {
+      final states = <QoraState<String>>[];
+      final sub = client.watchState<String>(['key']).listen(states.add);
+
+      client.mutate(['key'], 'hello');
+
+      await Future<void>.delayed(Duration.zero);
+      expect(states.isNotEmpty, isTrue);
+      expect(states.first, isA<Success<String>>());
+      expect((states.first as Success<String>).data, 'hello');
+      expect(client.getQueryData<String>(['key']), 'hello');
+
+      await sub.cancel();
+    });
+
+    test('mutate is an alias for setQueryData', () {
+      client.mutate(['test'], 'value');
+      expect(client.getQueryData<String>(['test']), 'value');
+    });
+
+    test('mutate non-existent key creates a new entry', () {
+      client.mutate(['new'], 'data');
+      final state = client.getQueryState<String>(['new']);
+      expect(state, isA<Success<String>>());
+      expect((state as Success<String>).data, 'data');
+    });
+
+    test('mutate updates multiple subscribers', () async {
+      final s1 = <QoraState<String>>[];
+      final s2 = <QoraState<String>>[];
+      final sub1 = client.watchState<String>(['shared']).listen(s1.add);
+      final sub2 = client.watchState<String>(['shared']).listen(s2.add);
+
+      client.mutate(['shared'], 'updated');
+
+      await Future<void>.delayed(Duration.zero);
+      expect((s1.first as Success<String>).data, 'updated');
+      expect((s2.first as Success<String>).data, 'updated');
+
+      await sub1.cancel();
+      await sub2.cancel();
     });
   });
 }

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `context.mutate<T>(key, data)`: convenience extension method for direct cache writes from any widget. Shortcut for `context.qora.mutate()` (#20).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

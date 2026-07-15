@@ -838,6 +838,23 @@ class QoraClient implements MutationTracker {
     _log('setQueryData: $normalized');
   }
 
+  /// Write data directly to the cache from any widget, without requiring a
+  /// fetcher. Alias for [setQueryData] with mutation semantics: intended for
+  /// optimistic updates after a write operation.
+  ///
+  /// Triggers UI updates for all active subscribers watching [key].
+  ///
+  /// ```dart
+  /// // Optimistic mutation from a button callback.
+  /// ElevatedButton(
+  ///   onPressed: () {
+  ///     context.qora.mutate(['todos', todoId], todo.copyWith(done: true));
+  ///   },
+  ///   child: const Text('Mark done'),
+  /// )
+  /// ```
+  void mutate<T>(Object key, T data) => setQueryData<T>(key, data);
+
   /// Restore query data from a previous snapshot (optimistic rollback).
   ///
   /// If [snapshot] is `null`, the query is removed from cache entirely.
