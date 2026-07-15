@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+
+- GraphQL integration guide covering `graphql` and `ferry` client wrapping, normalized cache interaction, cursor pagination, and error handling (#30).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
