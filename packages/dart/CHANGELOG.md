@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraState.isValidating`: new boolean getter that returns `true` when a background revalidation is in progress with stale data visible (`Loading` with `previousData`). Complements the existing `isLoading` which returns `true` for any in-progress fetch (#21).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

@@ -25,6 +25,12 @@ import 'use_query_client.dart';
 ///       options: const QoraOptions(staleTime: Duration(minutes: 5)),
 ///     );
 ///
+///     if (state.isValidating) {
+///       return Stack(
+///         children: [UserCard(state.dataOrNull!), const LinearProgressIndicator()],
+///       );
+///     }
+///
 ///     return switch (state) {
 ///       Initial()            => const SizedBox.shrink(),
 ///       Loading()            => const CircularProgressIndicator(),
@@ -34,6 +40,11 @@ import 'use_query_client.dart';
 ///   }
 /// }
 /// ```
+///
+/// Use [QoraState.isValidating] to show a subtle loading indicator on top of
+/// stale data during background revalidation, while [QoraState.isLoading]
+/// continues to return `true` for any in-progress fetch. See [QoraState]
+/// for the full set of boolean convenience getters.
 QoraState<T> useQuery<T>({
   required List<Object?> key,
   required Future<T> Function() fetcher,

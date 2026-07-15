@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraState.isValidating` : new boolean getter exposed in `QoraBuilder`, `QoraStateBuilder` and `useQuery` return types. Returns `true` when a background revalidation is in progress with stale data visible (#21).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

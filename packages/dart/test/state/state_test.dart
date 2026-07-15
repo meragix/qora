@@ -15,6 +15,7 @@ void main() {
         expect(state.dataOrNull, isNull);
         expect(state.isInitial, isTrue);
         expect(state.isLoading, isFalse);
+        expect(state.isValidating, isFalse);
         expect(state.isSuccess, isFalse);
         expect(state.isError, isFalse);
       });
@@ -35,6 +36,7 @@ void main() {
         expect(state.hasData, isFalse);
         expect(state.dataOrNull, isNull);
         expect(state.isLoading, isTrue);
+        expect(state.isValidating, isFalse);
         expect(state.previousData, isNull);
       });
 
@@ -43,6 +45,7 @@ void main() {
         expect(state.hasData, isTrue);
         expect(state.dataOrNull, equals('old'));
         expect(state.isLoading, isTrue);
+        expect(state.isValidating, isTrue);
         expect(state.previousData, equals('old'));
       });
 
@@ -71,6 +74,8 @@ void main() {
         expect(state.hasData, isTrue);
         expect(state.dataOrNull, equals('hello'));
         expect(state.isSuccess, isTrue);
+        expect(state.isLoading, isFalse);
+        expect(state.isValidating, isFalse);
         expect(state.data, equals('hello'));
         expect(state.updatedAt, equals(now));
       });
@@ -119,6 +124,8 @@ void main() {
         expect(state.hasData, isFalse);
         expect(state.dataOrNull, isNull);
         expect(state.isError, isTrue);
+        expect(state.isLoading, isFalse);
+        expect(state.isValidating, isFalse);
         expect(state.error, equals('boom'));
         expect(state.previousData, isNull);
         expect(state.stackTrace, isNull);
@@ -156,6 +163,34 @@ void main() {
   });
 
   group('QoraState - Pattern Matching', () {
+    test('isValidating distinguishes first-load from background refresh', () {
+      const firstLoad = Loading<String>();
+      const refresh = Loading<String>(previousData: 'old');
+
+      expect(
+        firstLoad.isLoading,
+        isTrue,
+      );
+      expect(
+        firstLoad.isValidating,
+        isFalse,
+        reason: 'First load has no stale data to validate against',
+      );
+
+      expect(
+        refresh.isLoading,
+        isTrue,
+      );
+      expect(
+        refresh.isValidating,
+        isTrue,
+        reason: 'Background refresh has stale data visible',
+      );
+
+      expect(const Initial<String>().isValidating, isFalse);
+      expect(Success.now('data').isValidating, isFalse);
+      expect(const Failure<String>(error: 'err').isValidating, isFalse);
+    });
     test('when() executes correct callback', () {
       var initialCalled = false;
       var loadingCalled = false;
