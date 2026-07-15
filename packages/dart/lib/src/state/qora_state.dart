@@ -56,6 +56,32 @@ sealed class QoraState<T> {
   /// Returns true if actively loading.
   bool get isLoading => this is Loading<T>;
 
+  /// Returns true when a background revalidation is in progress and stale data
+  /// is already available (i.e. [Loading] with [Loading.previousData] set).
+  ///
+  /// Use this to distinguish between "first-load spinner" and "background
+  /// refresh indicator":
+  ///
+  /// ```dart
+  /// if (state.isLoading && state.dataOrNull == null) {
+  ///   // First load — show full-screen spinner
+  ///   return const CircularProgressIndicator();
+  /// }
+  /// if (state.isValidating) {
+  ///   // Background refresh — show subtle indicator on top of stale data
+  ///   return Stack(
+  ///     children: [
+  ///       DataView(state.dataOrNull),
+  ///       const Positioned(top: 0, child: LinearProgressIndicator()),
+  ///     ],
+  ///   );
+  /// }
+  /// ```
+  bool get isValidating => switch (this) {
+        Loading(:final previousData) => previousData != null,
+        _ => false,
+      };
+
   /// Returns true if in error state.
   bool get isError => this is Failure<T>;
 

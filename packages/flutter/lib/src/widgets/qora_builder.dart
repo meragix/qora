@@ -17,6 +17,29 @@ import 'package:qora/qora.dart';
 /// can distinguish between actively fetching and waiting for network
 /// (`FetchStatus.paused`).
 ///
+/// Use [QoraState.isValidating] to distinguish between a first-load spinner
+/// (no data yet) and a background-refresh indicator (stale data visible):
+///
+/// ```dart
+/// QoraBuilder<User>(
+///   queryKey: ['users', userId],
+///   fetcher: () => api.getUser(userId),
+///   builder: (context, state, fetchStatus) {
+///     if (fetchStatus == FetchStatus.paused) {
+///       return OfflinePlaceholder(staleData: state.dataOrNull);
+///     }
+///     if (state.isValidating) {
+///       return Stack(children: [UserCard(state.dataOrNull!), const LinearProgressIndicator()]);
+///     }
+///     return switch (state) {
+///       Success(:final data) => UserCard(data),
+///       Loading() => const CircularProgressIndicator(),
+///       _ => const SizedBox.shrink(),
+///     };
+///   },
+/// )
+/// ```
+///
 /// ## Basic usage
 ///
 /// ```dart
