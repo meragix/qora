@@ -162,6 +162,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     final prev = _client;
     _initClient();
     if (_client == prev && prev != null) return;
+    _prepopulateIfNeeded();
     _subscribe();
     _executeIfNeeded();
   }
@@ -172,9 +173,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
     if (widget.client != oldWidget.client) {
       _initClient();
+      _prepopulateIfNeeded();
       _subscribe();
       _executeIfNeeded();
     } else if (widget.queryKey != oldWidget.queryKey) {
+      _prepopulateIfNeeded();
       _subscribe();
       _executeIfNeeded();
     } else if (widget.enabled && !oldWidget.enabled) {
@@ -193,6 +196,15 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     final newClient = widget.client ?? QoraScope.of(context);
     if (_client != newClient) {
       _client = newClient;
+    }
+  }
+
+  void _prepopulateIfNeeded() {
+    final client = _client;
+    if (client == null) return;
+    final opts = client.config.defaultOptions.merge(widget.options);
+    if (opts.initialData != null || opts.placeholderData != null) {
+      client.prepopulateCache<T>(widget.queryKey, opts);
     }
   }
 

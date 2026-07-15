@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraBuilder` and `useQuery` now eagerly seed `QoraOptions.initialData` / `placeholderData` into the cache before the first render, eliminating the `Initial` flash and enabling instant SSR/hydration renders (#19).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added

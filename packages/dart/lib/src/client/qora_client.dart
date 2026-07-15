@@ -2030,6 +2030,25 @@ class QoraClient implements MutationTracker {
     _log('initialData applied: ${entry.state}');
   }
 
+  /// Eagerly seeds the cache with [QoraOptions.initialData] or
+  /// [QoraOptions.placeholderData] before any fetch is triggered.
+  ///
+  /// Called by [QoraBuilder] and hooks in `didChangeDependencies` (before
+  /// the first `build()`) so widgets see the pre-populated state immediately
+  /// instead of flashing an [Initial] loader.
+  ///
+  /// If the cache already contains an entry for [key] (any state), or if
+  /// neither [QoraOptions.initialData] nor [QoraOptions.placeholderData]
+  /// produce a value of type `T`, this is a no-op.
+  void prepopulateCache<T>(Object key, QoraOptions options) {
+    final normalized = normalizeKey(key);
+    // Only create an entry if one does not already exist — never overwrite.
+    final existingEntry = _cache.peek(normalized);
+    if (existingEntry != null) return;
+    final entry = _getOrCreateEntry<T>(normalized);
+    _applyInitialData<T>(entry, options);
+  }
+
   /// Return an existing [CacheEntry] or create a fresh [Initial] one.
   ///
   /// Performs lazy eviction: if the existing entry has expired, it is

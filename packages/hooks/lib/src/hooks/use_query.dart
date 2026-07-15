@@ -41,6 +41,14 @@ QoraState<T> useQuery<T>({
 }) {
   final client = useQueryClient();
 
+  // Eagerly seed initialData/placeholderData into the cache before the first
+  // render so widgets see the pre-populated state instead of an Initial flash.
+  final mergedOptions = client.config.defaultOptions.merge(options);
+  if (mergedOptions.initialData != null ||
+      mergedOptions.placeholderData != null) {
+    client.prepopulateCache<T>(key, mergedOptions);
+  }
+
   // Initialise from cache — avoids a loading flash when data is already fresh.
   final state = useState<QoraState<T>>(client.getQueryState<T>(key));
 
