@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+
+- Migration guides from flutter_query and cached_query to Qora, with side-by-side API comparisons, step-by-step migration examples, and key behavioral differences (#28, #29).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
