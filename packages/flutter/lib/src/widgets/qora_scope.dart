@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
+import '../managers/flutter_connectivity_manager.dart';
+import '../managers/flutter_lifecycle_manager.dart';
 import 'network_status_builder.dart';
 
 /// Provides a [QoraClient] to the widget tree via an [InheritedWidget].
@@ -95,6 +97,56 @@ class QoraScope extends StatefulWidget {
     this.connectivityManager,
     required this.child,
   });
+
+  /// Convenience constructor that automatically wires [FlutterLifecycleManager]
+  /// and [FlutterConnectivityManager] for automatic refetch on app resume and
+  /// connectivity restore.
+  ///
+  /// Equivalent to:
+  ///
+  /// ```dart
+  /// QoraScope(
+  ///   client: client,
+  ///   lifecycleManager: FlutterLifecycleManager(qoraClient: client),
+  ///   connectivityManager: FlutterConnectivityManager(),
+  ///   child: MyApp(),
+  /// )
+  /// ```
+  ///
+  /// Set [enableLifecycle] or [enableConnectivity] to `false` to disable
+  /// a specific listener. Pass [minBackgroundDuration] to control how long
+  /// the app must be in background before queries are invalidated on resume.
+  ///
+  /// ```dart
+  /// void main() {
+  ///   runApp(
+  ///     QoraScope.auto(
+  ///       client: QoraClient(),
+  ///       child: MyApp(),
+  ///     ),
+  ///   );
+  /// }
+  /// ```
+  QoraScope.auto({
+    Key? key,
+    required QoraClient client,
+    bool enableLifecycle = true,
+    bool enableConnectivity = true,
+    Duration minBackgroundDuration = const Duration(seconds: 5),
+    required Widget child,
+  }) : this(
+          key: key,
+          client: client,
+          lifecycleManager: enableLifecycle
+              ? FlutterLifecycleManager(
+                  qoraClient: client,
+                  minBackgroundDuration: minBackgroundDuration,
+                )
+              : null,
+          connectivityManager:
+              enableConnectivity ? FlutterConnectivityManager() : null,
+          child: child,
+        );
 
   /// Returns the [QoraClient] from the nearest [QoraScope] ancestor.
   ///

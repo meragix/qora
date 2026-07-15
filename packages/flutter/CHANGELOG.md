@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraScope.auto()` : convenience constructor that automatically wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call lifecycle and connectivity listeners (#24).
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
