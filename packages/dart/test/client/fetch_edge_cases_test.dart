@@ -323,35 +323,23 @@ void main() {
     });
   });
 
-  group('a fetch whose entry was evicted while in flight', () {
-    Future<void> expectKeyReleased(QoraClient client) async {
-      expect(client.isFetchingCount, 0);
-      var calls = 0;
-      final data = await client.fetchQuery<String>(
-        key: ['a'],
-        fetcher: () async {
-          calls++;
-          return 'fresh';
-        },
-        options: _noRetry,
-      );
-      expect(calls, 1, reason: 'the key must not join the settled fetch');
-      expect(data, 'fresh');
+  group('eviction of a query with a fetch in flight', () {
+    Future<String> gated(Completer<void> gate, String value) async {
+      await gate.future;
+      return value;
     }
 
-    test('releases the key and still persists (LRU)', () async {
+    test('LRU skips it, and catches up once the fetch settled', () async {
+      final evicted = <List<dynamic>>[];
       final client = _RecordingClient(
-        config: const QoraClientConfig(maxCacheSize: 1),
+        config: QoraClientConfig(maxCacheSize: 1, onCacheEvict: evicted.add),
       );
       addTearDown(client.dispose);
       final gate = Completer<void>();
 
       final a = client.prefetch<String>(
         key: ['a'],
-        fetcher: () async {
-          await gate.future;
-          return 'A';
-        },
+        fetcher: () => gated(gate, 'A'),
         options: _noRetry,
       );
       await pumpEventQueue();
@@ -359,17 +347,28 @@ void main() {
         key: ['b'],
         fetcher: () async => 'B',
         options: _noRetry,
-      ); // evicts ['a']
-      expect(client.cachedKeys, isNot(contains(['a'])));
+      );
+      expect(evicted, isEmpty, reason: "['a'] is still fetching");
 
       gate.complete();
       await a;
-
+      expect(client.getQueryData<String>(['a']), 'A');
       expect(client.persisted, ['B', 'A']);
-      await expectKeyReleased(client);
+      expect(client.isFetchingCount, 0);
+
+      // The next insertion brings the cache back under maxCacheSize.
+      await client.prefetch<String>(
+        key: ['c'],
+        fetcher: () async => 'C',
+        options: _noRetry,
+      );
+      expect(client.cachedKeys, [
+        ['c'],
+      ]);
     });
 
-    test('releases the key after a failure (LRU)', () async {
+    test('LRU skips it when the fetch fails, and the key is released',
+        () async {
       final client = QoraClient(
         config: const QoraClientConfig(maxCacheSize: 1),
       );
@@ -389,15 +388,26 @@ void main() {
         key: ['b'],
         fetcher: () async => 'B',
         options: _noRetry,
-      ); // evicts ['a']
+      );
 
       gate.complete();
       await expectLater(a, throwsStateError);
+      expect(client.getQueryState<String>(['a']), isA<Failure<String>>());
+      expect(client.isFetchingCount, 0);
 
-      await expectKeyReleased(client);
+      var calls = 0;
+      await client.fetchQuery<String>(
+        key: ['a'],
+        fetcher: () async {
+          calls++;
+          return 'retry';
+        },
+        options: _noRetry,
+      );
+      expect(calls, 1);
     });
 
-    test('releases the key (GC)', () async {
+    test('the GC timer waits for the fetch, then collects the query', () async {
       // The GC timer reads the client defaults: the entry has no options of
       // its own until a fetch succeeds.
       final client = QoraClient(
@@ -410,22 +420,85 @@ void main() {
 
       final sub = client.watchQuery<String>(
         key: ['a'],
-        fetcher: () async {
-          await gate.future;
-          return 'A';
-        },
+        fetcher: () => gated(gate, 'A'),
         options: _noRetry,
       ).listen((_) {});
       await pumpEventQueue();
       await sub.cancel();
-      // The fetch is held by the gate, so only the GC timer can run here.
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      expect(client.cachedKeys, isNot(contains(['a'])));
+      expect(
+        client.cachedKeys,
+        anyElement(equals(['a'])),
+        reason: 'still fetching',
+      );
 
       gate.complete();
       await pumpEventQueue();
+      expect(client.getQueryData<String>(['a']), 'A');
 
-      await expectKeyReleased(client);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(client.cachedKeys, isNot(anyElement(equals(['a']))));
+    });
+  });
+
+  group('lazy eviction', () {
+    // A long staleTime: a cache hit returns the data without fetching, so a
+    // second fetcher call proves the expired entry was dropped.
+    const opts = QoraOptions(
+      retryCount: 0,
+      staleTime: Duration(hours: 1),
+      gcTime: Duration(milliseconds: 10),
+    );
+
+    test('drops an expired, inactive query on its next access', () async {
+      final evicted = <List<dynamic>>[];
+      // The background sweep starts with a 1-minute heartbeat, so only the
+      // lazy check can drop the entry within this test.
+      final client = QoraClient(
+        config: QoraClientConfig(
+          defaultOptions: opts,
+          onCacheEvict: evicted.add,
+        ),
+      );
+      addTearDown(client.dispose);
+      var calls = 0;
+      Future<String> fetcher() async => 'v${++calls}';
+
+      await client.fetchQuery<String>(key: ['a'], fetcher: fetcher);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final data = await client.fetchQuery<String>(
+        key: ['a'],
+        fetcher: fetcher,
+      );
+
+      expect(evicted, [
+        ['a'],
+      ]);
+      expect(calls, 2);
+      expect(data, 'v2');
+    });
+
+    test('keeps a query whose fetch is still running', () async {
+      final client = QoraClient(
+        config: const QoraClientConfig(defaultOptions: opts),
+      );
+      addTearDown(client.dispose);
+      final gate = Completer<void>();
+      var calls = 0;
+      Future<String> fetcher() async {
+        calls++;
+        await gate.future;
+        return 'A';
+      }
+
+      final first = client.fetchQuery<String>(key: ['a'], fetcher: fetcher);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final second = client.fetchQuery<String>(key: ['a'], fetcher: fetcher);
+      gate.complete();
+
+      expect(await Future.wait([first, second]), ['A', 'A']);
+      expect(calls, 1, reason: 'the second call joins the running fetch');
+      expect(client.getQueryData<String>(['a']), 'A');
     });
   });
 

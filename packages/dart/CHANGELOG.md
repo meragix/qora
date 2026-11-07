@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QueryCache` takes an optional `canEvict` predicate that vetoes the LRU eviction of an inactive entry. `QoraClient` uses it to keep queries with a fetch in flight.
+
 ### Changed
 
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
@@ -22,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An `onBackgroundFetchError` callback that threw made `prefetch` throw and aborted the reconnect replay batch it ran in. Its error now goes to the current `Zone`'s uncaught-error handler, and the fetch completes as usual.
 - After `invalidate()` (or `removeQuery()`) during a fetch, the old fetch's completion removed the deduplication entry of the newer fetch, so a third caller started a duplicate request; if the old fetch finished last, it also overwrote the newer data. Each fetch now releases only its own deduplication entry, reports `FetchStatus.idle` only when no other fetch for the key is running, and writes its result only if no fetch started after it has written already: an old fetch that settles first is shown until the newer one lands, one that settles last is dropped. A cancelled fetch restores the previous state only if the state is still the one it set, so cancelling the newer fetch no longer undoes another fetch's result or an `invalidate()`. After `removeQuery()` or `clear()`, a fetch still in flight for the removed query writes and persists nothing; a query evicted by `maxCacheSize` or garbage collection still persists the result of its last fetch, as before. A superseded background fetch that fails is still reported to `onBackgroundFetchError`.
 - A fetcher that threw `QoraCancelException` itself (a nested cancelled fetch, an HTTP client adapter) left the query in `Loading` and its key deduplicated onto the dead request, so later calls never fetched again. It is now handled like a cancellation: the previous state is restored and the key released.
+- A query evicted while its fetch was in flight (LRU with `maxCacheSize`, the GC timer, or the eviction sweep) lost the result: it landed on the disposed entry, while the next caller of the key joined the old fetch on a new, empty entry that stayed in `Initial`. A query with a fetch in flight or paused offline is no longer evicted; it is collected once the fetch settles. LRU eviction now evicts as many inactive entries as needed to get back under `maxCacheSize`, instead of one per insertion.
+- Lazy eviction never fired: reading an entry refreshed its last access time before the expiry check. An expired, inactive query is now dropped on its next access, as the GC timer would have done.
 
 ## [1.3.1] - 2026-11-07
 

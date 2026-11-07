@@ -146,7 +146,11 @@ class QoraClient implements MutationTracker {
   /// in debug/profile builds to enable DevTools reporting.
   QoraTracker _tracker;
 
-  final QueryCache _cache;
+  late final QueryCache _cache = QueryCache(
+    maxSize: config.maxCacheSize,
+    onEvict: config.onCacheEvict,
+    canEvict: _isEvictable,
+  );
 
   /// In-flight request futures, keyed by stringified normalised key.
   ///
@@ -172,6 +176,23 @@ class QoraClient implements MutationTracker {
   /// caller asked for the data to go). LRU and GC eviction do not mark
   /// entries: those fetches still persist their result, as before.
   final Expando<bool> _removedEntries = Expando<bool>('removedEntries');
+
+  /// Number of fetches still running for each cache entry, superseded ones
+  /// included. An entry with a fetch in flight is never evicted: its result
+  /// would land on a disposed entry while the next caller of the key joined
+  /// the old fetch on a fresh, empty one.
+  final Expando<int> _inFlightFetches = Expando<int>('inFlightFetches');
+
+  /// Whether the inactive [entry] may be evicted (LRU, GC timer, sweep, lazy
+  /// eviction): not while a fetch runs for it or is paused offline for it.
+  bool _isEvictable(List<dynamic> key, CacheEntry<dynamic> entry) =>
+      (_inFlightFetches[entry] ?? 0) == 0 &&
+      (_pausedFetches.isEmpty || !_pausedFetches.containsKey(_stringKey(key)));
+
+  /// Entries whose GC timer fired while a fetch ran for them. The fetch
+  /// reschedules their GC when it settles, instead of the timer re-arming
+  /// itself in a loop (at zero delay with `gcTime: Duration.zero`).
+  final Expando<bool> _gcDeferred = Expando<bool>('gcDeferred');
 
   /// Deserialized values awaiting typed injection into the cache.
   ///
@@ -265,10 +286,6 @@ class QoraClient implements MutationTracker {
   QoraClient({QoraClientConfig? config, QoraTracker? tracker})
       : config = config ?? const QoraClientConfig(),
         _tracker = tracker ?? const NoOpTracker(),
-        _cache = QueryCache(
-          maxSize: config?.maxCacheSize,
-          onEvict: config?.onCacheEvict,
-        ),
         _offlineMutationQueue = OfflineMutationQueue() {
     _startEvictionTimer();
   }
@@ -1890,12 +1907,22 @@ class QoraClient implements MutationTracker {
     late final Future<T> future;
     final seq = ++_fetchSeqCounter;
     final stateAtStart = entry.state;
+    _inFlightFetches[entry] = (_inFlightFetches[entry] ?? 0) + 1;
     bool isRemoved() => _removedEntries[entry] ?? false;
     bool mayWrite() => !isRemoved() && seq > (_lastWriterSeq[entry] ?? 0);
 
     // Fetch status is per key: report idle only when no other fetch for the
     // key is still registered.
+    var released = false;
     void release() {
+      if (released) return;
+      released = true;
+      final stillRunning =
+          _inFlightFetches[entry] = _inFlightFetches[entry]! - 1;
+      if (stillRunning == 0 && (_gcDeferred[entry] ?? false)) {
+        _gcDeferred[entry] = null;
+        if (identical(_cache.peek(key), entry)) _scheduleGC(key);
+      }
       if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
       _emitFetchingCount();
       if (!isRemoved() && !_pendingRequests.containsKey(sk)) {
@@ -2196,16 +2223,17 @@ class QoraClient implements MutationTracker {
   /// Performs lazy eviction: if the existing entry has expired, it is
   /// disposed and replaced with a new [Initial] entry.
   CacheEntry<T> _getOrCreateEntry<T>(List<dynamic> key) {
-    final existing = _cache.get<T>(key);
-
-    if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.gcTime) &&
-          !existing.isActive) {
-        _log('Lazy evict: $key');
-        _cache.remove(key);
-      } else {
-        return existing;
-      }
+    // Peek first: get() touches the entry, which would reset the very idle
+    // time checked here, so an expired entry was never lazily evicted.
+    final idle = _cache.peek(key);
+    if (idle != null &&
+        !idle.isActive &&
+        idle.shouldEvict(config.defaultOptions.gcTime) &&
+        _isEvictable(key, idle)) {
+      _log('Lazy evict: $key');
+      _cache.remove(key);
+    } else if (idle != null) {
+      return _cache.get<T>(key)!; // type check and LRU touch
     }
 
     _log('Cache MISS: $key');
@@ -2255,10 +2283,13 @@ class QoraClient implements MutationTracker {
 
     entry.gcTimer?.cancel();
     entry.gcTimer = Timer(config.defaultOptions.gcTime, () {
-      if (!entry.isActive) {
-        _cache.remove(key);
-        _log('GC removed: $key');
+      if (entry.isActive) return;
+      if (!_isEvictable(key, entry)) {
+        _gcDeferred[entry] = true; // its fetch reschedules GC on settling
+        return;
       }
+      _cache.remove(key);
+      _log('GC removed: $key');
     });
   }
 
@@ -2286,7 +2317,9 @@ class QoraClient implements MutationTracker {
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (e.isActive) continue;
+      // A busy entry is skipped: counting it, already expired, would re-arm
+      // the timer at zero delay for as long as its fetch runs.
+      if (e.isActive || !_isEvictable(entry.key, e)) continue;
       final expiry = e.lastAccessedAt.add(gcTime);
       if (earliest == null || expiry.isBefore(earliest)) {
         earliest = expiry;
@@ -2321,7 +2354,7 @@ class QoraClient implements MutationTracker {
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (!e.isActive && e.shouldEvict(gcTime)) {
+      if (!e.isActive && e.shouldEvict(gcTime) && _isEvictable(entry.key, e)) {
         (toRemove ??= []).add(entry.key);
       }
     }
