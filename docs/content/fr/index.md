@@ -98,7 +98,7 @@ Pas un simple flag de refetch à la reconnexion : trois briques qui travaillent 
   :::u-page-feature
   ---
   icon: i-lucide-wifi-off
-  to: /fr/flutter-integration/network-status
+  to: /fr/core-concepts/offline
   ---
   #title
   [Des requêtes qui savent qu'elles sont hors-ligne]{.text-primary}
