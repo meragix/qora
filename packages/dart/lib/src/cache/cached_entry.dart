@@ -44,6 +44,8 @@ class CacheEntry<T> {
   Timer? gcTimer;
 
   final StreamController<QoraState<T>> _controller;
+  final StreamController<void> _invalidations =
+      StreamController<void>.broadcast();
   bool _isDisposed = false;
   bool _forcedStale = false;
 
@@ -146,14 +148,26 @@ class CacheEntry<T> {
 
   /// Mark this entry as stale by transitioning to [Loading] with the
   /// current data as [previousData], or [Initial] if there is no current data.
+  ///
+  /// Also emits an event on [invalidations] so that active watchers can
+  /// trigger a refetch.
   void invalidate() {
+    if (_isDisposed) return;
     final previous = state.dataOrNull;
     // Here, the compiler knows that we are in QueryEntry<T>,
     // therefore Loading is naturally instantiated as Loading<T>.
     updateState(
       previous != null ? Loading<T>(previousData: previous) : Initial<T>(),
     );
+    if (!_invalidations.isClosed) _invalidations.add(null);
   }
+
+  /// Emits an event each time [invalidate] is called.
+  ///
+  /// Unlike [stream], this never fires for fetch-driven state transitions.
+  /// Listeners can therefore start a refetch in response without any risk of
+  /// a feedback loop (a failing fetch never re-emits an invalidation).
+  Stream<void> get invalidations => _invalidations.stream;
 
   /// Returns `true` when the entry has been idle (no access) longer than
   /// [gcTime] and is safe to garbage-collect.
@@ -175,5 +189,6 @@ class CacheEntry<T> {
     refetchTimer?.cancel();
     gcTimer?.cancel();
     _controller.close();
+    _invalidations.close();
   }
 }

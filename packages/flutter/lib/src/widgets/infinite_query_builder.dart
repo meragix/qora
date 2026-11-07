@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
+import '../utils/query_key_equality.dart';
 import 'qora_scope.dart';
 
 /// Controls the pagination actions exposed to [InfiniteQueryBuilder.builder].
@@ -173,7 +174,7 @@ class _InfiniteQueryBuilderState<TData, TPageParam>
       _createObserver();
       _subscribe();
       if (widget.enabled) unawaited(_observer!.fetch());
-    } else if (widget.queryKey != oldWidget.queryKey) {
+    } else if (!sameQueryKey(widget.queryKey, oldWidget.queryKey)) {
       _disposeObserver();
       _createObserver();
       _subscribe();

@@ -44,12 +44,17 @@ QoraState<T> useQuery<T>({
   // Initialise from cache — avoids a loading flash when data is already fresh.
   final state = useState<QoraState<T>>(client.getQueryState<T>(key));
 
+  // Keep the latest fetcher so background refetches (invalidation, polling)
+  // never run a stale closure captured on the first subscription.
+  final fetcherRef = useRef(fetcher);
+  fetcherRef.value = fetcher;
+
   // Re-subscribe whenever the key changes.
   useEffect(() {
     final sub = client
         .watchQuery<T>(
           key: key,
-          fetcher: fetcher,
+          fetcher: () => fetcherRef.value(),
           options: options,
         )
         .listen((newState) => state.value = newState);
