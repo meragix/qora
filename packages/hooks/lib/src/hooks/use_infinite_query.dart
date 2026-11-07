@@ -84,12 +84,21 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
   final error = useState<Object?>(null);
   final hasNextPage = useState(true);
 
+  // Bumped on key change and on unmount. Async work started under an older
+  // generation stops retrying and never writes state: a late page must not
+  // land in another key's list or in a disposed hook.
+  final generation = useRef(0);
+
   // Load the first page when the key changes.
   useEffect(() {
+    final gen = ++generation.value;
+    bool isCurrent() => generation.value == gen;
+
     // Reset pagination state on key change.
     pages.value = [];
     hasNextPage.value = true;
     error.value = null;
+    isFetchingNextPage.value = false;
 
     _fetchPage(
       client: client,
@@ -97,11 +106,21 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
       fetcher: () => fetcher(initialPageParam),
       options: options,
       onStart: () => isLoading.value = true,
-      onData: (data) => pages.value = [data],
-      onError: (e) => error.value = e,
-      onDone: () => isLoading.value = false,
+      onData: (data) {
+        if (isCurrent()) pages.value = [data];
+      },
+      onError: (e) {
+        if (isCurrent()) error.value = e;
+      },
+      onDone: () {
+        if (isCurrent()) isLoading.value = false;
+      },
     );
-    return null;
+    // flutter_hooks runs the next key's effect before this cleanup, so only
+    // retire this generation if no newer one has started.
+    return () {
+      if (isCurrent()) generation.value++;
+    };
   }, [QueryKey(key)]);
 
   Future<void> fetchNextPage() async {
@@ -114,19 +133,24 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
       return;
     }
 
+    final gen = generation.value;
+    bool isCurrent() => generation.value == gen;
+
     isFetchingNextPage.value = true;
     try {
       final newPage = await _withRetry(
         () => fetcher(nextParam),
         client.config.defaultOptions.merge(options),
+        isCurrent,
       );
+      if (!isCurrent()) return;
       pages.value = [...pages.value, newPage];
       hasNextPage.value = getNextPageParam(newPage) != null;
       error.value = null;
     } catch (e) {
-      error.value = e;
+      if (isCurrent()) error.value = e;
     } finally {
-      isFetchingNextPage.value = false;
+      if (isCurrent()) isFetchingNextPage.value = false;
     }
   }
 
@@ -145,8 +169,13 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
 /// Runs [fetch] with the retry policy of [opts], as `fetchQuery` does for the
 /// first page: up to [QoraOptions.retryCount] retries, stopped early when
 /// [QoraOptions.retryCondition] returns `false`, spaced by
-/// [QoraOptions.getRetryDelay].
-Future<T> _withRetry<T>(Future<T> Function() fetch, QoraOptions opts) async {
+/// [QoraOptions.getRetryDelay]. Stops retrying once [isCurrent] returns
+/// `false` (key changed or hook unmounted).
+Future<T> _withRetry<T>(
+  Future<T> Function() fetch,
+  QoraOptions opts,
+  bool Function() isCurrent,
+) async {
   for (var attempt = 0;; attempt++) {
     try {
       return await fetch();
@@ -156,6 +185,7 @@ Future<T> _withRetry<T>(Future<T> Function() fetch, QoraOptions opts) async {
         rethrow;
       }
       await Future<void>.delayed(opts.getRetryDelay(attempt));
+      if (!isCurrent()) rethrow;
     }
   }
 }

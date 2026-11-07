@@ -112,18 +112,27 @@ void main() {
       expect(handle.error, isA<_HttpError>());
     });
 
-    testWidgets('applies the client default options', (tester) async {
+    testWidgets('applies retryCount and retryCondition from client defaults',
+        (tester) async {
       client = QoraClient(
-        config: const QoraClientConfig(
-          defaultOptions: QoraOptions(retryCount: 0),
+        config: QoraClientConfig(
+          defaultOptions: QoraOptions(
+            retryCount: 2,
+            retryDelay: Duration.zero,
+            retryCondition: (e, _) => e is! _HttpError || e.status >= 500,
+          ),
         ),
       );
-      await mount(tester, errors: [const _HttpError(503)]);
+      // 503 is retried (defaults allow it), then 404 stops the retries.
+      await mount(
+        tester,
+        errors: [const _HttpError(503), const _HttpError(404)],
+      );
 
       await fetchNext(tester);
 
-      expect(nextPageCalls, 1);
-      expect(handle.error, isA<_HttpError>());
+      expect(nextPageCalls, 2);
+      expect((handle.error! as _HttpError).status, 404);
     });
 
     testWidgets('clears the previous error once a page loads', (tester) async {
@@ -140,6 +149,82 @@ void main() {
 
       expect(handle.pages, hasLength(2));
       expect(handle.error, isNull);
+    });
+  });
+
+  group('useInfiniteQuery fetchNextPage during a retry', () {
+    const retryEvery100ms = QoraOptions(
+      retryCount: 3,
+      retryDelay: Duration(milliseconds: 100),
+    );
+
+    testWidgets('unmounting stops the retries without touching state',
+        (tester) async {
+      await mount(
+        tester,
+        errors: List.filled(4, const _HttpError(503)),
+        options: retryEvery100ms,
+      );
+
+      final done = handle.fetchNextPage();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 2));
+      await done;
+
+      expect(nextPageCalls, 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a key change drops the late page of the previous key',
+        (tester) async {
+      final feed = ValueNotifier('a');
+      late InfiniteQueryHandle<List<String>, int> feedHandle;
+      var aNextCalls = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: QoraScope(
+            client: client,
+            child: ValueListenableBuilder<String>(
+              valueListenable: feed,
+              builder: (context, name, _) => HookBuilder(builder: (context) {
+                feedHandle = useInfiniteQuery<List<String>, int>(
+                  key: ['feed', name],
+                  fetcher: (page) async {
+                    if (page == 0) return ['$name-0'];
+                    if (name == 'a' && ++aNextCalls == 1) {
+                      throw const _HttpError(503);
+                    }
+                    return ['$name-$page'];
+                  },
+                  getNextPageParam: (last) => 1,
+                  initialPageParam: 0,
+                  options: retryEvery100ms,
+                );
+                return const SizedBox.shrink();
+              }),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Page 1 of "a" fails once and waits 100 ms before its retry.
+      final done = feedHandle.fetchNextPage();
+      await tester.pump(const Duration(milliseconds: 10));
+      feed.value = 'b';
+      await tester.pump(); // rebuild with the new key before the retry is due
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await done;
+      await tester.pump();
+
+      expect(feedHandle.pages, [
+        ['b-0'],
+      ]);
+      expect(feedHandle.isFetchingNextPage, isFalse);
+      expect(aNextCalls, 1);
     });
   });
 }
