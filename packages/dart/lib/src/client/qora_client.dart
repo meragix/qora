@@ -162,6 +162,9 @@ class QoraClient implements MutationTracker {
   /// on eviction.
   final Expando<int> _latestFetchSeq = Expando<int>('latestFetchSeq');
 
+  /// Source of unique fetch sequence numbers for [_latestFetchSeq].
+  int _fetchSeqCounter = 0;
+
   /// Deserialized values awaiting typed injection into the cache.
   ///
   /// Keyed by JSON-encoded normalised key (same encoding as
@@ -1862,15 +1865,17 @@ class QoraClient implements MutationTracker {
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
-    // invalidate() and removeQuery() drop this fetch's dedup entry, and a
-    // newer fetch may then take the key. A superseded fetch still completes
-    // for its own callers, but leaves the state, the fetch status and the
-    // dedup entry to the newer fetch: writing them would overwrite fresher
-    // data or stop the newer fetch from deduplicating.
+    // invalidate() drops this fetch's dedup entry, and a newer fetch may then
+    // take the key; removeQuery() and clear() dispose the entry itself. A
+    // superseded fetch still completes for its own callers, but leaves the
+    // state, the fetch status, persistence and the dedup entry alone:
+    // writing them would overwrite fresher data, stop the newer fetch from
+    // deduplicating, or persist data that was just removed.
     late final Future<T> future;
-    final seq = (_latestFetchSeq[entry] ?? 0) + 1;
+    final seq = ++_fetchSeqCounter;
+    final supersededOwner = _latestFetchSeq[entry];
     _latestFetchSeq[entry] = seq;
-    bool isSuperseded() => _latestFetchSeq[entry] != seq;
+    bool isSuperseded() => entry.isDisposed || _latestFetchSeq[entry] != seq;
 
     void release() {
       if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
@@ -1883,10 +1888,13 @@ class QoraClient implements MutationTracker {
       cancellationHandled = true;
       if (!isSuperseded()) {
         entry.updateState(previousState);
+        // Hand the entry back to the fetch this one superseded, if it is
+        // still running: it owns the state again and writes its result.
+        _latestFetchSeq[entry] = supersededOwner;
         _emitFetchStatus(sk, FetchStatus.idle);
+        _tracker.onQueryCancelled(sk);
       }
       release();
-      _tracker.onQueryCancelled(sk);
     }
 
     future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
