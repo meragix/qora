@@ -98,7 +98,7 @@ Not a refetch-on-reconnect flag: three pieces that work together, wired by one w
   :::u-page-feature
   ---
   icon: i-lucide-wifi-off
-  to: /en/flutter-integration/network-status
+  to: /en/core-concepts/offline
   ---
   #title
   [Queries that know they are offline]{.text-primary}
