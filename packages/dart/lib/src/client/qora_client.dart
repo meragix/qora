@@ -1874,8 +1874,7 @@ class QoraClient implements MutationTracker {
       final cached = entry.state.dataOrNull;
       if (cached != null) {
         // Serve cache now; queue a background refetch for when online.
-        _pausedFetches[sk] =
-            () => _backgroundFetch<T>(key, entry, fetcher, opts);
+        _pausedFetches[sk] = _replayOf<T>(key, entry, fetcher, opts);
         _emitFetchStatus(sk, FetchStatus.paused);
         _log('offlineFirst: serving cache, queuing refetch: $key');
         return Future.value(cached as T);
@@ -1912,7 +1911,7 @@ class QoraClient implements MutationTracker {
     bool mayWrite() => !isRemoved() && seq > (_lastWriterSeq[entry] ?? 0);
 
     // Fetch status is per key: report idle only when no other fetch for the
-    // key is still registered.
+    // key is still registered or paused.
     var released = false;
     void release() {
       if (released) return;
@@ -1925,7 +1924,9 @@ class QoraClient implements MutationTracker {
       }
       if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
       _emitFetchingCount();
-      if (!isRemoved() && !_pendingRequests.containsKey(sk)) {
+      if (!isRemoved() &&
+          !_pendingRequests.containsKey(sk) &&
+          !_pausedFetches.containsKey(sk)) {
         _emitFetchStatus(sk, FetchStatus.idle);
       }
     }
@@ -1954,7 +1955,6 @@ class QoraClient implements MutationTracker {
           release();
           return data;
         }
-        _lastWriterSeq[entry] = seq;
 
         entry.lastOptions = opts;
         if (opts.providesTags != null) {
@@ -1964,9 +1964,15 @@ class QoraClient implements MutationTracker {
           // previous fetch with different options are cleaned up.
           _unregisterTags(sk);
         }
-        final sharedData = opts.structuralSharing && previousData != null
-            ? structuralShare(previousData, data)
+        // Share against the data shown now, not at fetch start: a superseded
+        // fetch may have written since.
+        final currentData = entry.state.dataOrNull;
+        final sharedData = opts.structuralSharing && currentData != null
+            ? structuralShare(currentData, data)
             : data;
+        // Marked only now: a throw above (tags, structural sharing) must
+        // still let the failure path write Failure instead of leaving Loading.
+        _lastWriterSeq[entry] = seq;
         entry.updateState(
           Success<T>(data: sharedData, updatedAt: DateTime.now()),
         );
@@ -2005,26 +2011,42 @@ class QoraClient implements MutationTracker {
         cancel();
         throw QoraCancelException(sk); // ignore: only_throw_errors
       }
-      var transformErr = error;
-      if (opts.transformError != null) {
-        transformErr = opts.transformError!(transformErr);
-      }
-      final mapped = _mapError(transformErr, stackTrace);
-      if (mayWrite()) {
-        _lastWriterSeq[entry] = seq;
-        if (opts.keepPreviousData && previousData != null) {
-          // Stay in Success with old data; the caller still gets the error.
-        } else {
-          entry.updateState(
-            Failure<T>(
-              error: mapped,
-              stackTrace: stackTrace,
-              previousData: previousData,
-            ),
-          );
+      Object mapped;
+      var failureStack = stackTrace;
+      try {
+        var transformErr = error;
+        if (opts.transformError != null) {
+          transformErr = opts.transformError!(transformErr);
         }
+        mapped = _mapError(transformErr, stackTrace);
+      } catch (mappingError, mappingStack) {
+        // A throwing transformError or errorMapper is a bug in the app: its
+        // error becomes the fetch's error, instead of skipping the cleanup
+        // below and leaving the key deduplicated onto a dead request.
+        mapped = mappingError;
+        failureStack = mappingStack;
       }
-      release();
+      try {
+        if (mayWrite()) {
+          _lastWriterSeq[entry] = seq;
+          // The data shown now, which a superseded fetch may have written
+          // since this one started.
+          final currentData = entry.state.dataOrNull;
+          if (opts.keepPreviousData && currentData != null) {
+            // Stay in Success with old data; the caller still gets the error.
+          } else {
+            entry.updateState(
+              Failure<T>(
+                error: mapped,
+                stackTrace: failureStack,
+                previousData: currentData,
+              ),
+            );
+          }
+        }
+      } finally {
+        release();
+      }
       // Re-throw so that await fetchQuery propagates the error to the caller.
       throw mapped; // ignore: only_throw_errors
     });
@@ -2032,6 +2054,39 @@ class QoraClient implements MutationTracker {
     _pendingRequests[sk] = future;
     _emitFetchingCount();
     return future;
+  }
+
+  /// The closure that replays a paused fetch on reconnect.
+  ///
+  /// Replays run in batches after a jitter, and [_replayPausedFetches] drops
+  /// every key from [_pausedFetches] up front, so a query waiting for a later
+  /// batch can be evicted meanwhile. The replay then targets the live entry
+  /// for the key, as a new [fetchQuery] would, instead of the disposed one:
+  /// otherwise a watcher mounting on the new entry joined a fetch writing to
+  /// the old entry and stayed in [Initial]. Entries dropped by [removeQuery]
+  /// or [clear] never get here: those remove the paused fetch too.
+  Future<void> Function() _replayOf<T>(
+    List<dynamic> key,
+    CacheEntry<T> entry,
+    Future<T> Function() fetcher,
+    QoraOptions opts,
+  ) {
+    return () {
+      var live = entry;
+      if (entry.isDisposed) {
+        final current = _cache.peek(key);
+        if (current == null) {
+          live = _getOrCreateEntry<T>(key);
+        } else if (current is CacheEntry<T>) {
+          live = current;
+        } else {
+          // The key now holds another type: this replay has nothing to fill.
+          _log('Replay skipped, key reused with another type: $key');
+          return Future<void>.value();
+        }
+      }
+      return _backgroundFetch<T>(key, live, fetcher, opts);
+    };
   }
 
   /// Runs a fetch that no caller awaits: background revalidations
@@ -2113,7 +2168,7 @@ class QoraClient implements MutationTracker {
     }
 
     // Register for replay on reconnect.
-    _pausedFetches[sk] = () => _backgroundFetch<T>(key, entry, fetcher, opts);
+    _pausedFetches[sk] = _replayOf<T>(key, entry, fetcher, opts);
 
     _emitFetchStatus(sk, FetchStatus.paused);
     _log('Paused (offline): $key');
@@ -2225,10 +2280,17 @@ class QoraClient implements MutationTracker {
   CacheEntry<T> _getOrCreateEntry<T>(List<dynamic> key) {
     // Peek first: get() touches the entry, which would reset the very idle
     // time checked here, so an expired entry was never lazily evicted.
+    //
+    // Skipped with gcTime zero: every inactive entry is expired a microsecond
+    // after it is written, so the check would drop an entry created earlier
+    // in the same call (a hydration followed by a fetch). The GC timer
+    // already removes those on the next event-loop turn.
+    final gcTime = config.defaultOptions.gcTime;
     final idle = _cache.peek(key);
     if (idle != null &&
+        gcTime > Duration.zero &&
         !idle.isActive &&
-        idle.shouldEvict(config.defaultOptions.gcTime) &&
+        idle.shouldEvict(gcTime) &&
         _isEvictable(key, idle)) {
       _log('Lazy evict: $key');
       _cache.remove(key);

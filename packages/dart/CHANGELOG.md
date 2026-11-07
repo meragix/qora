@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `QueryCache` takes an optional `canEvict` predicate that vetoes the LRU eviction of an inactive entry. `QoraClient` uses it to keep queries with a fetch in flight.
+- `QueryCache(canEvict:)`: an optional predicate that keeps an entry from LRU eviction.
 
 ### Changed
 
@@ -23,11 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Infinite queries ignored `QoraOptions.retryCondition`: every page fetch failure was retried up to `retryCount`, including errors the condition rejects (a 401 or a 404). `InfiniteQueryObserver`, and through it `InfiniteQueryBuilder`, now applies it like `fetchQuery` does.
 - `InfiniteQueryObserver` kept retrying, and calling the fetcher, after `dispose()`. It now stops after the current retry delay.
 - A query paused offline whose fetch failed on reconnect crashed the current `Zone` with an uncaught error. The failure also skipped the remaining paused queries and the offline mutation replay. Replayed fetches now record the failure in the query state and pass it to `onBackgroundFetchError`.
-- An `onBackgroundFetchError` callback that threw made `prefetch` throw and aborted the reconnect replay batch it ran in. Its error now goes to the current `Zone`'s uncaught-error handler, and the fetch completes as usual.
-- After `invalidate()` (or `removeQuery()`) during a fetch, the old fetch's completion removed the deduplication entry of the newer fetch, so a third caller started a duplicate request; if the old fetch finished last, it also overwrote the newer data. Each fetch now releases only its own deduplication entry, reports `FetchStatus.idle` only when no other fetch for the key is running, and writes its result only if no fetch started after it has written already: an old fetch that settles first is shown until the newer one lands, one that settles last is dropped. A cancelled fetch restores the previous state only if the state is still the one it set, so cancelling the newer fetch no longer undoes another fetch's result or an `invalidate()`. After `removeQuery()` or `clear()`, a fetch still in flight for the removed query writes and persists nothing; a query evicted by `maxCacheSize` or garbage collection still persists the result of its last fetch, as before. A superseded background fetch that fails is still reported to `onBackgroundFetchError`.
-- A fetcher that threw `QoraCancelException` itself (a nested cancelled fetch, an HTTP client adapter) left the query in `Loading` and its key deduplicated onto the dead request, so later calls never fetched again. It is now handled like a cancellation: the previous state is restored and the key released.
-- A query evicted while its fetch was in flight (LRU with `maxCacheSize`, the GC timer, or the eviction sweep) lost the result: it landed on the disposed entry, while the next caller of the key joined the old fetch on a new, empty entry that stayed in `Initial`. A query with a fetch in flight or paused offline is no longer evicted; it is collected once the fetch settles. LRU eviction now evicts as many inactive entries as needed to get back under `maxCacheSize`, instead of one per insertion.
-- Lazy eviction never fired: reading an entry refreshed its last access time before the expiry check. An expired, inactive query is now dropped on its next access, as the GC timer would have done.
+- A throwing `onBackgroundFetchError` no longer makes `prefetch` throw or stops the reconnect replay; its error goes to the current `Zone`.
+- A slow fetch superseded by `invalidate()` no longer overwrites newer data or breaks deduplication of the newer fetch. After `removeQuery()` or `clear()`, a fetch still in flight no longer writes or persists the removed query.
+- A fetcher that throws `QoraCancelException` no longer leaves the query stuck in `Loading`.
+- A query evicted (LRU, GC) while a fetch was in flight or waiting for reconnect no longer loses the result, and `maxCacheSize` eviction now brings the cache back under the limit.
+- Lazy eviction of expired queries now works, and no longer drops hydrated data with `gcTime: Duration.zero`.
+- A throwing `transformError`, `errorMapper` or model `==` no longer leaves the query stuck in `Loading`; the fetch fails with that error.
+- `keepPreviousData` and `Failure.previousData` now keep data written by an older fetch that settled first.
+- `FetchStatus` no longer reports `idle` while a fetch for the key is paused offline.
 
 ## [1.3.1] - 2026-11-07
 

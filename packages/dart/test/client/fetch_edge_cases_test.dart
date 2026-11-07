@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
+import 'package:meta/meta.dart';
 import 'package:qora/qora.dart';
 import 'package:test/test.dart';
 
@@ -580,6 +582,341 @@ void main() {
       expect(data, 'new');
     });
   });
+
+  group('a fetch whose error handling throws', () {
+    for (final viaMapper in [false, true]) {
+      final name = viaMapper ? 'errorMapper' : 'transformError';
+      test('a throwing $name fails the fetch and releases the key', () async {
+        final client = QoraClient(
+          config: QoraClientConfig(
+            errorMapper:
+                viaMapper ? (_, __) => throw StateError('mapper bug') : null,
+          ),
+        );
+        addTearDown(client.dispose);
+        final options = viaMapper
+            ? _noRetry
+            : QoraOptions(
+                retryCount: 0,
+                transformError: (_) => throw StateError('mapper bug'),
+              );
+
+        await expectLater(
+          client.fetchQuery<String>(
+            key: ['k'],
+            fetcher: () async => throw Exception('network'),
+            options: options,
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        expect(client.isFetchingCount, 0);
+        final state = client.getQueryState<String>(['k']);
+        expect(state, isA<Failure<String>>());
+        final error = (state as Failure<String>).error as StateError;
+        expect(error.message, 'mapper bug');
+
+        var calls = 0;
+        await client.fetchQuery<String>(
+          key: ['k'],
+          fetcher: () async {
+            calls++;
+            return 'ok';
+          },
+          options: _noRetry,
+        );
+        expect(calls, 1, reason: 'the key must not stay on the dead fetch');
+      });
+    }
+
+    test('a throwing structural share writes Failure, not a stuck Loading',
+        () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+      var n = 0;
+      Future<_Exploding> fetcher() async => _Exploding(++n);
+
+      await client.fetchQuery<_Exploding>(
+        key: ['k'],
+        fetcher: fetcher,
+        options: _noRetry,
+      );
+      client.invalidate(['k']);
+      await expectLater(
+        client.fetchQuery<_Exploding>(
+          key: ['k'],
+          fetcher: fetcher,
+          options: _noRetry,
+        ),
+        throwsStateError,
+      );
+
+      final state = client.getQueryState<_Exploding>(['k']);
+      expect(state, isA<Failure<_Exploding>>());
+      expect(client.isFetchingCount, 0);
+    });
+  });
+
+  group('a newer fetch that fails after a superseded one wrote', () {
+    for (final keep in [true, false]) {
+      test('keeps the data on screen (keepPreviousData: $keep)', () async {
+        final client = QoraClient();
+        addTearDown(client.dispose);
+        final options = QoraOptions(retryCount: 0, keepPreviousData: keep);
+        final gateA = Completer<void>();
+        final gateB = Completer<void>();
+
+        final a = client.fetchQuery<String>(
+          key: ['k'],
+          fetcher: () async {
+            await gateA.future;
+            return 'A';
+          },
+          options: options,
+        );
+        await pumpEventQueue();
+        client.invalidate(['k']);
+        final b = client.fetchQuery<String>(
+          key: ['k'],
+          fetcher: () async {
+            await gateB.future;
+            throw StateError('B failed');
+          },
+          options: options,
+        );
+        await pumpEventQueue();
+
+        gateA.complete();
+        expect(await a, 'A');
+        gateB.complete();
+        await expectLater(b, throwsStateError);
+
+        final state = client.getQueryState<String>(['k']);
+        if (keep) {
+          expect(state, isA<Success<String>>());
+        } else {
+          expect(state, isA<Failure<String>>());
+        }
+        expect(state.dataOrNull, 'A');
+      });
+    }
+  });
+
+  group('offline and eviction', () {
+    test('no idle status while a fetch for the key is paused', () async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+      final network = _FakeConnectivity();
+      client.attachConnectivityManager(network);
+      network.set(NetworkStatus.online);
+      await pumpEventQueue();
+      final statuses = <FetchStatus>[];
+      final sub = client.watchFetchStatus(['k']).listen(statuses.add);
+      final gate = Completer<void>();
+
+      final a = client.fetchQuery<String>(
+        key: ['k'],
+        fetcher: () async {
+          await gate.future;
+          return 'A';
+        },
+        options: _noRetry,
+      );
+      await pumpEventQueue();
+      network.set(NetworkStatus.offline);
+      await pumpEventQueue();
+      client.invalidate(['k']);
+      await client.prefetch<String>(
+        key: ['k'],
+        fetcher: () async => 'B',
+        options: _noRetry,
+      ); // paused
+      gate.complete(); // the old fetch settles while the new one is paused
+      await a;
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(statuses.last, FetchStatus.paused);
+    });
+
+    test('a query paused offline is not evicted, and GC runs after replay',
+        () async {
+      final evicted = <List<dynamic>>[];
+      final client = QoraClient(
+        config: QoraClientConfig(
+          maxCacheSize: 1,
+          onCacheEvict: evicted.add,
+          defaultOptions: const QoraOptions(gcTime: Duration(milliseconds: 10)),
+        ),
+      );
+      addTearDown(client.dispose);
+      final network = _FakeConnectivity(); // starts offline
+      client.attachConnectivityManager(network);
+      await pumpEventQueue();
+
+      final sub = client.watchQuery<String>(
+        key: ['a'],
+        fetcher: () async => 'A',
+        options: _noRetry,
+      ).listen((_) {});
+      await pumpEventQueue();
+      await sub.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 40)); // GC fires
+      await client.prefetch<String>(
+        key: ['b'],
+        fetcher: () async => 'B',
+        options: _noRetry,
+      ); // LRU pressure
+      expect(evicted, isEmpty, reason: "['a'] is paused, not idle");
+
+      network.set(NetworkStatus.online);
+      await pumpEventQueue();
+      expect(client.getQueryData<String>(['a']), 'A');
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(evicted, anyElement(equals(['a'])));
+    });
+
+    test('a replay queued behind a running batch fills the live entry',
+        () async {
+      final client = QoraClient(
+        config: const QoraClientConfig(
+          maxCacheSize: 2,
+          reconnectStrategy: ReconnectStrategy(
+            maxConcurrent: 1,
+            jitter: Duration.zero,
+          ),
+        ),
+      );
+      addTearDown(client.dispose);
+      final network = _FakeConnectivity(); // starts offline
+      client.attachConnectivityManager(network);
+      await pumpEventQueue();
+      final gateA = Completer<void>();
+      final gateB = Completer<void>();
+      var bCalls = 0;
+      Future<String> fetchB() async {
+        bCalls++;
+        await gateB.future;
+        return 'B';
+      }
+
+      await client.prefetch<String>(
+        key: ['a'],
+        fetcher: () async {
+          await gateA.future;
+          return 'A';
+        },
+        options: _noRetry,
+      );
+      await client.prefetch<String>(
+        key: ['b'],
+        fetcher: fetchB,
+        options: _noRetry,
+      );
+
+      network.set(NetworkStatus.online);
+      await pumpEventQueue(); // batch 1 runs ['a']; ['b'] waits, unpaused
+      await client.prefetch<String>(
+        key: ['c'],
+        fetcher: () async => 'C',
+        options: _noRetry,
+      ); // LRU evicts ['b']
+      expect(client.cachedKeys, isNot(anyElement(equals(['b']))));
+
+      gateA.complete(); // batch 2 replays ['b']
+      await pumpEventQueue();
+      final states = <QoraState<String>>[];
+      final sub = client.watchQuery<String>(
+        key: ['b'],
+        fetcher: fetchB,
+        options: _noRetry,
+      ).listen(states.add);
+      await pumpEventQueue();
+      gateB.complete();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(bCalls, 1, reason: 'the watcher joins the replay');
+      expect(states.last, isA<Success<String>>());
+      expect(client.getQueryData<String>(['b']), 'B');
+    });
+
+    test('gcTime zero keeps a hydrated entry for the fetch that reads it',
+        () async {
+      final client = QoraClient(
+        config: const QoraClientConfig(
+          defaultOptions: QoraOptions(gcTime: Duration.zero),
+        ),
+      );
+      addTearDown(client.dispose);
+      client.queueHydration(['a'], 'hydrated', updatedAt: DateTime(2000));
+
+      final data = await client.fetchQuery<String>(
+        key: ['a'],
+        fetcher: () async => 'network',
+        options: _noRetry,
+      );
+
+      // Stale hydrated data is served at once and revalidated in the
+      // background, on the entry the cache holds.
+      expect(data, 'hydrated');
+      await pumpEventQueue();
+      expect(client.getQueryData<String>(['a']), 'network');
+    });
+
+    test('the sweep skips a query with a fetch in flight, without spinning',
+        () {
+      fakeAsync((async) {
+        var timers = 0;
+        runZoned(
+          () {
+            final evicted = <List<dynamic>>[];
+            // DateTime.now() is not faked: a 1 µs gcTime makes the entry
+            // expire in real time by the first sweep, a fake minute later.
+            final client = QoraClient(
+              config: QoraClientConfig(
+                onCacheEvict: evicted.add,
+                defaultOptions: const QoraOptions(
+                  retryCount: 0,
+                  gcTime: Duration(microseconds: 1),
+                ),
+              ),
+            );
+            final gate = Completer<void>();
+            unawaited(
+              client.fetchQuery<String>(
+                key: ['a'],
+                fetcher: () async {
+                  await gate.future;
+                  return 'A';
+                },
+              ),
+            );
+            async.flushMicrotasks();
+
+            async.elapse(const Duration(minutes: 2));
+            expect(evicted, isEmpty, reason: 'its fetch is still running');
+            expect(timers, lessThan(10), reason: 'no zero-delay re-arm loop');
+
+            gate.complete();
+            async.flushMicrotasks();
+            async.elapse(const Duration(minutes: 2));
+            expect(evicted, [
+              ['a'],
+            ]);
+            client.dispose();
+          },
+          zoneSpecification: ZoneSpecification(
+            createTimer: (self, parent, zone, duration, callback) {
+              if (++timers > 1000) throw StateError('timer spin');
+              return parent.createTimer(zone, duration, callback);
+            },
+          ),
+        );
+      });
+    });
+  });
 }
 
 class _RecordingClient extends QoraClient {
@@ -611,4 +948,18 @@ class _FakeConnectivity implements ConnectivityManager {
     _status = status;
     _controller.add(status);
   }
+}
+
+/// A model whose `==` throws, to make structural sharing fail.
+@immutable
+class _Exploding {
+  _Exploding(this.id);
+
+  final int id;
+
+  @override
+  bool operator ==(Object other) => throw StateError('== bug');
+
+  @override
+  int get hashCode => id;
 }
