@@ -170,27 +170,27 @@ final user = await client.fetchQuery<User>(
 
 ## DevTools overlay
 
-```yaml
-dev_dependencies:
-  qora_devtools_overlay: ^0.3.0
+```bash
+flutter pub add qora_devtools_overlay
 ```
 
 ```dart
 void main() {
   final tracker = OverlayTracker();
-  final client = QoraClient(tracker: tracker);
+  // No tracker in release: the client falls back to NoOpTracker.
+  final client = QoraClient(tracker: kDebugMode ? tracker : null);
 
   runApp(
     QoraInspector(
       tracker: tracker,
-      client: client,
+      client: kDebugMode ? client : null,
       child: QoraScope.auto(client: client, child: const MyApp()),
     ),
   );
 }
 ```
 
-`QoraInspector` renders nothing extra in release builds. A Flutter DevTools extension sharing the same event protocol is in development and not published yet.
+`QoraInspector` builds nothing in release builds, and tree shaking removes the panel. A Flutter DevTools extension sharing the same event protocol is in development and not published yet.
 
 ## Documentation
 
