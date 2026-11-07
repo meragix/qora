@@ -253,5 +253,56 @@ void main() {
       final merged = base.merge(child);
       expect(merged.placeholderData, fn);
     });
+
+    // ── prepopulateCache ───────────────────────────────────────────────────
+
+    test('prepopulateCache seeds Success from initialData before any fetch',
+        () {
+      client.prepopulateCache<String>(
+        ['prepop'],
+        const QoraOptions(initialData: 'seeded'),
+      );
+
+      final state = client.getQueryState<String>(['prepop']);
+      expect(state, isA<Success<String>>());
+      expect((state as Success<String>).data, 'seeded');
+    });
+
+    test('prepopulateCache does not overwrite existing cache entries', () {
+      client.setQueryData<String>(['existing'], 'original');
+
+      client.prepopulateCache<String>(
+        ['existing'],
+        const QoraOptions(initialData: 'should-not-overwrite'),
+      );
+
+      expect(client.getQueryData<String>(['existing']), 'original');
+    });
+
+    test('prepopulateCache with stale initialData triggers SWR on fetchQuery',
+        () async {
+      client.prepopulateCache<String>(
+        ['swr-key'],
+        const QoraOptions(initialData: 'placeholder'),
+      );
+
+      var fetchCount = 0;
+      final result = await client.fetchQuery<String>(
+        key: ['swr-key'],
+        fetcher: () async {
+          fetchCount++;
+          return 'fresh';
+        },
+      );
+
+      expect(
+        result,
+        'placeholder',
+        reason: 'SWR returns stale placeholder immediately',
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(fetchCount, 1, reason: 'background SWR refetch fired');
+      expect(client.getQueryData<String>(['swr-key']), 'fresh');
+    });
   });
 }

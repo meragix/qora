@@ -10,7 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `QoraBuilder.select` and `useQuery.select`: optional parameter for derived data subscriptions. Widgets only rebuild when the selected value changes, improving performance for large datasets (#22).
+- `QoraClient.prepopulateCache<T>(key, options)`: seeds the cache with `QoraOptions.initialData` or `placeholderData` before any fetch, so widgets and hooks render the seed on their first frame instead of `Initial` (#19). No-op when an entry already exists.
+
+### Fixed
+
+- `QoraClient.watchQuery`: active watchers now refetch when their query is invalidated (`invalidate`, `invalidateWhere`, `invalidateQueries`, `invalidateTags`, `MutationOptions.invalidates`, refetch on window focus). Previously the stream stayed in `Loading(previousData)` until the next mount, so `useQuery` consumers never saw fresh data after a mutation.
+- `CacheEntry.invalidations`: new stream that fires only on explicit invalidation (never on fetch transitions), used by `watchQuery` to refetch without any risk of a feedback loop.
 
 ## [1.2.0] - 2026-06-15
 

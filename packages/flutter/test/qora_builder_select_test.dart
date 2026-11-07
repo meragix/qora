@@ -72,5 +72,74 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('len:0'), findsOneWidget);
     });
+
+    testWidgets('a Failure with the same selected value still rebuilds',
+        (tester) async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+      var fail = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          client: client,
+          child: QoraBuilder<List<String>>(
+            queryKey: ['items'],
+            options: const QoraOptions(retryCount: 0),
+            fetcher: () async {
+              if (fail) throw StateError('boom');
+              return ['a', 'b'];
+            },
+            select: (items) => items.length,
+            builder: (context, state, _) => Text(
+              state is Failure<List<String>> ? 'failure' : 'ok',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ok'), findsOneWidget);
+
+      fail = true;
+      client.invalidate(['items']);
+      await tester.pumpAndSettle();
+
+      expect(find.text('failure'), findsOneWidget);
+    });
+
+    testWidgets('a skipped rebuild never leaves stale data behind',
+        (tester) async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+      client.setQueryData<List<String>>(['items'], ['a', 'b']);
+      late StateSetter rebuildParent;
+
+      await tester.pumpWidget(
+        _wrap(
+          client: client,
+          child: StatefulBuilder(builder: (context, setState) {
+            rebuildParent = setState;
+            return QoraBuilder<List<String>>(
+              queryKey: ['items'],
+              options: const QoraOptions(staleTime: Duration(minutes: 5)),
+              fetcher: () async => ['a', 'b'],
+              select: (items) => items.length,
+              builder: (context, state, _) =>
+                  Text(state.dataOrNull?.join() ?? '-'),
+            );
+          }),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ab'), findsOneWidget);
+
+      client.setQueryData<List<String>>(['items'], ['x', 'y']);
+      await tester.pumpAndSettle();
+      expect(find.text('ab'), findsOneWidget, reason: 'same length: skipped');
+
+      rebuildParent(() {});
+      await tester.pump();
+      expect(find.text('xy'), findsOneWidget,
+          reason: 'the next rebuild must show the latest data');
+    });
   });
 }

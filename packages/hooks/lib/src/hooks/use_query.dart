@@ -35,16 +35,17 @@ import 'use_query_client.dart';
 /// }
 /// ```
 ///
-/// Use [select] to derive a computed value from the data and avoid
-/// unnecessary rebuilds:
+/// Use [select] as a rebuild filter: the widget rebuilds only when the state
+/// kind or the selected value changes. The returned state is always the
+/// latest one; [select] decides *when* to rebuild, not *what* is returned.
 ///
 /// ```dart
-/// final count = useQuery<List<User>>(
+/// final state = useQuery<List<User>>(
 ///   key: ['users'],
 ///   fetcher: () => api.getUsers(),
-///   select: (users) => users.length,
+///   select: (users) => users.length, // rebuild only when the count changes
 /// );
-/// // Only rebuilds when count changes.
+/// final count = state.dataOrNull?.length ?? 0;
 /// ```
 QoraState<T> useQuery<T>({
   required List<Object?> key,
@@ -53,33 +54,61 @@ QoraState<T> useQuery<T>({
   Object? Function(T data)? select,
 }) {
   final client = useQueryClient();
+  final queryKey = QueryKey(key);
 
-  // Initialise from cache — avoids a loading flash when data is already fresh.
-  final state = useState<QoraState<T>>(client.getQueryState<T>(key));
-  final lastSelected = useRef<Object?>(null);
+  // Eagerly seed initialData/placeholderData into the cache before the first
+  // render so widgets see the pre-populated state instead of an Initial flash.
+  final mergedOptions = client.config.defaultOptions.merge(options);
+  if (mergedOptions.initialData != null ||
+      mergedOptions.placeholderData != null) {
+    client.prepopulateCache<T>(key, mergedOptions);
+  }
+
+  // Latest state, updated on every emission. A rebuild is requested through
+  // [rebuildTick]; [select] can skip it without ever returning stale data.
+  final latest = useRef<QoraState<T>>(client.getQueryState<T>(key));
+  final subscribedKey = useRef<QueryKey>(queryKey);
+  if (subscribedKey.value != queryKey) {
+    // Key changed: read the new key's cache synchronously for this frame.
+    subscribedKey.value = queryKey;
+    latest.value = client.getQueryState<T>(key);
+  }
+  final rebuildTick = useState(0);
+
+  // Keep the latest callbacks so background refetches (invalidation,
+  // polling) never run a stale closure captured on the first subscription.
+  final fetcherRef = useRef(fetcher);
+  fetcherRef.value = fetcher;
+  final selectRef = useRef(select);
+  selectRef.value = select;
+  final snapshot = useRef<(Type, Object?)?>(null);
+
+  bool selectionChanged(QoraState<T> next) {
+    final selector = selectRef.value;
+    if (selector == null) return true;
+    final data = next.dataOrNull;
+    final current = (next.runtimeType, data == null ? null : selector(data));
+    final changed = current != snapshot.value;
+    snapshot.value = current;
+    return changed;
+  }
 
   // Re-subscribe whenever the key changes.
   useEffect(() {
+    selectionChanged(latest.value);
     final sub = client
         .watchQuery<T>(
       key: key,
-      fetcher: fetcher,
+      fetcher: () => fetcherRef.value(),
       options: options,
     )
         .listen((newState) {
-      if (select != null) {
-        final data = newState.dataOrNull;
-        if (data != null) {
-          final newSelected = select(data);
-          if (lastSelected.value == newSelected) return;
-          lastSelected.value = newSelected;
-        }
-      }
-      state.value = newState;
+      latest.value = newState;
+      if (selectionChanged(newState)) rebuildTick.value++;
     });
 
     return sub.cancel;
-  }, [QueryKey(key)]);
+  }, [queryKey]);
 
-  return state.value;
+  return latest.value;
 }
