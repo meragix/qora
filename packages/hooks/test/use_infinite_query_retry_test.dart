@@ -226,5 +226,52 @@ void main() {
       expect(feedHandle.isFetchingNextPage, isFalse);
       expect(aNextCalls, 1);
     });
+
+    testWidgets('a key change drops a late successful page', (tester) async {
+      final feed = ValueNotifier('a');
+      late InfiniteQueryHandle<List<String>, int> feedHandle;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: QoraScope(
+            client: client,
+            child: ValueListenableBuilder<String>(
+              valueListenable: feed,
+              builder: (context, name, _) => HookBuilder(builder: (context) {
+                feedHandle = useInfiniteQuery<List<String>, int>(
+                  key: ['feed', name],
+                  fetcher: (page) async {
+                    if (page == 0) return ['$name-0'];
+                    // No error, no retry: just a slow next page.
+                    await Future<void>.delayed(
+                      const Duration(milliseconds: 100),
+                    );
+                    return ['$name-$page'];
+                  },
+                  getNextPageParam: (last) => 1,
+                  initialPageParam: 0,
+                  options: const QoraOptions(retryCount: 0),
+                );
+                return const SizedBox.shrink();
+              }),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final done = feedHandle.fetchNextPage();
+      await tester.pump(const Duration(milliseconds: 10));
+      feed.value = 'b';
+      await tester.pump();
+      await tester.pumpAndSettle();
+      await done;
+      await tester.pump();
+
+      expect(feedHandle.pages, [
+        ['b-0'],
+      ]);
+      expect(feedHandle.isFetchingNextPage, isFalse);
+    });
   });
 }

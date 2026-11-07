@@ -146,10 +146,54 @@ void main() {
       expect(reported, isEmpty);
     });
 
+    test('a prefetch and a watcher sharing a failing fetch report once',
+        () async {
+      final gate = Completer<void>();
+      var calls = 0;
+      Future<String> fetcher() async {
+        calls++;
+        await gate.future;
+        throw StateError('boom');
+      }
+
+      final prefetch = client.prefetch<String>(
+        key: ['user', 1],
+        fetcher: fetcher,
+        options: _noRetry,
+      );
+      // The screen mounts while the prefetch is still in flight; its deferred
+      // mount fetch joins the prefetch.
+      final sub = client.watchQuery<String>(
+        key: ['user', 1],
+        fetcher: fetcher,
+        options: _noRetry,
+      ).listen((_) {});
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      gate.complete();
+      await prefetch;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await sub.cancel();
+
+      expect(calls, 1);
+      expect(reported, hasLength(1));
+    });
+
     group('paused offline', () {
       late _FakeConnectivity network;
 
       setUp(() async {
+        // One replay per batch, so a failing replay could stop later ones.
+        client.dispose();
+        client = QoraClient(
+          config: QoraClientConfig(
+            onBackgroundFetchError: (error, stackTrace, key) =>
+                reported.add((error, key)),
+            reconnectStrategy: const ReconnectStrategy(
+              maxConcurrent: 1,
+              jitter: Duration.zero,
+            ),
+          ),
+        );
         network = _FakeConnectivity(online: false);
         client.attachConnectivityManager(network);
         await Future<void>.delayed(Duration.zero);
@@ -190,7 +234,18 @@ void main() {
         expect(reported.single.$1, same(error));
       });
 
-      test('a failed replay does not stop the other replays', () async {
+      test('a failed replay does not stop later batches or mutations',
+          () async {
+        final sent = <String>[];
+        final mutation = MutationController<String, String, void>(
+          mutator: (v) async {
+            sent.add(v);
+            return v;
+          },
+          options: const MutationOptions(offlineQueue: true),
+          isOnline: () => client.isOnline,
+          offlineQueue: client.offlineMutationQueue,
+        );
         await client.prefetch<String>(
           key: ['a'],
           fetcher: () async => throw StateError('a'),
@@ -201,11 +256,69 @@ void main() {
           fetcher: () async => 'b',
           options: _noRetry,
         );
+        await mutation.mutate('queued');
+        expect(sent, isEmpty);
 
         network.set(NetworkStatus.online);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
         expect(client.getQueryData<String>(['b']), 'b');
+        expect(sent, ['queued']);
+        mutation.dispose();
+      });
+
+      test('a replay joining a fetch started after reconnect reports once',
+          () async {
+        final gateA = Completer<void>();
+        final gateB = Completer<void>();
+        await client.prefetch<String>(
+          key: ['a'],
+          fetcher: () async {
+            await gateA.future;
+            return 'a';
+          },
+          options: _noRetry,
+        );
+        await client.prefetch<String>(
+          key: ['b'],
+          fetcher: () async => throw StateError('stale replay'),
+          options: _noRetry,
+        );
+
+        // Batch 1 replays "a" and waits on gateA; "b" waits for batch 2.
+        network.set(NetworkStatus.online);
+        await Future<void>.delayed(Duration.zero);
+
+        // Meanwhile a new prefetch on "b" starts (and owns) a fetch.
+        final fresh = client.prefetch<String>(
+          key: ['b'],
+          fetcher: () async {
+            await gateB.future;
+            throw StateError('b');
+          },
+          options: _noRetry,
+        );
+        gateA.complete(); // batch 2 replays "b" and joins the fresh fetch
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        gateB.complete();
+        await fresh;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(reported.map((r) => r.$2), [
+          ['b'],
+        ]);
+      });
+
+      test('a watcher paused with no cache reports nothing', () async {
+        final sub = client.watchQuery<String>(
+          key: ['user', 1],
+          fetcher: () async => 'Ada',
+          options: _noRetry,
+        ).listen((_) {});
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await sub.cancel();
+
+        expect(reported, isEmpty);
       });
     });
 
