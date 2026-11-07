@@ -12,6 +12,7 @@ import 'package:qora/src/infinite/infinite_cache_entry.dart';
 import 'package:qora/src/infinite/infinite_data.dart';
 import 'package:qora/src/infinite/infinite_query_state.dart';
 import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/key_equality.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/managers/lifecycle_manager.dart';
@@ -572,6 +573,9 @@ class QoraClient implements MutationTracker {
     // Dependency subscription: cancelled in finally.
     StreamSubscription<QoraState<dynamic>>? depSub;
 
+    // Invalidation listener: cancelled in finally.
+    StreamSubscription<void>? invalidationSub;
+
     // Local polling timer: owned exclusively by this watcher instance.
     //
     // Previously this was stored on `entry.refetchTimer` (shared mutable
@@ -681,6 +685,34 @@ class QoraClient implements MutationTracker {
           }
         }
 
+        // Refetch when the query is invalidated while this watcher is active
+        // ([invalidate], tag/predicate invalidation, refetchOnWindowFocus).
+        // The signal is emitted only by an explicit invalidation, never by a
+        // fetch, so a fetch that fails immediately cannot re-trigger itself.
+        // Concurrent watchers on the same key are deduplicated by _doFetch.
+        invalidationSub = entry.invalidations.listen((_) {
+          if (_isDisposed || !entry.isActive) return;
+          if (cancelToken?.isCancelled == true) return;
+          if (opts.dependsOn != null) {
+            final depNorm = normalizeKey(opts.dependsOn!);
+            if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) return;
+          }
+          unawaited(
+            _doFetch<T>(
+              normalized,
+              entry,
+              fetcher,
+              opts,
+              cancelToken: cancelToken,
+            ).then(
+              (_) {},
+              onError: (Object e, StackTrace s) {
+                config.onBackgroundFetchError?.call(e, s, normalized);
+              },
+            ),
+          );
+        });
+
         // Setup polling interval: stored in a local variable, not on the
         // shared entry, to prevent cross-watcher timer cancellation.
         if (opts.refetchInterval != null) {
@@ -703,6 +735,7 @@ class QoraClient implements MutationTracker {
       yield* entry.stream;
     } finally {
       depSub?.cancel();
+      invalidationSub?.cancel();
       localRefetchTimer?.cancel();
       entry.removeSubscriber();
       _scheduleGC(normalized);
@@ -858,9 +891,10 @@ class QoraClient implements MutationTracker {
 
   /// Mark a query as stale and cancel any in-flight request for it.
   ///
-  /// Active [watchQuery] streams will transition to
-  /// `Loading(previousData: ...)` immediately. The next time a subscriber
-  /// mounts or [fetchQuery] is called, a fresh network request will be made.
+  /// Active [watchQuery] streams transition to `Loading(previousData: ...)`
+  /// immediately and refetch in the background with their own fetcher.
+  /// Queries without an active watcher are refetched the next time a
+  /// subscriber mounts or [fetchQuery] is called.
   ///
   /// ```dart
   /// await api.createPost(payload);
@@ -902,6 +936,26 @@ class QoraClient implements MutationTracker {
     for (final key in matched) {
       invalidate(key);
     }
+  }
+
+  /// Invalidate every query whose key starts with [prefix].
+  ///
+  /// [prefix] accepts the same forms as a query key ([QoraKey] or [List]).
+  /// Elements are compared with the same deep equality as query keys, so maps
+  /// and nested lists match structurally. An empty prefix matches every
+  /// query. Active watchers refetch, exactly as with [invalidate].
+  ///
+  /// ```dart
+  /// // Matches ['posts'], ['posts', 1], ['posts', 1, 'comments'], ...
+  /// client.invalidatePrefix(['posts']);
+  ///
+  /// // Matches every query for user 42, whatever comes next.
+  /// client.invalidatePrefix(['users', 42]);
+  /// ```
+  void invalidatePrefix(Object prefix) {
+    _assertNotDisposed();
+    final normalizedPrefix = normalizeKey(prefix);
+    invalidateWhere((key) => _startsWith(key, normalizedPrefix));
   }
 
   /// Invalidate all queries matching [filter].
@@ -1619,10 +1673,9 @@ class QoraClient implements MutationTracker {
       if (!entry.isActive) continue;
       if (opts?.refetchOnWindowFocus != true) continue;
       if (!entry.isStale(opts?.staleTime)) continue;
-      // Transitioning to Loading(previousData: ...) is the signal that
-      // QoraBuilder._subscribe() watches for: it calls _executeFetch() which
-      // invokes fetchQuery with the watcher's fetcher closure, completing the
-      // SWR on-focus revalidation cycle.
+      // invalidate() emits on CacheEntry.invalidations, which every active
+      // watchQuery stream listens to: the watcher refetches with its own
+      // fetcher closure, completing the SWR on-focus revalidation cycle.
       entry.invalidate();
       _log('refetchOnWindowFocus: invalidated ${mapEntry.key}');
     }
@@ -2030,6 +2083,25 @@ class QoraClient implements MutationTracker {
     _log('initialData applied: ${entry.state}');
   }
 
+  /// Eagerly seeds the cache with [QoraOptions.initialData] or
+  /// [QoraOptions.placeholderData] before any fetch is triggered.
+  ///
+  /// Called by [QoraBuilder] and hooks in `didChangeDependencies` (before
+  /// the first `build()`) so widgets see the pre-populated state immediately
+  /// instead of flashing an [Initial] loader.
+  ///
+  /// If the cache already contains an entry for [key] (any state), or if
+  /// neither [QoraOptions.initialData] nor [QoraOptions.placeholderData]
+  /// produce a value of type `T`, this is a no-op.
+  void prepopulateCache<T>(Object key, QoraOptions options) {
+    final normalized = normalizeKey(key);
+    // Only create an entry if one does not already exist; never overwrite.
+    final existingEntry = _cache.peek(normalized);
+    if (existingEntry != null) return;
+    final entry = _getOrCreateEntry<T>(normalized);
+    _applyInitialData<T>(entry, options);
+  }
+
   /// Return an existing [CacheEntry] or create a fresh [Initial] one.
   ///
   /// Performs lazy eviction: if the existing entry has expired, it is
@@ -2171,6 +2243,12 @@ class QoraClient implements MutationTracker {
         _log('Evicted: $key');
       }
     }
+  }
+
+  /// Whether [key] starts with every element of [prefix] (deep equality).
+  static bool _startsWith(List<dynamic> key, List<dynamic> prefix) {
+    if (prefix.length > key.length) return false;
+    return equalsKey(key.sublist(0, prefix.length), prefix);
   }
 
   /// Map a raw error through [QoraClientConfig.errorMapper] if configured.
