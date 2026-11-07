@@ -7,11 +7,11 @@ on:
       - "packages/dart/**"
       - ".github/workflows/dart.yml"
       - ".github/workflows/_dart_package.yml"
+  # No path filter on pull requests: "ci / packages/dart" is a required
+  # status check on main, and a filtered workflow never reports it on
+  # PRs that do not touch the core package (docs, examples), which then
+  # stay blocked on "Expected: Waiting for status to be reported".
   pull_request:
-    paths:
-      - "packages/dart/**"
-      - ".github/workflows/dart.yml"
-      - ".github/workflows/_dart_package.yml"
 
 jobs:
   ci:
