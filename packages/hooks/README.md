@@ -19,8 +19,8 @@ Add both `qora_flutter` and `qora_hooks` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.3.0
-  qora_hooks: ^1.3.0
+  qora_flutter: ^1.3.1
+  qora_hooks: ^1.3.1
   flutter_hooks: ^0.21.2
 ```
 
