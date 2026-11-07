@@ -13,7 +13,7 @@ Part of the [Qora monorepo](https://github.com/meragix/qora). For Flutter-specif
 
 ```yaml
 dependencies:
-  qora: ^1.2.0
+  qora: ^1.3.0
 ```
 
 ## Quick start
@@ -56,7 +56,7 @@ client.watchQuery<User>(
 ### Optimistic update with rollback
 
 ```dart
-final snapshot = client.getState<User>(['users', 1]);
+final snapshot = client.getQueryData<User>(['users', 1]);
 client.setQueryData(['users', 1], user.copyWith(name: 'Alice'));
 try {
   await api.updateUser(1, name: 'Alice');

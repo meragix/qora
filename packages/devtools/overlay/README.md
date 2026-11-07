@@ -34,7 +34,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  qora_devtools_overlay: ^0.1.0
+  qora_devtools_overlay: ^0.3.0
 ```
 
 ## Usage

@@ -49,12 +49,7 @@ This package runs inside your **app isolate** and has zero cost in release build
 
 ## Installation
 
-```yaml
-dependencies:
-  qora: ^0.4.0
-  qora_devtools_extension: ^0.1.0
-  qora_devtools_shared: ^0.1.0
-```
+> **Status: in development.** The version on pub.dev (0.2.0) targets `qora` 0.8 and cannot be installed alongside `qora` 1.x. Until a compatible release ships, use the in-app overlay, [`qora_devtools_overlay`](https://pub.dev/packages/qora_devtools_overlay).
 
 > Only add this package to debug or profile builds. In release, use the default `NoOpTracker` (built into `qora`) which has zero runtime overhead.
 

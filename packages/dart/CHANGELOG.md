@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-07
+
 ### Added
 
 - `QoraClient.invalidatePrefix(prefix)`: invalidates every query whose key starts with `prefix`, comparing segments with deep key equality (#23). `invalidate(key)` stays exact and unchanged.
@@ -248,6 +250,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getQueryData` / `setQueryData`
 - Retry logic with exponential backoff
 
+[unreleased]: https://github.com/meragix/qora/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/meragix/qora/compare/1.2.0...1.3.0
+[1.2.0]: https://github.com/meragix/qora/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/meragix/qora/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/meragix/qora/compare/0.9.0...1.0.0
 [0.9.0]: https://github.com/meragix/qora/compare/0.8.0...0.9.0
@@ -259,5 +264,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.0]: https://github.com/meragix/qora/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/meragix/qora/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/meragix/qora/releases/tag/0.1.0
-[unreleased]: https://github.com/meragix/qora/compare/1.2.0...HEAD
-[1.2.0]: https://github.com/meragix/qora/compare/1.0.0...1.2.0

@@ -62,8 +62,9 @@ class _StorageEntry {
 ///
 /// ```dart
 /// // 1. Create with a storage backend (swap InMemory for Hive/Isar/etc.)
+/// final storage = InMemoryStorageAdapter();
 /// final client = PersistQoraClient(
-///   storage: InMemoryStorageAdapter(),
+///   storage: storage,
 ///   persistDuration: Duration(days: 7),
 /// );
 ///
@@ -82,7 +83,7 @@ class _StorageEntry {
 /// );
 ///
 /// // 3. Warm the cache from disk before the first widget builds.
-/// await client.storage.init();
+/// await storage.init();
 /// await client.hydrate();
 ///
 /// runApp(QoraScope(client: client, child: const MyApp()));
@@ -122,7 +123,7 @@ class _StorageEntry {
 /// ## Name-based registration (obfuscation-safe)
 ///
 /// ```dart
-/// // Without name: uses T.toString() — unsafe on Flutter Web / --obfuscate
+/// // Without name: uses T.toString(), unsafe on Flutter Web / --obfuscate
 /// client.registerSerializer<User>(serializer);
 ///
 /// // With explicit name: always stable
@@ -183,7 +184,7 @@ class PersistQoraClient extends QoraClient {
     // and hydrate() can no longer find the serializer.
     //
     // Throws [ArgumentError] when [name] is omitted, catching the mistake in
-    // all build modes — not just debug — before it silently corrupts persisted
+    // all build modes, not just debug, before it silently corrupts persisted
     // data in a release build.
     if (name == null) {
       throw ArgumentError(
@@ -212,7 +213,7 @@ class PersistQoraClient extends QoraClient {
   /// Call once at startup, **after** all serializers have been registered and
   /// **before** any widget builds (or any [fetchQuery] / [watchQuery] call).
   /// Awaiting [hydrate] before [runApp] guarantees the cache is warm on the
-  /// very first frame — no spinner, no empty state flicker:
+  /// very first frame: no spinner, no empty state flicker:
   ///
   /// ```dart
   /// // Typical Flutter bootstrap
@@ -258,8 +259,8 @@ class PersistQoraClient extends QoraClient {
   ///
   /// ### Model versioning
   ///
-  /// If your model schema changes between app releases — a required field
-  /// added, a field renamed, a type changed — persisted entries written by
+  /// If your model schema changes between app releases (a required field
+  /// added, a field renamed, a type changed), persisted entries written by
   /// the old version may throw in [QoraSerializer.fromJson]. [hydrate] catches every such
   /// exception, logs a warning (when [QoraClientConfig.debugMode] is `true`),
   /// deletes the corrupt entry from storage, and continues. The app never
@@ -274,19 +275,19 @@ class PersistQoraClient extends QoraClient {
   ///   return User(
   ///     id:        map['id'] as int,
   ///     name:      map['name'] as String,
-  ///     // Added in v2 — fall back to empty string for v1 entries on disk
+  ///     // Added in v2: fall back to empty string for v1 entries on disk
   ///     avatarUrl: map['avatarUrl'] as String? ?? '',
   ///   );
   /// }
   /// ```
   ///
   /// For **breaking changes** with no safe default (type change, field
-  /// removal), bump the serializer [name] — e.g. `'User'` → `'User_v2'`.
+  /// removal), bump the serializer [name], e.g. `'User'` → `'User_v2'`.
   /// Old entries are silently skipped (no matching serializer), the next
   /// fetch writes a fresh entry under the new name, and the old entries
   /// are cleaned up by TTL expiry.
   ///
-  /// Hydration is idempotent — calling it multiple times is safe but
+  /// Hydration is idempotent: calling it multiple times is safe but
   /// redundant.
   Future<void> hydrate() async {
     final allKeys = await _storage.keys();
@@ -301,14 +302,14 @@ class PersistQoraClient extends QoraClient {
           jsonDecode(raw) as Map<String, dynamic>,
         );
       } catch (_) {
-        _persistLog('Corrupt entry at "$storageKey" — deleting');
+        _persistLog('Corrupt entry at "$storageKey", deleting');
         await _storage.delete(storageKey);
         continue;
       }
 
       if (envelope.isExpired()) {
         _persistLog(
-          'Expired "${envelope.typeName}" at "$storageKey" — deleting',
+          'Expired "${envelope.typeName}" at "$storageKey", deleting',
         );
         await _storage.delete(storageKey);
         continue;
@@ -317,7 +318,7 @@ class PersistQoraClient extends QoraClient {
       final serializer = _serializersByName[envelope.typeName];
       if (serializer == null) {
         _persistLog(
-          'No serializer for "${envelope.typeName}" — deleting "$storageKey". '
+          'No serializer for "${envelope.typeName}", deleting "$storageKey". '
           'Call registerSerializer<${envelope.typeName}>() before hydrate().',
         );
         await _storage.delete(storageKey);
@@ -330,13 +331,13 @@ class PersistQoraClient extends QoraClient {
       } catch (e) {
         _persistLog(
           'fromJson failed for "${envelope.typeName}" '
-          'at "$storageKey": $e — deleting',
+          'at "$storageKey": $e, deleting',
         );
         await _storage.delete(storageKey);
         continue;
       }
 
-      // storageKey is already a JSON-encoded normalised key — pass it directly
+      // storageKey is already a JSON-encoded normalised key; pass it directly
       // as the raw key. queueHydration normalizes internally, producing the
       // same encoding used by _encodeStorageKey.
       final queueKey = jsonDecode(storageKey);
@@ -407,7 +408,7 @@ class PersistQoraClient extends QoraClient {
     Duration? ttl,
   }) async {
     final typeName = _typeNames[T];
-    if (typeName == null) return; // No serializer for T — skip silently.
+    if (typeName == null) return; // No serializer for T; skip silently.
 
     final serializer = _serializersByName[typeName]!;
 

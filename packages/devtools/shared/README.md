@@ -62,7 +62,7 @@ All three packages share this package. None of them imports the others.
 
 ```yaml
 dependencies:
-  qora_devtools_shared: ^0.1.0
+  qora_devtools_shared: ^0.2.0
 ```
 
 ## Usage
