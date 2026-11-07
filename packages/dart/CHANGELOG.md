@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
 
+### Fixed
+
+- Per-query `QoraOptions` now inherit `QoraClientConfig.defaultOptions`, as documented. `merge` reset every field a query did not pass (`staleTime`, `gcTime`, `enabled`, `retryCount`, `retryDelay`, `refetchOnWindowFocus`, `refetchOnReconnect`, `networkMode`, `structuralSharing`, `keepPreviousData`) to its constructor default: a global `retryCount: 0` became 3 as soon as a query passed `QoraOptions(staleTime: ...)`. These constructor parameters are now nullable; a field left out is unset, reads as its default, and falls back to the global value on `merge`. Reading the fields and existing call sites are unchanged. If a query relied on the reset, pass the default explicitly, for example `QoraOptions(staleTime: Duration.zero)`.
+
 ## [1.3.1] - 2026-11-07
 
 ### Fixed
