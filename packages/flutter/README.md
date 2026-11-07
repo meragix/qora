@@ -143,8 +143,8 @@ QoraStateBuilder<List<Notification>>(
 
 Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 
-- [Setup](https://qora.meragix.dev/flutter-integration/setup)
-- [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
-- [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
-- [Optimistic Updates](https://qora.meragix.dev/recipes/optimistic-updates)
-- [Offline-first example](https://qora.meragix.dev/examples/offline-first)
+- [Setup](https://qora.meragix.dev/en/flutter-integration/setup)
+- [QoraScope](https://qora.meragix.dev/en/flutter-integration/qora-scope)
+- [QoraBuilder](https://qora.meragix.dev/en/flutter-integration/qora-builder)
+- [Optimistic Updates](https://qora.meragix.dev/en/recipes/optimistic-updates)
+- [Offline-first example](https://qora.meragix.dev/en/examples/offline-first)

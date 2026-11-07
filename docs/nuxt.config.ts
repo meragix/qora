@@ -7,8 +7,9 @@ export default defineNuxtConfig({
       routes: ['/en', '/fr'],
     },
   },
-   site: {
+  site: {
     name: 'Qora',
+    url: 'https://qora.meragix.dev',
   },
   i18n: {
     strategy: 'prefix',
