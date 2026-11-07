@@ -39,8 +39,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
-
+      // No extra pump: the very first frame must already show the seed.
       expect(find.text('pre-seeded'), findsOneWidget,
           reason: 'Fresh initialData should show data on first render');
       expect(find.text('Loading<String>'), findsNothing);
@@ -77,6 +76,29 @@ void main() {
       expect(find.text('fresh-cached'), findsOneWidget);
       expect(fetchCount, 0,
           reason: 'fresh initialData should skip the network');
+    });
+
+    testWidgets('stale initialData renders first, then revalidates',
+        (tester) async {
+      final client = QoraClient();
+      addTearDown(client.dispose);
+
+      await tester.pumpWidget(
+        _wrap(
+          client: client,
+          child: QoraBuilder<String>(
+            queryKey: ['stale-seed'],
+            fetcher: () async => 'network',
+            options: const QoraOptions(initialData: 'seed'),
+            builder: (context, state, fetchStatus) =>
+                Text(state.dataOrNull ?? 'none'),
+          ),
+        ),
+      );
+
+      expect(find.text('seed'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('network'), findsOneWidget);
     });
   });
 }
