@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `QoraClient.prepopulateCache<T>(key, options)`: eagerly seeds the cache with `QoraOptions.initialData` or `placeholderData` before any fetch. Called by Flutter widgets and hooks in `didChangeDependencies` so the first render shows pre-populated data instead of an `Initial` loader (#19).
+- `QoraClient.prepopulateCache<T>(key, options)`: seeds the cache with `QoraOptions.initialData` or `placeholderData` before any fetch, so widgets and hooks render the seed on their first frame instead of `Initial` (#19). No-op when an entry already exists.
 
 ### Fixed
 

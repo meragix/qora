@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).
+- `QoraBuilder` seeds `QoraOptions.initialData` / `placeholderData` before the first frame, so cached or server-provided data renders instantly (#19).
+
 ### Fixed
 
 - `QoraBuilder`: a fetcher that failed without awaiting I/O (for example `if (token == null) throw ...`) after an invalidation caused an unbounded `Loading` / `Failure` refetch loop that froze the UI. `QoraBuilder` now delegates its lifecycle to `QoraClient.watchQuery`, whose invalidation signal cannot be re-triggered by a fetch.

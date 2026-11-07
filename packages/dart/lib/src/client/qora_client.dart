@@ -2074,7 +2074,7 @@ class QoraClient implements MutationTracker {
   /// produce a value of type `T`, this is a no-op.
   void prepopulateCache<T>(Object key, QoraOptions options) {
     final normalized = normalizeKey(key);
-    // Only create an entry if one does not already exist — never overwrite.
+    // Only create an entry if one does not already exist; never overwrite.
     final existingEntry = _cache.peek(normalized);
     if (existingEntry != null) return;
     final entry = _getOrCreateEntry<T>(normalized);
