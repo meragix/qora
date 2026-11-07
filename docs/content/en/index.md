@@ -1,7 +1,7 @@
 ---
 seo:
-  title: Qora | Server-State Management for Dart & Flutter
-  description: Declarative data fetching with SWR caching, optimistic mutations, request deduplication, offline persistence, and built-in DevTools. Pure Dart core, Flutter-ready.
+  title: Server state for Flutter apps that keep working offline
+  description: Fetch, cache and sync server data in Flutter. Saved data on cold start, queries that pause offline, writes queued and replayed on reconnect. Inspired by TanStack Query, no code generation.
 ---
 
 ::u-page-hero
@@ -10,10 +10,10 @@ orientation: horizontal
 ---
 
 #title
-Server State for [Dart & Flutter]{.text-primary}
+Server state for Flutter apps that [keep working offline]{.text-primary}
 
 #description
-Declare what data you need. Qora fetches it, caches it, deduplicates concurrent requests, and keeps it fresh automatically. Mutations ship with optimistic updates and automatic rollback.
+Qora fetches, caches and synchronizes server data, and keeps your app usable when the network is not. Saved data shows on a cold start, queries pause offline and resume on reconnect, and writes made offline are queued and replayed in order.
 
 #headline
   :::u-badge
@@ -22,7 +22,7 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
   variant: outline
   class: rounded-full
   ---
-  v1.2.0 is now available
+  v1.3.0 is now available
   :::
 
 #links
@@ -30,7 +30,7 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
   ---
   color: neutral
   size: xl
-  to: /getting-started/installation
+  to: /en/getting-started/installation
   trailing-icon: i-lucide-arrow-right
   ---
   Get started
@@ -50,23 +50,27 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
 #default
   :::prose
 
-  ```dart [main.dart]
-  // One call: cached, deduplicated, background-refreshed.
-  final user = await client.fetchQuery<User>(
-    key: ['user', userId],
+  ```dart [user_screen.dart]
+  // Cached data on the first frame, kept during refetches and errors.
+  QoraBuilder<User>(
+    queryKey: ['users', userId],
     fetcher: () => api.getUser(userId),
-    options: QoraOptions(staleTime: Duration(minutes: 5)),
-  );
+    builder: (context, state, fetchStatus) => Column(children: [
+      if (fetchStatus == FetchStatus.paused) const OfflineBanner(),
+      if (state.dataOrNull case final user?) UserCard(user),
+    ]),
+  )
 
-  // Optimistic update: UI reflects the change before the server responds.
-  // On error, Qora rolls back automatically.
-  await controller.mutate(
-    key: ['user', userId, 'rename'],
-    mutator: (vars) => api.renameUser(vars),
-    onMutate: (vars) => client.setQueryData(['user', userId], vars.newUser),
-    onError:  (_, ctx) => client.restoreQueryData(['user', userId], ctx),
-    onSuccess: (_) => client.invalidateQuery(['user', userId]),
-  );
+  // Written offline: shown now, sent when the device reconnects.
+  QoraMutationBuilder<Comment, String, void>(
+    mutator: (text) => api.postComment(text),
+    options: MutationOptions(
+      offlineQueue: true,
+      optimisticResponse: (text) => Comment.draft(text),
+      invalidates: [['comments']],
+    ),
+    builder: (context, state, mutate) => SendButton(onSend: mutate),
+  )
   ```
 
   :::
@@ -74,7 +78,49 @@ Declare what data you need. Qora fetches it, caches it, deduplicates concurrent 
 
 ::u-page-section
 #title
-Everything server state needs. Nothing it does not.
+Offline, built in
+
+#description
+Not a refetch-on-reconnect flag: three pieces that work together, wired by one widget.
+
+#features
+  :::u-page-feature
+  ---
+  icon: i-lucide-hard-drive
+  to: /en/recipes/persistence
+  ---
+  #title
+  [Saved data on cold start]{.text-primary}
+  #description
+  `PersistQoraClient` writes successful fetches to your storage and restores them before the first frame. Stale entries show immediately and revalidate in the background.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-wifi-off
+  to: /en/flutter-integration/network-status
+  ---
+  #title
+  [Queries that know they are offline]{.text-primary}
+  #description
+  Queries pause while the device is offline and report it through `FetchStatus.paused`, so the UI can tell "no network" from "loading". They resume on reconnect, with jitter to avoid a thundering herd.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-list-ordered
+  to: /en/examples/offline-first
+  ---
+  #title
+  [Writes that wait for the network]{.text-primary}
+  #description
+  Mutations made offline return an optimistic result right away and are replayed in order on reconnect. The queue is held in memory today; persisting it across app restarts is the focus of 1.4.
+  :::
+::
+
+::u-page-section
+#title
+Everything else you expect from a query library
 
 #features
   :::u-page-feature
@@ -82,9 +128,9 @@ Everything server state needs. Nothing it does not.
   icon: i-lucide-layers-3
   ---
   #title
-  [SWR Caching]{.text-primary}
+  Stale-while-revalidate
   #description
-  Returns cached data immediately, then revalidates in the background. Configure stale time and cache time per query or globally. Fresh data reaches the user with no loading flicker.
+  Cached data renders on the first frame; fresh data replaces it in the background.
   :::
 
   :::u-page-feature
@@ -92,19 +138,9 @@ Everything server state needs. Nothing it does not.
   icon: i-lucide-git-merge
   ---
   #title
-  [Request Deduplication]{.text-primary}
+  Request deduplication
   #description
-  Multiple widgets requesting the same key simultaneously trigger exactly one network call. The result is shared across all subscribers the moment it resolves.
-  :::
-
-  :::u-page-feature
-  ---
-  icon: i-lucide-zap
-  ---
-  #title
-  [Optimistic Mutations]{.text-primary}
-  #description
-  Update the cache before the server responds. If the request fails, Qora restores the previous snapshot automatically. No manual rollback logic required.
+  Ten widgets watching the same key share one cache entry and one network call.
   :::
 
   :::u-page-feature
@@ -112,29 +148,49 @@ Everything server state needs. Nothing it does not.
   icon: i-lucide-refresh-cw
   ---
   #title
-  [Background Sync]{.text-primary}
+  Precise invalidation
   #description
-  Stale queries are refetched automatically when the app returns to the foreground or the device reconnects to the network. Built-in lifecycle and connectivity hooks handle this with zero configuration.
+  By exact key, by key prefix, by predicate, or by tag. Mounted queries refetch automatically.
   :::
 
   :::u-page-feature
   ---
-  icon: i-lucide-hard-drive
+  icon: i-lucide-zap
   ---
   #title
-  [Offline Persistence]{.text-primary}
+  Optimistic updates
   #description
-  Hydrate the cache from disk on startup with `PersistQoraClient`. Plug-and-play adapters for Hive and SharedPreferences. The cache survives app restarts.
+  Update the cache in `onMutate`, restore the snapshot in `onError`, invalidate on success.
   :::
 
   :::u-page-feature
   ---
-  icon: i-lucide-link
+  icon: i-lucide-split
   ---
   #title
-  [Query Dependencies]{.text-primary}
+  Two-axis state
   #description
-  Declare that one query depends on another with `dependsOn`. The dependent query waits until its dependency has data, then re-runs reactively whenever the upstream value changes.
+  A sealed `QoraState` you can match exhaustively, plus a separate `FetchStatus`. Previous data is never lost on refetch or error.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-infinity
+  ---
+  #title
+  Infinite queries
+  #description
+  Cursor or page based pagination with a `maxPages` memory window.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-anchor
+  ---
+  #title
+  Builders or hooks
+  #description
+  `QoraBuilder` widgets, or `useQuery` and `useMutation` with `qora_hooks`.
   :::
 
   :::u-page-feature
@@ -142,9 +198,9 @@ Everything server state needs. Nothing it does not.
   icon: i-lucide-monitor
   ---
   #title
-  [Built-in DevTools]{.text-primary}
+  In-app DevTools
   #description
-  Inspect every cache entry, replay the event timeline, and trigger refetch or invalidate commands from a floating in-app panel. One line of setup. A dedicated Flutter DevTools IDE extension is in development.
+  A debug-only overlay that shows every query, its state, its staleness and the mutation queue.
   :::
 
   :::u-page-feature
@@ -152,31 +208,74 @@ Everything server state needs. Nothing it does not.
   icon: i-lucide-package
   ---
   #title
-  [Pure Dart Core]{.text-primary}
+  Pure Dart core
   #description
-  The core library has no Flutter dependency. Use it in Flutter apps, Dart CLI tools, backend services, or shared packages. The Flutter layer adds widgets and lifecycle integration on top.
+  No Flutter dependency and no code generation. Works in CLIs, servers and tests.
+  :::
+::
+
+::u-page-section
+#title
+Works with what you already use
+
+#description
+Qora owns server data. Keep your state management for UI state, your HTTP client for transport.
+
+#features
+  :::u-page-feature
+  ---
+  icon: i-lucide-boxes
+  to: /en/third-party/with-riverpod
+  ---
+  #title
+  Riverpod
+  #description
+  Expose Qora queries to providers.
   :::
 
   :::u-page-feature
   ---
-  icon: i-lucide-fast-forward
+  icon: i-lucide-workflow
+  to: /en/third-party/with-bloc
   ---
   #title
-  [Prefetch]{.text-primary}
+  BLoC
   #description
-  Warm the cache before the user navigates. Call `prefetch` on any key and the data is ready when the screen mounts. Respects `staleTime` — already-fresh entries are not re-fetched.
+  Feed cubits and blocs from the cache.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-globe
+  to: /en/third-party/with-dio
+  ---
+  #title
+  Dio and GraphQL
+  #description
+  Map transport errors, refresh tokens, wrap `graphql` and `ferry`.
+  :::
+
+  :::u-page-feature
+  ---
+  icon: i-lucide-arrow-right-left
+  to: /en/getting-started/migrating-from-other-libraries
+  ---
+  #title
+  Coming from another library
+  #description
+  API mapping from `cached_query`, `flutter_query` and TanStack Query.
   :::
 ::
 
 ::u-page-section
   :::u-page-c-t-a
   ---
-  title: Start in under five minutes
-  description: Add the package, wrap your app, and write your first query. No boilerplate, no code generation, no provider scaffolding required.
+  title: Your first query in five minutes
+  description: Add one package, wrap your app with QoraScope.auto, and bind a query to a widget. No code generation, no provider scaffolding.
   class: dark:bg-neutral-950
   links:
     - label: Read the docs
-      to: '/getting-started/installation'
+      to: '/en/getting-started/installation'
       trailingIcon: i-lucide-arrow-right
       size: xl
     - label: View on GitHub
