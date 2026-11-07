@@ -142,3 +142,4 @@ final client = useQueryClient(); // nearest QoraClient from QoraScope
 - Source: [github.com/meragix/qora](https://github.com/meragix/qora/tree/main/packages/hooks)
 - Issues: [github.com/meragix/qora/issues](https://github.com/meragix/qora/issues)
 - Documentation: **[qora.meragix.dev](https://qora.meragix.dev)**
+- Using an AI assistant: [AI Assistants](https://qora.meragix.dev/en/getting-started/ai-assistants)

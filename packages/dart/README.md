@@ -87,3 +87,5 @@ switch (state) {
 ## Documentation
 
 Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
+
+Using an AI assistant? See [AI Assistants](https://qora.meragix.dev/en/getting-started/ai-assistants) for a rules file and `llms.txt`.

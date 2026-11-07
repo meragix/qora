@@ -148,3 +148,4 @@ Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 - [QoraBuilder](https://qora.meragix.dev/en/flutter-integration/qora-builder)
 - [Optimistic Updates](https://qora.meragix.dev/en/recipes/optimistic-updates)
 - [Offline-first example](https://qora.meragix.dev/en/examples/offline-first)
+- [AI Assistants](https://qora.meragix.dev/en/getting-started/ai-assistants): rules and docs for Claude, Cursor or Copilot
