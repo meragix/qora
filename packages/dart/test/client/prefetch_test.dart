@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:qora/qora.dart';
 import 'package:test/test.dart';
 
@@ -94,6 +96,119 @@ void main() {
       expect(reported, isEmpty);
     });
 
+    test('reports a failure once when two prefetches share the fetch',
+        () async {
+      var calls = 0;
+      final gate = Completer<void>();
+      Future<String> fetcher() async {
+        calls++;
+        await gate.future;
+        throw StateError('boom');
+      }
+
+      final first = client.prefetch<String>(
+        key: ['user', 1],
+        fetcher: fetcher,
+        options: _noRetry,
+      );
+      final second = client.prefetch<String>(
+        key: ['user', 1],
+        fetcher: fetcher,
+        options: _noRetry,
+      );
+      gate.complete();
+      await Future.wait([first, second]);
+
+      expect(calls, 1);
+      expect(reported, hasLength(1));
+    });
+
+    test('does not report a failure delivered to a fetchQuery caller',
+        () async {
+      final gate = Completer<void>();
+      final fetch = client.fetchQuery<String>(
+        key: ['user', 1],
+        fetcher: () async {
+          await gate.future;
+          throw StateError('boom');
+        },
+        options: _noRetry,
+      );
+      final prefetch = client.prefetch<String>(
+        key: ['user', 1],
+        fetcher: () async => 'unused',
+        options: _noRetry,
+      );
+      gate.complete();
+
+      await expectLater(fetch, throwsStateError);
+      await expectLater(prefetch, completes);
+      expect(reported, isEmpty);
+    });
+
+    group('paused offline', () {
+      late _FakeConnectivity network;
+
+      setUp(() async {
+        network = _FakeConnectivity(online: false);
+        client.attachConnectivityManager(network);
+        await Future<void>.delayed(Duration.zero);
+      });
+
+      test('fetches on reconnect', () async {
+        await client.prefetch<String>(
+          key: ['user', 1],
+          fetcher: () async => 'Ada',
+          options: _noRetry,
+        );
+        expect(client.getQueryData<String>(['user', 1]), isNull);
+
+        network.set(NetworkStatus.online);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(client.getQueryData<String>(['user', 1]), 'Ada');
+        expect(reported, isEmpty);
+      });
+
+      test('reports a failure after reconnect once, without crashing',
+          () async {
+        final error = StateError('after reconnect');
+        await client.prefetch<String>(
+          key: ['user', 1],
+          fetcher: () async => throw error,
+          options: _noRetry,
+        );
+
+        network.set(NetworkStatus.online);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(
+          client.getQueryState<String>(['user', 1]),
+          isA<Failure<String>>(),
+        );
+        expect(reported, hasLength(1));
+        expect(reported.single.$1, same(error));
+      });
+
+      test('a failed replay does not stop the other replays', () async {
+        await client.prefetch<String>(
+          key: ['a'],
+          fetcher: () async => throw StateError('a'),
+          options: _noRetry,
+        );
+        await client.prefetch<String>(
+          key: ['b'],
+          fetcher: () async => 'b',
+          options: _noRetry,
+        );
+
+        network.set(NetworkStatus.online);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(client.getQueryData<String>(['b']), 'b');
+      });
+    });
+
     test('caches the data on success', () async {
       await client.prefetch<String>(
         key: ['user', 1],
@@ -118,20 +233,26 @@ void main() {
 }
 
 class _FakeConnectivity implements ConnectivityManager {
-  _FakeConnectivity({required bool online}) : _online = online;
+  _FakeConnectivity({required bool online})
+      : _status = online ? NetworkStatus.online : NetworkStatus.offline;
 
-  final bool _online;
-
-  @override
-  NetworkStatus get currentStatus =>
-      _online ? NetworkStatus.online : NetworkStatus.offline;
+  final _controller = StreamController<NetworkStatus>.broadcast();
+  NetworkStatus _status;
 
   @override
-  Stream<NetworkStatus> get statusStream => const Stream.empty();
+  NetworkStatus get currentStatus => _status;
+
+  @override
+  Stream<NetworkStatus> get statusStream => _controller.stream;
 
   @override
   Future<void> start() async {}
 
   @override
-  void dispose() {}
+  void dispose() => _controller.close();
+
+  void set(NetworkStatus status) {
+    _status = status;
+    _controller.add(status);
+  }
 }

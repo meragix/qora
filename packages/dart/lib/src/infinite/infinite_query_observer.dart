@@ -333,6 +333,8 @@ class InfiniteQueryObserver<TData, TPageParam> {
           rethrow;
         }
         await Future<void>.delayed(opts.getRetryDelay(attempt));
+        // Disposed during the delay: stop calling the fetcher.
+        if (_isDisposed) rethrow;
         attempt++;
       }
     }

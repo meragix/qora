@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
-- `QoraClient.prefetch()` no longer throws. A failed fetch is still stored as the query's `Failure` state and is now passed to `QoraClientConfig.onBackgroundFetchError`; a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
+- `QoraClient.prefetch()` no longer throws for a fetch failure. The failure is still recorded in the query state and is now passed once to `QoraClientConfig.onBackgroundFetchError` (not when the prefetch joined a fetch started elsewhere, which reports or delivers its own error); a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
 
 ### Fixed
 
 - Infinite queries ignored `QoraOptions.retryCondition`: every page fetch failure was retried up to `retryCount`, including errors the condition rejects (a 401 or a 404). `InfiniteQueryObserver`, and through it `InfiniteQueryBuilder`, now applies it like `fetchQuery` does.
+- `InfiniteQueryObserver` kept retrying, and calling the fetcher, after `dispose()`. It now stops after the current retry delay.
+- A query paused offline whose fetch failed on reconnect crashed the current `Zone` with an uncaught error. The failure also skipped the remaining paused queries and the offline mutation replay. Replayed fetches now record the failure in the query state and pass it to `onBackgroundFetchError`.
 
 ## [1.3.1] - 2026-11-07
 

@@ -83,8 +83,9 @@ class QoraClientConfig {
   final void Function(List<dynamic> key)? onCacheEvict;
 
   /// Callback invoked when a background fetch fails: a revalidation triggered
-  /// by [QoraClient.watchQuery] or [QoraClient.fetchQuery], or a
-  /// [QoraClient.prefetch].
+  /// by [QoraClient.watchQuery] or [QoraClient.fetchQuery], a
+  /// [QoraClient.prefetch], or a fetch paused offline and replayed on
+  /// reconnect.
   ///
   /// These fetches have no caller awaiting the error, so Qora does not rethrow
   /// it. The error has already been stored in the query's [Failure] state; use

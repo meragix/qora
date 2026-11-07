@@ -120,6 +120,28 @@ void main() {
       obs.dispose();
     });
 
+    test('stops retrying once the observer is disposed', () async {
+      var calls = 0;
+      final obs = observer(
+        fetcher: (_) async {
+          calls++;
+          throw const _HttpError(503);
+        },
+        baseOptions: const QoraOptions(
+          retryCount: 3,
+          retryDelay: Duration(milliseconds: 20),
+        ),
+      );
+
+      final fetch = obs.fetch();
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      obs.dispose();
+      await fetch;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(calls, 1);
+    });
+
     test('also applies to fetchNextPage', () async {
       var calls = 0;
       final obs = observer(
