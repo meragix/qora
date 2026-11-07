@@ -3,7 +3,10 @@
 
 ## [Unreleased]
 
-## [1.3.1] - 2026-11-07
+### Fixed
+
+- `useMutation` now uses the offline mutation queue: with `MutationOptions(offlineQueue: true)`, a call made while offline is queued and sent on reconnect, as with `QoraMutationBuilder`. It was previously sent immediately and failed.
+- `useMutation` now reports its mutations to the client, so they appear in the DevTools overlay and in `QoraClient.mutationEvents`.
 
 ## [1.3.0] - 2026-11-07
 

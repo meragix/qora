@@ -251,11 +251,16 @@ class PersistQoraClient extends QoraClient {
   ///
   /// | Condition                       | Action                          |
   /// |---------------------------------|---------------------------------|
+  /// | Key not written by Qora         | Left untouched                  |
   /// | JSON decode failure             | Delete from storage, skip       |
   /// | TTL expired                     | Delete from storage, skip       |
-  /// | No serializer registered        | Log (debugMode), skip           |
+  /// | No serializer registered        | Delete from storage, log, skip  |
   /// | [QoraSerializer.fromJson] throws| Delete from storage, log, skip  |
   /// | Valid                           | Add to pending hydration queue  |
+  ///
+  /// Qora writes each query under its JSON-encoded key (`["users",1]`), so
+  /// only keys holding a JSON array are read. Other keys in a shared
+  /// adapter, such as app settings in the same Hive box, are never deleted.
   ///
   /// ### Model versioning
   ///
@@ -283,9 +288,8 @@ class PersistQoraClient extends QoraClient {
   ///
   /// For **breaking changes** with no safe default (type change, field
   /// removal), bump the serializer [name], e.g. `'User'` → `'User_v2'`.
-  /// Old entries are silently skipped (no matching serializer), the next
-  /// fetch writes a fresh entry under the new name, and the old entries
-  /// are cleaned up by TTL expiry.
+  /// Old entries have no matching serializer and are deleted by the next
+  /// [hydrate]; the next fetch writes a fresh entry under the new name.
   ///
   /// Hydration is idempotent: calling it multiple times is safe but
   /// redundant.
@@ -293,6 +297,9 @@ class PersistQoraClient extends QoraClient {
     final allKeys = await _storage.keys();
 
     for (final storageKey in allKeys) {
+      // Keys Qora did not write belong to the app: never read or delete them.
+      if (!_isQueryStorageKey(storageKey)) continue;
+
       final raw = await _storage.read(storageKey);
       if (raw == null) continue;
 
@@ -440,6 +447,16 @@ class PersistQoraClient extends QoraClient {
   /// Encodes a normalised query key to a stable JSON string used as the
   /// storage key. [normalizeKey] guarantees all parts are JSON-encodable.
   String _encodeStorageKey(List<dynamic> key) => jsonEncode(key);
+
+  /// Whether [storageKey] was produced by [_encodeStorageKey].
+  bool _isQueryStorageKey(String storageKey) {
+    if (!storageKey.startsWith('[')) return false;
+    try {
+      return jsonDecode(storageKey) is List;
+    } on FormatException {
+      return false;
+    }
+  }
 
   void _persistLog(String message) {
     if (config.debugMode) {

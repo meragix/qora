@@ -12,10 +12,10 @@ import 'package:qora_flutter/qora_flutter.dart';
 ///   mutator: (input) => api.updateUser(input),
 /// );
 ///
-/// // Fire-and-forget — errors are captured in MutationFailure state.
+/// // Fire-and-forget: errors are captured in MutationFailure state.
 /// mutation.mutate(UpdateUserInput(name: 'Alice'));
 ///
-/// // Await the result — errors are propagated via the returned Future.
+/// // Await the result: errors are propagated via the returned Future.
 /// final user = await mutation.mutateAsync(UpdateUserInput(name: 'Alice'));
 /// ```
 class MutationHandle<TData, TVariables> {
@@ -64,8 +64,9 @@ class MutationHandle<TData, TVariables> {
 /// the widget is unmounted. The [MutationHandle.state] is updated on every
 /// state transition.
 ///
-/// [TContext] defaults to `void` — supply an explicit type argument when you
-/// need to store an optimistic-update snapshot for rollback via [onMutate].
+/// The rollback context type is fixed to `void`: a value returned by
+/// `onMutate` is not passed on to `onError`. For a snapshot-based rollback,
+/// use `QoraMutationBuilder`, whose `TContext` type parameter carries it.
 ///
 /// ```dart
 /// class EditProfileScreen extends HookWidget {
@@ -107,7 +108,7 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
   final optionsRef = useRef(options);
   optionsRef.value = options;
 
-  // Read QoraClient for auto-invalidation (optional — null if no QoraScope).
+  // Read QoraClient for auto-invalidation (optional: null if no QoraScope).
   final context = useContext();
   final client = QoraScope.maybeOf(context);
 
@@ -115,6 +116,11 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
     () => MutationController<TData, TVariables, void>(
       mutator: (v) => mutatorRef.value(v),
       options: optionsRef.value,
+      // Same wiring as QoraMutationBuilder: report to DevTools, and queue
+      // the call while offline when MutationOptions.offlineQueue is set.
+      tracker: client,
+      isOnline: client != null ? () => client.isOnline : null,
+      offlineQueue: client?.offlineMutationQueue,
       invalidateQuery:
           client != null ? (key) async => client.invalidate(key) : null,
       invalidateTags:
