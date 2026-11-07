@@ -5,7 +5,7 @@
 <a href="https://pub.dev/packages/qora_flutter/score"><img src="https://img.shields.io/pub/likes/qora_flutter" alt="likes"></a>
 <a href="https://pub.dev/packages/qora_flutter/score"><img src="https://img.shields.io/pub/points/qora_flutter" alt="pub points"></a>
 
-Flutter integration for [Qora](https://pub.dev/packages/qora). Bind server state to your UI with a single widget: no `setState`, no `StreamBuilder`, no loading flag boilerplate.
+Flutter integration for [Qora](https://pub.dev/packages/qora), the server-state layer for apps that have to keep working offline. Bind server data to your UI with one widget: cached data on the first frame, background refresh, refetch on resume and on reconnect.
 
 Part of the [Qora monorepo](https://github.com/meragix/qora).
 
@@ -13,25 +13,27 @@ Part of the [Qora monorepo](https://github.com/meragix/qora).
 
 | Feature | Description |
 |---------|-------------|
-| Declarative UI | Access your data directly via `QoraBuilder` |
-| Lifecycle aware | Queries pause when the app is in the background |
-| Network aware | Triggers refetches when the connection is restored |
+| Declarative UI | `QoraBuilder` renders cached data on the first frame and keeps it during refetches and errors |
+| Lifecycle aware | Stale queries refetch when the app returns to the foreground |
+| Network aware | Queries pause while offline and refetch when the connection is restored |
+| Offline writes | `QoraMutationBuilder` queues mutations made offline and replays them on reconnect |
 | Zero boilerplate | Loading, error, and data states handled in one place |
 
 ## Install
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.2.0
+  qora_flutter: ^1.3.0
 ```
 
 `qora_flutter` automatically includes `qora` and `connectivity_plus` as dependencies; no extra packages needed.
 
 ## Setup
 
-Wrap your app with `QoraScope` once:
+Wrap your app with `QoraScope.auto` once. It creates and owns the lifecycle and connectivity managers:
 
 ```dart
+import 'package:flutter/foundation.dart';
 import 'package:qora_flutter/qora_flutter.dart';
 
 void main() {
@@ -39,16 +41,11 @@ void main() {
     config: const QoraClientConfig(debugMode: kDebugMode),
   );
 
-  runApp(
-    QoraScope(
-      client: client,
-      lifecycleManager: FlutterLifecycleManager(qoraClient: client),
-      connectivityManager: FlutterConnectivityManager(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(QoraScope.auto(client: client, child: const MyApp()));
 }
 ```
+
+Pass your own `FlutterLifecycleManager` / `FlutterConnectivityManager` to the default `QoraScope` constructor when you need custom settings.
 
 ## Fetch and display data
 
@@ -82,13 +79,41 @@ context.qora.invalidateWhere((k) => k.firstOrNull == 'posts');
 
 Every `QoraBuilder` subscribed to a matching key re-fetches automatically.
 
+## Write while offline
+
+With `offlineQueue: true`, a mutation triggered offline returns an optimistic result immediately and is replayed in order when the device reconnects:
+
+```dart
+QoraMutationBuilder<Comment, String, void>(
+  mutator: (text) => api.postComment(text),
+  options: MutationOptions(
+    offlineQueue: true,
+    optimisticResponse: (text) => Comment.draft(text),
+    invalidates: [['comments']],
+  ),
+  builder: (context, state, mutate) => switch (state) {
+    MutationSuccess(:final data, :final isOptimistic) => ListTile(
+        title: Text(data.text),
+        trailing: isOptimistic ? const Icon(Icons.schedule) : null,
+      ),
+    MutationFailure(:final error) => ErrorBanner(error),
+    _ => TextButton(
+        onPressed: state.isPending ? null : () => mutate('Nice post'),
+        child: const Text('Send'),
+      ),
+  },
+)
+```
+
+The queue is held in memory: it survives connectivity changes, not an app restart.
+
 ## Optimistic updates
 
 ```dart
 final client = context.qora;
 final key = ['users', userId];
 
-final snapshot = client.getState<User>(key);
+final snapshot = client.getQueryData<User>(key);
 
 client.setQueryData<User>(key, user.copyWith(name: newName));
 
@@ -121,4 +146,5 @@ Full guides and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 - [Setup](https://qora.meragix.dev/flutter-integration/setup)
 - [QoraScope](https://qora.meragix.dev/flutter-integration/qora-scope)
 - [QoraBuilder](https://qora.meragix.dev/flutter-integration/qora-builder)
-- [Optimistic Updates](https://qora.meragix.dev/guides/optimistic-updates)
+- [Optimistic Updates](https://qora.meragix.dev/recipes/optimistic-updates)
+- [Offline-first example](https://qora.meragix.dev/examples/offline-first)

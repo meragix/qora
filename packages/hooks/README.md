@@ -5,7 +5,7 @@
 <a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/likes/qora_hooks" alt="likes"></a>
 <a href="https://pub.dev/packages/qora_hooks/score"><img src="https://img.shields.io/pub/points/qora_hooks" alt="pub points"></a>
 
-`flutter_hooks` integration for [Qora](https://github.com/meragix/qora): provides `useQuery`, `useMutation`, `useInfiniteQuery`, and `useQueryClient`.
+`flutter_hooks` integration for [Qora](https://github.com/meragix/qora): provides `useQuery`, `useMutation`, `useInfiniteQuery`, `useFetchStatus`, and `useQueryClient`.
 
 Part of the [Qora monorepo](https://github.com/meragix/qora).
 
@@ -19,9 +19,9 @@ Add both `qora_flutter` and `qora_hooks` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.2.0
-  qora_hooks: ^1.2.0
-  flutter_hooks: ^0.20.0
+  qora_flutter: ^1.3.0
+  qora_hooks: ^1.3.0
+  flutter_hooks: ^0.21.2
 ```
 
 Wrap your app with `QoraScope`:
@@ -108,6 +108,28 @@ final allPosts = query.pages.expand((p) => p.posts).toList();
 ```
 
 Call `query.fetchNextPage()` when the user reaches the end of the list to load the next page. `query.hasNextPage` becomes `false` when `getNextPageParam` returns `null`.
+
+### Rebuild only when derived data changes
+
+`select` is a rebuild filter: the widget rebuilds when the state kind or the selected value changes. The returned state is always the latest one.
+
+```dart
+final state = useQuery<List<User>>(
+  key: ['users'],
+  fetcher: () => api.getUsers(),
+  select: (users) => users.length,
+);
+final count = state.dataOrNull?.length ?? 0;
+```
+
+### `useFetchStatus`
+
+Observes the engine status of a query without fetching: `fetching`, `paused` (offline) or `idle`.
+
+```dart
+final status = useFetchStatus(['users']);
+if (status == FetchStatus.paused) return const OfflineBanner();
+```
 
 ### `useQueryClient`
 
