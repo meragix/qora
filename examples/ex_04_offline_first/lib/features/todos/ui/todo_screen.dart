@@ -24,7 +24,8 @@ class TodoScreen extends StatelessWidget {
       fetcher: api.getTodos,
       builder: (context, state, fetchStatus) {
         // ── Offline + no cache at all ─────────────────────────────────────
-        if (state is Initial && fetchStatus == FetchStatus.paused) {
+        // A fetch started while offline pauses with Loading(previousData: null).
+        if (state.dataOrNull == null && fetchStatus == FetchStatus.paused) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -219,7 +220,7 @@ class _AddTodoFab extends StatelessWidget {
       mutator: api.createTodo,
       options: MutationOptions(
         offlineQueue: true,
-        // onMutate runs immediately — even offline — so the todo appears in the
+        // onMutate runs immediately, even offline, so the todo appears in the
         // list straight away. Returns the previous list for rollback on error.
         onMutate: (input) async {
           final prev =
@@ -250,7 +251,7 @@ class _AddTodoFab extends StatelessWidget {
               ? null
               : () => _showAddDialog(context, mutate),
           icon: isQueued ? const Icon(Icons.schedule) : const Icon(Icons.add),
-          label: Text(isQueued ? 'Queued — syncing soon' : 'Add Todo'),
+          label: Text(isQueued ? 'Queued, syncing soon' : 'Add Todo'),
         );
       },
     );
