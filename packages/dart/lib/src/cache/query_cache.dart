@@ -15,13 +15,25 @@ class QueryCache {
   final KeyCacheMap<CacheEntry<dynamic>> _cache =
       KeyCacheMap<CacheEntry<dynamic>>();
   final void Function(List<dynamic> key)? _onEvict;
+  final bool Function(List<dynamic> key, CacheEntry<dynamic> entry)? _canEvict;
   final int? _maxSize;
 
+  /// Creates a cache holding at most [maxSize] entries (`null`: unbounded).
+  ///
+  /// [onEvict] is called with the normalised key of every removed entry.
+  ///
+  /// [canEvict] lets the owner veto LRU eviction of an inactive entry, for
+  /// example one with a fetch still in flight: evicting it would hand its
+  /// result to a disposed entry. A vetoed entry is skipped like an active
+  /// one, so the cache may briefly exceed [maxSize]. `null` (default) allows
+  /// every inactive entry to be evicted.
   QueryCache({
     int? maxSize,
     void Function(List<dynamic> key)? onEvict,
+    bool Function(List<dynamic> key, CacheEntry<dynamic> entry)? canEvict,
   })  : _maxSize = maxSize,
-        _onEvict = onEvict;
+        _onEvict = onEvict,
+        _canEvict = canEvict;
 
   // ── Read ─────────────────────────────────────────────────────────────────
 
@@ -83,10 +95,10 @@ class QueryCache {
   /// Triggers LRU eviction if [maxSize] is set and the cache is full.
   void set<T>(Object key, CacheEntry<T> entry) {
     final normalized = normalizeKey(key);
-    if (_maxSize != null &&
-        _cache.length >= _maxSize &&
-        !_cache.containsKey(normalized)) {
-      _evictLRU();
+    if (_maxSize != null && !_cache.containsKey(normalized)) {
+      // Loop: entries skipped earlier (active or vetoed) may have become
+      // evictable, so the cache gets back under maxSize once it can.
+      while (_cache.length >= _maxSize && _evictLRU()) {}
     }
     _cache.set(normalized, entry);
   }
@@ -155,9 +167,10 @@ class QueryCache {
 
   /// Evicts the least-recently-used *inactive* entry to free space.
   ///
-  /// Active entries (with subscribers) are never forcibly evicted.
-  void _evictLRU() {
-    if (_cache.isEmpty) return;
+  /// Active entries (with subscribers) and entries vetoed by `canEvict` are
+  /// never forcibly evicted. Returns whether an entry was evicted.
+  bool _evictLRU() {
+    if (_cache.isEmpty) return false;
 
     List<dynamic>? oldestKey;
     DateTime? oldestTime;
@@ -165,14 +178,15 @@ class QueryCache {
     for (final entry in _cache.entries) {
       final e = entry.value;
       if (e.isActive) continue; // Never evict active queries.
+      if (_canEvict != null && !_canEvict(entry.key, e)) continue;
       if (oldestTime == null || e.lastAccessedAt.isBefore(oldestTime)) {
         oldestTime = e.lastAccessedAt;
         oldestKey = entry.key;
       }
     }
 
-    if (oldestKey != null) {
-      remove(oldestKey);
-    }
+    if (oldestKey == null) return false;
+    remove(oldestKey);
+    return true;
   }
 }
