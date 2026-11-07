@@ -5,10 +5,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Documentation
-
-- Route-level prefetching guide covering GoRouter redirects, AutoRoute resolvers, cache-first vs network-first strategies, and error handling patterns (#25).
-
 ## [1.2.0] - 2026-06-15
 
 ### Added
