@@ -1956,8 +1956,8 @@ class QoraClient implements MutationTracker {
   /// It is passed to [QoraClientConfig.onBackgroundFetchError] only when this
   /// call started the fetch: a call that joins an in-flight or paused fetch
   /// leaves the report to the fetch that started it, or to the [fetchQuery]
-  /// caller that receives the error. Cancellation and offline pauses are not
-  /// failures and are never reported.
+  /// caller that receives the error. Cancellation and a real offline pause
+  /// (one that registered a replay) are not failures and are never reported.
   Future<void> _backgroundFetch<T>(
     List<dynamic> key,
     CacheEntry<T> entry,
@@ -1972,8 +1972,13 @@ class QoraClient implements MutationTracker {
       await _doFetch<T>(key, entry, fetcher, opts, cancelToken: cancelToken);
     } on QoraCancelException {
       // Cancelled on purpose.
-    } on QoraOfflineException {
-      // Paused offline: the fetch runs again on reconnect.
+    } on QoraOfflineException catch (e, s) {
+      // A real pause registers a replay; the fetch runs again on reconnect.
+      // Without one, the exception came from the fetcher, errorMapper or
+      // transformError: it is a failure like any other.
+      if (ownsFetch && !_pausedFetches.containsKey(sk)) {
+        config.onBackgroundFetchError?.call(e, s, key);
+      }
     } catch (e, s) {
       if (ownsFetch) config.onBackgroundFetchError?.call(e, s, key);
     }

@@ -90,8 +90,10 @@ class QoraClientConfig {
   /// These fetches have no caller awaiting the error, so Qora does not rethrow
   /// it. The query state has already been updated, as for any failed fetch
   /// ([Failure], or the previous [Success] with [QoraOptions.keepPreviousData]),
-  /// and the callback fires once per failed fetch, from the call that started
-  /// it. Use this callback for logging, telemetry, or crash reporting.
+  /// and the callback fires once per failed background fetch, from the call
+  /// that started it. A fetch started by [QoraClient.fetchQuery] delivers its
+  /// error to that caller instead, even when background callers joined it.
+  /// Use this callback for logging, telemetry, or crash reporting.
   ///
   /// ```dart
   /// onBackgroundFetchError: (error, stackTrace, key) =>

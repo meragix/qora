@@ -162,13 +162,14 @@ void main() {
         options: _noRetry,
       );
       // The screen mounts while the prefetch is still in flight; its deferred
-      // mount fetch joins the prefetch.
+      // mount fetch joins the prefetch. pumpEventQueue runs the watcher's
+      // zero-delay mount timer deterministically, unlike a wall-clock delay.
       final sub = client.watchQuery<String>(
         key: ['user', 1],
         fetcher: fetcher,
         options: _noRetry,
       ).listen((_) {});
-      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await pumpEventQueue();
       gate.complete();
       await prefetch;
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -284,8 +285,14 @@ void main() {
           fetcher: () async => throw StateError('stale replay'),
           options: _noRetry,
         );
+        await client.prefetch<String>(
+          key: ['c'],
+          fetcher: () async => 'c',
+          options: _noRetry,
+        );
 
-        // Batch 1 replays "a" and waits on gateA; "b" waits for batch 2.
+        // Batch 1 replays "a" and waits on gateA; "b" and "c" wait for
+        // batches 2 and 3.
         network.set(NetworkStatus.online);
         await Future<void>.delayed(Duration.zero);
 
@@ -304,9 +311,29 @@ void main() {
         await fresh;
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
+        // Exactly one report, from the fresh prefetch that owns the fetch:
+        // the replay of "b" joined it instead of fetching the stale fetcher.
         expect(reported.map((r) => r.$2), [
           ['b'],
         ]);
+        expect((reported.single.$1 as StateError).message, 'b');
+        // Batch 3 ran, so batch 2 (the replay of "b") ran before it.
+        expect(client.getQueryData<String>(['c']), 'c');
+      });
+
+      test('reports a QoraOfflineException that is not a real pause', () async {
+        network.set(NetworkStatus.online);
+        await Future<void>.delayed(Duration.zero);
+
+        // e.g. an errorMapper turning a socket error into QoraOfflineException
+        await client.prefetch<String>(
+          key: ['user', 1],
+          fetcher: () async => throw const QoraOfflineException('mapped'),
+          options: _noRetry,
+        );
+
+        expect(reported, hasLength(1));
+        expect(reported.single.$1, isA<QoraOfflineException>());
       });
 
       test('a watcher paused with no cache reports nothing', () async {
