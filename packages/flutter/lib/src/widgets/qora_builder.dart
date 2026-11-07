@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import '../utils/query_key_equality.dart';
 import 'qora_scope.dart';
 import 'package:qora/qora.dart';
 
@@ -162,9 +163,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     final prev = _client;
     _initClient();
     if (_client == prev && prev != null) return;
-    _prepopulateIfNeeded();
     _subscribe();
-    _executeIfNeeded();
   }
 
   @override
@@ -173,15 +172,10 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
 
     if (widget.client != oldWidget.client) {
       _initClient();
-      _prepopulateIfNeeded();
       _subscribe();
-      _executeIfNeeded();
-    } else if (widget.queryKey != oldWidget.queryKey) {
-      _prepopulateIfNeeded();
+    } else if (!sameQueryKey(widget.queryKey, oldWidget.queryKey) ||
+        widget.enabled != oldWidget.enabled) {
       _subscribe();
-      _executeIfNeeded();
-    } else if (widget.enabled && !oldWidget.enabled) {
-      _executeIfNeeded();
     }
   }
 
@@ -199,27 +193,13 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     }
   }
 
-  void _prepopulateIfNeeded() {
-    final client = _client;
-    if (client == null) return;
+  /// Seeds [QoraOptions.initialData] / [QoraOptions.placeholderData] into
+  /// the cache before the first read, so the first frame shows it instead of
+  /// [Initial]. No-op when the cache already holds an entry for the key.
+  void _prepopulateIfNeeded(QoraClient client) {
     final opts = client.config.defaultOptions.merge(widget.options);
     if (opts.initialData != null || opts.placeholderData != null) {
       client.prepopulateCache<T>(widget.queryKey, opts);
-    }
-  }
-
-  void _executeIfNeeded() {
-    if (!widget.enabled) return;
-    final client = _client;
-    if (client == null) return;
-
-    final opts = client.config.defaultOptions.merge(widget.options);
-    final shouldRefetchOnMount = opts.refetchOnMount ?? true;
-    final state = client.getQueryState<T>(widget.queryKey);
-    final isFirstFetch = state is Initial<T>;
-
-    if (isFirstFetch || shouldRefetchOnMount) {
-      unawaited(_executeFetch());
     }
   }
 
@@ -230,33 +210,34 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     final client = _client;
     if (client == null) return;
 
-    // Subscribe to query state changes.
-    _stateSub = client.watchState<T>(widget.queryKey).listen(
+    _prepopulateIfNeeded(client);
+
+    // Read the cache synchronously so the very first frame reflects cached
+    // data instead of flashing Initial until the stream delivers an event.
+    _state = client.getQueryState<T>(widget.queryKey);
+    final current = _state;
+    if (current is Success<T>) _lastKnownData = current.data;
+
+    // When enabled, watchQuery owns the whole lifecycle: fetch on mount
+    // (honouring refetchOnMount / staleTime), polling, and refetch on
+    // invalidation. When disabled, observe the cache without fetching.
+    final stream = widget.enabled
+        ? client.watchQuery<T>(
+            key: widget.queryKey,
+            // Resolve the fetcher at call time so background refetches
+            // (invalidation, polling) always use the latest closure.
+            fetcher: () => widget.fetcher(),
+            options: widget.options,
+          )
+        : client.watchState<T>(widget.queryKey);
+
+    _stateSub = stream.listen(
       (state) {
         if (!mounted) return;
         setState(() {
           _state = state;
           if (state is Success<T>) _lastKnownData = state.data;
         });
-
-        // When the query is invalidated externally (e.g. lifecycle event or
-        // an explicit client.invalidate() call), the state transitions to
-        // Loading(previousData: X). We call fetchQuery here to ensure an
-        // actual network request is dispatched.
-        //
-        // If a fetch is already in-flight or paused, the client's
-        // deduplication mechanism prevents duplicate requests.
-        if (widget.enabled &&
-            state is Loading<T> &&
-            state.previousData != null) {
-          client
-              .fetchQuery<T>(
-                key: widget.queryKey,
-                fetcher: widget.fetcher,
-                options: widget.options,
-              )
-              .ignore();
-        }
       },
       onError: (Object error) {
         debugPrint('[QoraBuilder] Unexpected stream error: $error');
@@ -270,24 +251,6 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
         setState(() => _fetchStatus = status);
       },
     );
-  }
-
-  Future<void> _executeFetch() async {
-    final client = _client;
-    if (client == null) return;
-
-    try {
-      await client.fetchQuery<T>(
-        key: widget.queryKey,
-        fetcher: widget.fetcher,
-        options: widget.options,
-      );
-    } on QoraOfflineException {
-      // Handled gracefully — FetchStatus.paused is emitted by the client and
-      // received via _fetchStatusSub.
-    } catch (_) {
-      // Other errors are captured in the Failure state and forwarded by stream.
-    }
   }
 
   @override
@@ -379,7 +342,7 @@ class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
     if (widget.client != oldWidget.client) {
       _initClient();
       _subscribe();
-    } else if (widget.queryKey != oldWidget.queryKey) {
+    } else if (!sameQueryKey(widget.queryKey, oldWidget.queryKey)) {
       _subscribe();
     }
   }
@@ -396,7 +359,11 @@ class _QoraStateBuilderState<T> extends State<QoraStateBuilder<T>> {
 
   void _subscribe() {
     _subscription?.cancel();
-    _subscription = _client?.watchState<T>(widget.queryKey).listen(
+    final client = _client;
+    if (client == null) return;
+    // Synchronous first frame: read the cache before the stream delivers.
+    _state = client.getQueryState<T>(widget.queryKey);
+    _subscription = client.watchState<T>(widget.queryKey).listen(
       (state) {
         if (!mounted) return;
         setState(() => _state = state);

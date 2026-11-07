@@ -7,7 +7,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `QoraBuilder` and `useQuery` now eagerly seed `QoraOptions.initialData` / `placeholderData` into the cache before the first render, eliminating the `Initial` flash and enabling instant SSR/hydration renders (#19).
+### Fixed
+
+- `QoraBuilder`: a fetcher that failed without awaiting I/O (for example `if (token == null) throw ...`) after an invalidation caused an unbounded `Loading` / `Failure` refetch loop that froze the UI. `QoraBuilder` now delegates its lifecycle to `QoraClient.watchQuery`, whose invalidation signal cannot be re-triggered by a fetch.
+- `QoraBuilder` / `QoraStateBuilder`: the first frame now renders the cached state synchronously instead of `Initial`.
+- `QoraBuilder` / `QoraStateBuilder` / `InfiniteQueryBuilder`: query keys are compared structurally. A parent rebuild passing a new list with the same content (`queryKey: ['users', id]`) no longer re-subscribes and refetches stale data.
+- `QoraBuilder`: background refetches (invalidation, polling) use the latest `fetcher` closure.
 
 ## [1.2.0] - 2026-06-15
 
