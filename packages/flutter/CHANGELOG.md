@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.3.1] - 2026-11-07
 
+- No changes in this package. Released in lockstep with `qora` 1.3.1 and `qora_hooks` 1.3.1.
+
 ## [1.3.0] - 2026-11-07
 
 ### Added
