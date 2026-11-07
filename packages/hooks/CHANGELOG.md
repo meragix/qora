@@ -13,6 +13,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `useQuery` seeds `QoraOptions.initialData` / `placeholderData` before the first build (#19).
+
 ### Fixed
 
 - `useQuery`: refetches after its query is invalidated instead of staying in `Loading(previousData)` (fixed in `qora` core).

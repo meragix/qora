@@ -193,12 +193,24 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     }
   }
 
+  /// Seeds [QoraOptions.initialData] / [QoraOptions.placeholderData] into
+  /// the cache before the first read, so the first frame shows it instead of
+  /// [Initial]. No-op when the cache already holds an entry for the key.
+  void _prepopulateIfNeeded(QoraClient client) {
+    final opts = client.config.defaultOptions.merge(widget.options);
+    if (opts.initialData != null || opts.placeholderData != null) {
+      client.prepopulateCache<T>(widget.queryKey, opts);
+    }
+  }
+
   void _subscribe() {
     _stateSub?.cancel();
     _fetchStatusSub?.cancel();
 
     final client = _client;
     if (client == null) return;
+
+    _prepopulateIfNeeded(client);
 
     // Read the cache synchronously so the very first frame reflects cached
     // data instead of flashing Initial until the stream delivers an event.

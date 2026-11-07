@@ -7,7 +7,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `QoraScope.auto()`: convenience constructor that automatically wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call lifecycle and connectivity listeners (#24).
+- `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).
+- `QoraBuilder` seeds `QoraOptions.initialData` / `placeholderData` before the first frame, so cached or server-provided data renders instantly (#19).
 
 ### Fixed
 
