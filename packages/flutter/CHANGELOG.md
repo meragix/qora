@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).
+- `QoraBuilder` seeds `QoraOptions.initialData` / `placeholderData` before the first frame, so cached or server-provided data renders instantly (#19).
+- `QoraBuilder.select`: rebuild filter for derived data. The widget rebuilds only when the state kind or the selected value changes; the builder still receives the full, up-to-date state (#22).
+
+### Fixed
+
+- `QoraBuilder`: a fetcher that failed without awaiting I/O (for example `if (token == null) throw ...`) after an invalidation caused an unbounded `Loading` / `Failure` refetch loop that froze the UI. `QoraBuilder` now delegates its lifecycle to `QoraClient.watchQuery`, whose invalidation signal cannot be re-triggered by a fetch.
+- `QoraBuilder` / `QoraStateBuilder`: the first frame now renders the cached state synchronously instead of `Initial`.
+- `QoraBuilder` / `QoraStateBuilder` / `InfiniteQueryBuilder`: query keys are compared structurally. A parent rebuild passing a new list with the same content (`queryKey: ['users', id]`) no longer re-subscribes and refetches stale data.
+- `QoraBuilder`: background refetches (invalidation, polling) use the latest `fetcher` closure.
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
