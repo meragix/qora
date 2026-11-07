@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `QoraScope.auto()`: convenience constructor that automatically wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call lifecycle and connectivity listeners (#24).
+
 ### Fixed
 
 - `QoraBuilder`: a fetcher that failed without awaiting I/O (for example `if (token == null) throw ...`) after an invalidation caused an unbounded `Loading` / `Failure` refetch loop that froze the UI. `QoraBuilder` now delegates its lifecycle to `QoraClient.watchQuery`, whose invalidation signal cannot be re-triggered by a fetch.

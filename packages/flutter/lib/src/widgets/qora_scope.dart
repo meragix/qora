@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:qora/qora.dart';
 
+import '../managers/flutter_connectivity_manager.dart';
+import '../managers/flutter_lifecycle_manager.dart';
 import 'network_status_builder.dart';
 
 /// Provides a [QoraClient] to the widget tree via an [InheritedWidget].
@@ -94,7 +96,60 @@ class QoraScope extends StatefulWidget {
     this.lifecycleManager,
     this.connectivityManager,
     required this.child,
-  });
+  })  : _autoLifecycle = false,
+        _autoConnectivity = false,
+        _minBackgroundDuration = Duration.zero;
+
+  // Set by [QoraScope.auto]: the managers are created by the State, once,
+  // so parent rebuilds never allocate new, unstarted instances.
+  final bool _autoLifecycle;
+  final bool _autoConnectivity;
+  final Duration _minBackgroundDuration;
+
+  /// Convenience constructor that automatically wires [FlutterLifecycleManager]
+  /// and [FlutterConnectivityManager] for automatic refetch on app resume and
+  /// connectivity restore.
+  ///
+  /// Equivalent to:
+  ///
+  /// ```dart
+  /// QoraScope(
+  ///   client: client,
+  ///   lifecycleManager: FlutterLifecycleManager(qoraClient: client),
+  ///   connectivityManager: FlutterConnectivityManager(),
+  ///   child: MyApp(),
+  /// )
+  /// ```
+  ///
+  /// Set [enableLifecycle] or [enableConnectivity] to `false` to disable
+  /// a specific listener. Pass [minBackgroundDuration] to control how long
+  /// the app must be in background before queries are invalidated on resume.
+  ///
+  /// The managers are created once when the scope mounts and disposed with
+  /// it; rebuilding the parent never creates new instances.
+  ///
+  /// ```dart
+  /// void main() {
+  ///   runApp(
+  ///     QoraScope.auto(
+  ///       client: QoraClient(),
+  ///       child: MyApp(),
+  ///     ),
+  ///   );
+  /// }
+  /// ```
+  const QoraScope.auto({
+    super.key,
+    required this.client,
+    bool enableLifecycle = true,
+    bool enableConnectivity = true,
+    Duration minBackgroundDuration = const Duration(seconds: 5),
+    required this.child,
+  })  : lifecycleManager = null,
+        connectivityManager = null,
+        _autoLifecycle = enableLifecycle,
+        _autoConnectivity = enableConnectivity,
+        _minBackgroundDuration = minBackgroundDuration;
 
   /// Returns the [QoraClient] from the nearest [QoraScope] ancestor.
   ///
@@ -167,25 +222,41 @@ class QoraScope extends StatefulWidget {
 }
 
 class _QoraScopeState extends State<QoraScope> {
+  // Resolved once in initState and owned for the whole lifetime of the scope.
+  // Reading widget.* in build/dispose would pick up instances from later
+  // rebuilds that were never started.
+  LifecycleManager? _lifecycleManager;
+  ConnectivityManager? _connectivityManager;
+
   @override
   void initState() {
     super.initState();
 
-    if (widget.lifecycleManager != null) {
-      widget.lifecycleManager!.start();
+    _lifecycleManager = widget.lifecycleManager ??
+        (widget._autoLifecycle
+            ? FlutterLifecycleManager(
+                qoraClient: widget.client,
+                minBackgroundDuration: widget._minBackgroundDuration,
+              )
+            : null);
+    _connectivityManager = widget.connectivityManager ??
+        (widget._autoConnectivity ? FlutterConnectivityManager() : null);
+
+    final lifecycle = _lifecycleManager;
+    if (lifecycle != null) {
+      lifecycle.start();
       // Wire refetchOnWindowFocus: QoraClient listens to lifecycleStream and
       // invalidates stale active queries whenever the app resumes.
-      widget.client.attachLifecycleManager(widget.lifecycleManager!);
+      widget.client.attachLifecycleManager(lifecycle);
     }
 
-    if (widget.connectivityManager != null) {
+    final connectivity = _connectivityManager;
+    if (connectivity != null) {
       // Start the manager, then attach it to the client.
       // The client reads manager.currentStatus on attach, so calling start()
       // first ensures the initial status is already resolved.
-      widget.connectivityManager!.start().then((_) {
-        if (mounted) {
-          widget.client.attachConnectivityManager(widget.connectivityManager!);
-        }
+      connectivity.start().then((_) {
+        if (mounted) widget.client.attachConnectivityManager(connectivity);
       });
     }
   }
@@ -193,8 +264,8 @@ class _QoraScopeState extends State<QoraScope> {
   @override
   void dispose() {
     widget.client.dispose();
-    widget.lifecycleManager?.dispose();
-    widget.connectivityManager?.dispose();
+    _lifecycleManager?.dispose();
+    _connectivityManager?.dispose();
     super.dispose();
   }
 
@@ -202,7 +273,7 @@ class _QoraScopeState extends State<QoraScope> {
   Widget build(BuildContext context) {
     return _InheritedQoraScope(
       client: widget.client,
-      connectivityManager: widget.connectivityManager,
+      connectivityManager: _connectivityManager,
       child: widget.child,
     );
   }
