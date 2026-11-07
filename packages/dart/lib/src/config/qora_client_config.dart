@@ -82,13 +82,13 @@ class QoraClientConfig {
   /// analytics, or syncing persistent storage.
   final void Function(List<dynamic> key)? onCacheEvict;
 
-  /// Callback invoked when a background fetch triggered by [QoraClient.watchQuery]
-  /// fails.
+  /// Callback invoked when a background fetch fails: a revalidation triggered
+  /// by [QoraClient.watchQuery] or [QoraClient.fetchQuery], or a
+  /// [QoraClient.prefetch].
   ///
-  /// Background fetches happen inside `unawaited(...)` futures — without this
-  /// callback the re-thrown error would crash the current [Zone]. The error has
-  /// already been stored in the query's [Failure] state; use this callback for
-  /// logging, telemetry, or crash reporting.
+  /// These fetches have no caller awaiting the error, so Qora does not rethrow
+  /// it. The error has already been stored in the query's [Failure] state; use
+  /// this callback for logging, telemetry, or crash reporting.
   ///
   /// ```dart
   /// onBackgroundFetchError: (error, stackTrace, key) =>

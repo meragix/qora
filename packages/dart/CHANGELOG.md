@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
+- `QoraClient.prefetch()` no longer throws. A failed fetch is still stored as the query's `Failure` state and is now passed to `QoraClientConfig.onBackgroundFetchError`; a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
 
 ## [1.3.1] - 2026-11-07
 

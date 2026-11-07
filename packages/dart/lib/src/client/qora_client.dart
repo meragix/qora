@@ -785,8 +785,11 @@ class QoraClient implements MutationTracker {
 
   /// Pre-warm the cache without creating a stream or blocking the caller's UI.
   ///
-  /// No-op if the cached data is already fresh. Useful for eager loading
-  /// before navigation:
+  /// No-op if the cached data is already fresh. Never throws: a failed fetch
+  /// is stored as the query's [Failure] state and passed to
+  /// [QoraClientConfig.onBackgroundFetchError]; a cancelled or offline-paused
+  /// prefetch completes silently. Use [fetchQuery] to await the data or the
+  /// error. Useful for eager loading before navigation:
   ///
   /// ```dart
   /// // Prefetch on hover / likely next route
@@ -828,13 +831,23 @@ class QoraClient implements MutationTracker {
     }
 
     _log('Prefetching: $normalized');
-    await _doFetch<T>(
-      normalized,
-      entry,
-      fetcher,
-      opts,
-      cancelToken: cancelToken,
-    );
+    try {
+      await _doFetch<T>(
+        normalized,
+        entry,
+        fetcher,
+        opts,
+        cancelToken: cancelToken,
+      );
+    } on QoraCancelException {
+      // Cancelled on purpose: nothing to report.
+    } on QoraOfflineException {
+      // Paused offline: the fetch resumes on reconnect.
+    } catch (e, s) {
+      // Already stored as the query's Failure state. Prefetches are
+      // fire-and-forget, so rethrowing would crash the caller's Zone.
+      config.onBackgroundFetchError?.call(e, s, normalized);
+    }
   }
 
   // ── Cache mutation ───────────────────────────────────────────────────────
