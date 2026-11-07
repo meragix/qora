@@ -310,6 +310,9 @@ class InfiniteQueryObserver<TData, TPageParam> {
 
   /// Fetch a single page, with exponential-backoff retry on failure.
   ///
+  /// Honours [QoraOptions.retryCount] and [QoraOptions.retryCondition], like
+  /// [QoraClient.fetchQuery].
+  ///
   /// Respects [NetworkMode.online]: throws [QoraOfflineException] immediately
   /// when offline and the effective network mode is [NetworkMode.online].
   Future<TData> _fetchWithRetry(TPageParam pageParam) async {
@@ -326,6 +329,9 @@ class InfiniteQueryObserver<TData, TPageParam> {
       } catch (e) {
         if (e is QoraOfflineException) rethrow;
         if (attempt >= opts.retryCount) rethrow;
+        if (opts.retryCondition != null && !opts.retryCondition!(e, attempt)) {
+          rethrow;
+        }
         await Future<void>.delayed(opts.getRetryDelay(attempt));
         attempt++;
       }
