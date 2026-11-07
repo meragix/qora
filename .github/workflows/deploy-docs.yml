@@ -37,6 +37,9 @@ jobs:
 
       - name: Build website
         working-directory: ./docs
+        env:
+          # Absolute URLs in sitemap.xml, canonical tags and og:image.
+          NUXT_SITE_URL: https://qora.meragix.dev
         run: npm run build
       
       - name: Upload artifact

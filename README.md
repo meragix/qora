@@ -155,8 +155,8 @@ final user = await client.fetchQuery<User>(
 
 ## Is Qora the right tool?
 
-- **You use Riverpod or BLoC and fetch data in providers or cubits.** Qora can sit next to them and take over caching, refetching and invalidation. See the [Riverpod](https://qora.meragix.dev/third-party/with-riverpod) and [BLoC](https://qora.meragix.dev/third-party/with-bloc) guides.
-- **You are coming from `cached_query` or `flutter_query`.** The [migration guide](https://qora.meragix.dev/getting-started/migrating-from-other-libraries) maps each API to its Qora equivalent.
+- **You use Riverpod or BLoC and fetch data in providers or cubits.** Qora can sit next to them and take over caching, refetching and invalidation. See the [Riverpod](https://qora.meragix.dev/en/third-party/with-riverpod) and [BLoC](https://qora.meragix.dev/en/third-party/with-bloc) guides.
+- **You are coming from `cached_query` or `flutter_query`.** The [migration guide](https://qora.meragix.dev/en/getting-started/migrating-from-other-libraries) maps each API to its Qora equivalent.
 - **Your app is read-only and always online.** A plain `FutureBuilder` or your existing state management may be enough. Qora pays off when the same data is shown in several places, changes after writes, or must survive bad connectivity.
 
 ## Packages
@@ -196,11 +196,11 @@ void main() {
 
 Guides, recipes and API reference: **[qora.meragix.dev](https://qora.meragix.dev)**
 
-- [Quick start](https://qora.meragix.dev/getting-started/quick-start)
-- [Offline-first example](https://qora.meragix.dev/examples/offline-first)
-- [Persistence](https://qora.meragix.dev/recipes/persistence)
-- [Network status](https://qora.meragix.dev/flutter-integration/network-status)
-- [Coming from TanStack Query](https://qora.meragix.dev/getting-started/coming-from-tanstack-query)
+- [Quick start](https://qora.meragix.dev/en/getting-started/quick-start)
+- [Offline-first example](https://qora.meragix.dev/en/examples/offline-first)
+- [Persistence](https://qora.meragix.dev/en/recipes/persistence)
+- [Network status](https://qora.meragix.dev/en/flutter-integration/network-status)
+- [Coming from TanStack Query](https://qora.meragix.dev/en/getting-started/coming-from-tanstack-query)
 
 Runnable apps live in [examples/](examples).
 
