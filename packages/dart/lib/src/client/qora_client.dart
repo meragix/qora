@@ -489,17 +489,12 @@ class QoraClient implements MutationTracker {
       final staleData = (entry.state as Success<T>).data;
       _log('Cache HIT (stale): $normalized: revalidating in background');
       unawaited(
-        _doFetch<T>(
+        _backgroundFetch<T>(
           normalized,
           entry,
           fetcher,
           opts,
           cancelToken: cancelToken,
-        ).then(
-          (_) {},
-          onError: (Object e, StackTrace s) {
-            config.onBackgroundFetchError?.call(e, s, normalized);
-          },
         ),
       );
       return staleData;
@@ -618,17 +613,12 @@ class QoraClient implements MutationTracker {
                 Future<void>.delayed(Duration.zero, () {
                   if (_isDisposed || !entry.isActive) return;
                   unawaited(
-                    _doFetch<T>(
+                    _backgroundFetch<T>(
                       normalized,
                       entry,
                       fetcher,
                       opts,
                       cancelToken: cancelToken,
-                    ).then(
-                      (_) {},
-                      onError: (Object e, StackTrace s) {
-                        config.onBackgroundFetchError?.call(e, s, normalized);
-                      },
                     ),
                   );
                 }),
@@ -643,12 +633,7 @@ class QoraClient implements MutationTracker {
                 depSub?.cancel();
                 depSub = null;
                 unawaited(
-                  _doFetch<T>(normalized, entry, fetcher, opts).then(
-                    (_) {},
-                    onError: (Object e, StackTrace s) {
-                      config.onBackgroundFetchError?.call(e, s, normalized);
-                    },
-                  ),
+                  _backgroundFetch<T>(normalized, entry, fetcher, opts),
                 );
               }
             });
@@ -667,17 +652,12 @@ class QoraClient implements MutationTracker {
               Future<void>.delayed(Duration.zero, () {
                 if (_isDisposed || !entry.isActive) return;
                 unawaited(
-                  _doFetch<T>(
+                  _backgroundFetch<T>(
                     normalized,
                     entry,
                     fetcher,
                     opts,
                     cancelToken: cancelToken,
-                  ).then(
-                    (_) {},
-                    onError: (Object e, StackTrace s) {
-                      config.onBackgroundFetchError?.call(e, s, normalized);
-                    },
                   ),
                 );
               }),
@@ -698,17 +678,12 @@ class QoraClient implements MutationTracker {
             if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) return;
           }
           unawaited(
-            _doFetch<T>(
+            _backgroundFetch<T>(
               normalized,
               entry,
               fetcher,
               opts,
               cancelToken: cancelToken,
-            ).then(
-              (_) {},
-              onError: (Object e, StackTrace s) {
-                config.onBackgroundFetchError?.call(e, s, normalized);
-              },
             ),
           );
         });
@@ -719,12 +694,7 @@ class QoraClient implements MutationTracker {
           localRefetchTimer = Timer.periodic(opts.refetchInterval!, (_) {
             if (!_isDisposed && entry.isActive) {
               unawaited(
-                _doFetch<T>(normalized, entry, fetcher, opts).then(
-                  (_) {},
-                  onError: (Object e, StackTrace s) {
-                    config.onBackgroundFetchError?.call(e, s, normalized);
-                  },
-                ),
+                _backgroundFetch<T>(normalized, entry, fetcher, opts),
               );
             }
           });
@@ -785,8 +755,14 @@ class QoraClient implements MutationTracker {
 
   /// Pre-warm the cache without creating a stream or blocking the caller's UI.
   ///
-  /// No-op if the cached data is already fresh. Useful for eager loading
-  /// before navigation:
+  /// No-op if the cached data is already fresh. Never throws for a fetch
+  /// failure: the failure is recorded in the query state, as for any fetch,
+  /// and passed once to [QoraClientConfig.onBackgroundFetchError] (not at all
+  /// when the prefetch joined a fetch started elsewhere, which reports or
+  /// delivers it itself). A cancelled prefetch completes silently; one paused
+  /// offline completes at once and its fetch runs on reconnect. Use
+  /// [fetchQuery] to await the data or the error. Calling it on a disposed
+  /// client still throws. Useful for eager loading before navigation:
   ///
   /// ```dart
   /// // Prefetch on hover / likely next route
@@ -828,7 +804,7 @@ class QoraClient implements MutationTracker {
     }
 
     _log('Prefetching: $normalized');
-    await _doFetch<T>(
+    await _backgroundFetch<T>(
       normalized,
       entry,
       fetcher,
@@ -1857,9 +1833,8 @@ class QoraClient implements MutationTracker {
       final cached = entry.state.dataOrNull;
       if (cached != null) {
         // Serve cache now; queue a background refetch for when online.
-        _pausedFetches[sk] = () async {
-          await _doFetch<T>(key, entry, fetcher, opts);
-        };
+        _pausedFetches[sk] =
+            () => _backgroundFetch<T>(key, entry, fetcher, opts);
         _emitFetchStatus(sk, FetchStatus.paused);
         _log('offlineFirst: serving cache, queuing refetch: $key');
         return Future.value(cached as T);
@@ -1973,6 +1948,42 @@ class QoraClient implements MutationTracker {
     return future;
   }
 
+  /// Runs a fetch that no caller awaits: background revalidations
+  /// ([watchQuery], [fetchQuery] stale-while-revalidate, invalidation,
+  /// polling), [prefetch], and fetches replayed on reconnect.
+  ///
+  /// Never throws. The failure is recorded in the query state by [_doFetch].
+  /// It is passed to [QoraClientConfig.onBackgroundFetchError] only when this
+  /// call started the fetch: a call that joins an in-flight or paused fetch
+  /// leaves the report to the fetch that started it, or to the [fetchQuery]
+  /// caller that receives the error. Cancellation and a real offline pause
+  /// (one that registered a replay) are not failures and are never reported.
+  Future<void> _backgroundFetch<T>(
+    List<dynamic> key,
+    CacheEntry<T> entry,
+    Future<T> Function() fetcher,
+    QoraOptions opts, {
+    CancelToken? cancelToken,
+  }) async {
+    final sk = _stringKey(key);
+    final ownsFetch =
+        !_pendingRequests.containsKey(sk) && !_pausedFetches.containsKey(sk);
+    try {
+      await _doFetch<T>(key, entry, fetcher, opts, cancelToken: cancelToken);
+    } on QoraCancelException {
+      // Cancelled on purpose.
+    } on QoraOfflineException catch (e, s) {
+      // A real pause registers a replay; the fetch runs again on reconnect.
+      // Without one, the exception came from the fetcher, errorMapper or
+      // transformError: it is a failure like any other.
+      if (ownsFetch && !_pausedFetches.containsKey(sk)) {
+        config.onBackgroundFetchError?.call(e, s, key);
+      }
+    } catch (e, s) {
+      if (ownsFetch) config.onBackgroundFetchError?.call(e, s, key);
+    }
+  }
+
   /// Pause a fetch because the device is offline.
   ///
   /// - Transitions the entry to `Loading(previousData: ...)` so the UI
@@ -1995,9 +2006,7 @@ class QoraClient implements MutationTracker {
     }
 
     // Register for replay on reconnect.
-    _pausedFetches[sk] = () async {
-      await _doFetch<T>(key, entry, fetcher, opts);
-    };
+    _pausedFetches[sk] = () => _backgroundFetch<T>(key, entry, fetcher, opts);
 
     _emitFetchStatus(sk, FetchStatus.paused);
     _log('Paused (offline): $key');

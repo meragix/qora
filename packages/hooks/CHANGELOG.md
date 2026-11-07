@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `useInfiniteQuery`: `fetchNextPage` called the fetcher once and exposed the first failure, while the first page went through `fetchQuery` and was retried. It now applies the same policy: `retryCount`, `retryCondition` and the backoff of `options`, merged over the client defaults.
+- `useInfiniteQuery`: `error` kept the last failure after a page loaded successfully; it is now cleared.
+- `useInfiniteQuery`: a page that arrived after the key changed was appended to the new key's pages, and a page that arrived after unmount threw "A ValueNotifier was used after being disposed". Late results are now dropped, and next-page retries stop once the key changes or the widget unmounts.
+
 ## [1.3.1] - 2026-11-07
 
 ### Fixed
