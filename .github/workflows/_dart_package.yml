@@ -37,7 +37,7 @@ jobs:
 
       - name: Format
         working-directory: ${{ inputs.package }}
-        run: dart format .
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
         working-directory: ${{ inputs.package }}
