@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Infinite queries ignored `QoraOptions.retryCondition`: every page fetch failure was retried up to `retryCount`, including errors the condition rejects (a 401 or a 404). `InfiniteQueryObserver`, and through it `InfiniteQueryBuilder`, now applies it like `fetchQuery` does.
 - `InfiniteQueryObserver` kept retrying, and calling the fetcher, after `dispose()`. It now stops after the current retry delay.
 - A query paused offline whose fetch failed on reconnect crashed the current `Zone` with an uncaught error. The failure also skipped the remaining paused queries and the offline mutation replay. Replayed fetches now record the failure in the query state and pass it to `onBackgroundFetchError`.
+- An `onBackgroundFetchError` callback that threw made `prefetch` throw and aborted the reconnect replay batch it ran in. Its error now goes to the current `Zone`'s uncaught-error handler, and the fetch completes as usual.
+- After `invalidate()` (or `removeQuery()`) during a fetch, the old fetch's completion removed the deduplication entry of the newer fetch, so a third caller started a duplicate request; if the old fetch finished last, it also overwrote the newer data. A superseded fetch now completes for its own callers only and leaves the query state, fetch status and deduplication to the newer fetch.
+- A fetcher that threw `QoraCancelException` itself (a nested cancelled fetch, an HTTP client adapter) left the query in `Loading` and its key deduplicated onto the dead request, so later calls never fetched again. It is now handled like a cancellation: the previous state is restored and the key released.
 
 ## [1.3.1] - 2026-11-07
 

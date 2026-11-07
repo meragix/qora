@@ -154,6 +154,14 @@ class QoraClient implements MutationTracker {
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
 
+  /// Sequence number of the latest fetch started for each cache entry.
+  ///
+  /// A fetch whose number is no longer the latest was superseded (for
+  /// example after [invalidate]) and must not write the entry's state. An
+  /// [Expando] ties the number to the entry's lifetime: nothing to clean up
+  /// on eviction.
+  final Expando<int> _latestFetchSeq = Expando<int>('latestFetchSeq');
+
   /// Deserialized values awaiting typed injection into the cache.
   ///
   /// Keyed by JSON-encoded normalised key (same encoding as
@@ -1854,18 +1862,45 @@ class QoraClient implements MutationTracker {
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
-    final future =
-        _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
+    // invalidate() and removeQuery() drop this fetch's dedup entry, and a
+    // newer fetch may then take the key. A superseded fetch still completes
+    // for its own callers, but leaves the state, the fetch status and the
+    // dedup entry to the newer fetch: writing them would overwrite fresher
+    // data or stop the newer fetch from deduplicating.
+    late final Future<T> future;
+    final seq = (_latestFetchSeq[entry] ?? 0) + 1;
+    _latestFetchSeq[entry] = seq;
+    bool isSuperseded() => _latestFetchSeq[entry] != seq;
+
+    void release() {
+      if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
+      _emitFetchingCount();
+    }
+
+    // Cancellation: discard the result and restore the pre-fetch state.
+    var cancellationHandled = false;
+    void cancel() {
+      cancellationHandled = true;
+      if (!isSuperseded()) {
+        entry.updateState(previousState);
+        _emitFetchStatus(sk, FetchStatus.idle);
+      }
+      release();
+      _tracker.onQueryCancelled(sk);
+    }
+
+    future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (result) {
         final data = result.value;
         // Mid-flight cancellation: discard result, restore pre-fetch state.
         if (cancelToken?.isCancelled == true) {
-          entry.updateState(previousState);
-          _pendingRequests.remove(sk);
-          _emitFetchingCount();
-          _emitFetchStatus(sk, FetchStatus.idle);
-          _tracker.onQueryCancelled(sk);
+          cancel();
           throw QoraCancelException(sk); // ignore: only_throw_errors
+        }
+
+        if (isSuperseded()) {
+          _log('Superseded fetch settled, result left to the newer one: $key');
+          return data;
         }
 
         entry.lastOptions = opts;
@@ -1900,31 +1935,33 @@ class QoraClient implements MutationTracker {
               : null,
         );
         onFetchSuccess<T>(key, data);
-        _pendingRequests.remove(sk);
-        _emitFetchingCount();
+        release();
         _emitFetchStatus(sk, FetchStatus.idle);
         return data;
       },
     ).catchError((Object error, StackTrace stackTrace) {
+      // A QoraCancelException from the .then() above is already handled. One
+      // thrown by the fetcher itself (a nested fetch, an HTTP client adapter)
+      // is not: without this, the key stayed deduplicated onto a dead future.
+      if (error is QoraCancelException) {
+        if (!cancellationHandled) cancel();
+        throw error; // ignore: only_throw_errors
+      }
       // If the token was cancelled and the underlying HTTP client threw its own
       // cancellation error, normalise it into QoraCancelException.
-      if (cancelToken?.isCancelled == true && error is! QoraCancelException) {
-        entry.updateState(previousState);
-        _pendingRequests.remove(sk);
-        _emitFetchingCount();
-        _emitFetchStatus(sk, FetchStatus.idle);
-        _tracker.onQueryCancelled(sk);
+      if (cancelToken?.isCancelled == true) {
+        cancel();
         throw QoraCancelException(sk); // ignore: only_throw_errors
-      }
-      // QoraCancelException thrown from the .then() callback: re-throw as-is.
-      if (error is QoraCancelException) {
-        throw error; // ignore: only_throw_errors
       }
       var transformErr = error;
       if (opts.transformError != null) {
         transformErr = opts.transformError!(transformErr);
       }
       final mapped = _mapError(transformErr, stackTrace);
+      if (isSuperseded()) {
+        // The newer fetch owns the state; this caller still gets its error.
+        throw mapped; // ignore: only_throw_errors
+      }
       if (opts.keepPreviousData && previousData != null) {
         // Stay in Success with old data; the caller still gets the thrown error.
       } else {
@@ -1936,8 +1973,7 @@ class QoraClient implements MutationTracker {
           ),
         );
       }
-      _pendingRequests.remove(sk);
-      _emitFetchingCount();
+      release();
       _emitFetchStatus(sk, FetchStatus.idle);
       // Re-throw so that await fetchQuery propagates the error to the caller.
       throw mapped; // ignore: only_throw_errors
@@ -1977,10 +2013,31 @@ class QoraClient implements MutationTracker {
       // Without one, the exception came from the fetcher, errorMapper or
       // transformError: it is a failure like any other.
       if (ownsFetch && !_pausedFetches.containsKey(sk)) {
-        config.onBackgroundFetchError?.call(e, s, key);
+        _reportBackgroundError(e, s, key);
       }
     } catch (e, s) {
-      if (ownsFetch) config.onBackgroundFetchError?.call(e, s, key);
+      if (ownsFetch) _reportBackgroundError(e, s, key);
+    }
+  }
+
+  /// Passes a background fetch failure to
+  /// [QoraClientConfig.onBackgroundFetchError].
+  ///
+  /// A callback that throws must not turn a fire-and-forget fetch into a
+  /// thrown error, abort a replay batch, or hide the original failure: its
+  /// error goes to the current [Zone]'s uncaught-error handler instead, where
+  /// crash reporting sees it.
+  void _reportBackgroundError(
+    Object error,
+    StackTrace stack,
+    List<dynamic> key,
+  ) {
+    final callback = config.onBackgroundFetchError;
+    if (callback == null) return;
+    try {
+      callback(error, stack, key);
+    } catch (callbackError, callbackStack) {
+      Zone.current.handleUncaughtError(callbackError, callbackStack);
     }
   }
 
