@@ -22,7 +22,7 @@ Qora récupère, met en cache et synchronise les données serveur, et garde votr
   variant: outline
   class: rounded-full
   ---
-  v1.3.0 est disponible
+  v1.3.1 est disponible
   :::
 
 #links

@@ -22,7 +22,7 @@ Qora fetches, caches and synchronizes server data, and keeps your app usable whe
   variant: outline
   class: rounded-full
   ---
-  v1.3.0 is now available
+  v1.3.1 is now available
   :::
 
 #links

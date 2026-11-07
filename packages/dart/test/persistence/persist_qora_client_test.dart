@@ -69,4 +69,30 @@ void main() {
 
     expect(await storage.keys(), isEmpty);
   });
+
+  test('clearStorage deletes Qora entries and keeps foreign keys', () async {
+    await storage.write('settings.theme', 'dark');
+    final client = newClient();
+    await client
+        .fetchQuery<String>(key: ['greeting'], fetcher: () async => 'hi');
+    await client.persistQuery<String>(['greeting']);
+
+    await client.clearStorage();
+
+    expect(await storage.keys(), ['settings.theme']);
+  });
+
+  test('clear wipes the cache and Qora entries only', () async {
+    await storage.write('settings.theme', 'dark');
+    final client = newClient();
+    await client
+        .fetchQuery<String>(key: ['greeting'], fetcher: () async => 'hi');
+    await client.persistQuery<String>(['greeting']);
+
+    client.clear();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(client.getQueryData<String>(['greeting']), isNull);
+    expect(await storage.keys(), ['settings.theme']);
+  });
 }

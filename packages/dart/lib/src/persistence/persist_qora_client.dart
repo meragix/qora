@@ -385,11 +385,20 @@ class PersistQoraClient extends QoraClient {
 
   // ── Storage utilities ─────────────────────────────────────────────────────
 
-  /// Delete all entries from [StorageAdapter] without affecting the
+  /// Delete every entry Qora wrote to [StorageAdapter] without affecting the
   /// in-memory cache.
   ///
+  /// Keys that Qora did not write (app settings in a shared Hive box or
+  /// `SharedPreferences` instance) are left untouched, as in [hydrate]. To
+  /// wipe the whole adapter, call [StorageAdapter.clear] on it directly.
+  ///
   /// Use [clear] to wipe both in-memory cache and storage simultaneously.
-  Future<void> clearStorage() => _storage.clear();
+  Future<void> clearStorage() async {
+    final keys = await _storage.keys();
+    for (final key in keys) {
+      if (_isQueryStorageKey(key)) await _storage.delete(key);
+    }
+  }
 
   /// Force-persist the current cached value for [key] to [StorageAdapter].
   ///
