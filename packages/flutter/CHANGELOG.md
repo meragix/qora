@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 - `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).
 - `QoraBuilder` seeds `QoraOptions.initialData` / `placeholderData` before the first frame, so cached or server-provided data renders instantly (#19).
+- `QoraBuilder.select`: rebuild filter for derived data. The widget rebuilds only when the state kind or the selected value changes; the builder still receives the full, up-to-date state (#22).
 
 ### Fixed
 

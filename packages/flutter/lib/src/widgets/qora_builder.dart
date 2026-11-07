@@ -69,6 +69,17 @@ import 'package:qora/qora.dart';
 ///   },
 /// )
 /// ```
+/// ## Derived subscriptions with `select`
+///
+/// ```dart
+/// QoraBuilder<List<User>>(
+///   queryKey: ['users'],
+///   fetcher: () => api.getUsers(),
+///   select: (users) => users.length, // rebuild only when the count changes
+///   builder: (context, state, fetchStatus) =>
+///       Text('${state.dataOrNull?.length ?? 0} users'),
+/// )
+/// ```
 class QoraBuilder<T> extends StatefulWidget {
   /// The query key — either a [QoraKey] or a plain [List].
   ///
@@ -130,11 +141,31 @@ class QoraBuilder<T> extends StatefulWidget {
   /// ```
   final bool keepPreviousData;
 
+  /// Rebuild filter for derived data.
+  ///
+  /// When provided, a new query state only rebuilds the widget if the state
+  /// kind changes ([Initial], [Loading], [Success], [Failure]) or if the value
+  /// returned by [select] changes (compared with `==`). The [builder] still
+  /// receives the full, up-to-date [QoraState]: [select] decides *when* to
+  /// rebuild, not *what* is passed. [FetchStatus] changes always rebuild.
+  ///
+  /// ```dart
+  /// QoraBuilder<List<User>>(
+  ///   queryKey: ['users'],
+  ///   fetcher: () => api.getUsers(),
+  ///   select: (users) => users.length,
+  ///   builder: (context, state, fetchStatus) =>
+  ///       Text('${state.dataOrNull?.length ?? 0} users'),
+  /// )
+  /// ```
+  final Object? Function(T data)? select;
+
   const QoraBuilder({
     super.key,
     required this.queryKey,
     required this.fetcher,
     required this.builder,
+    this.select,
     this.options,
     this.client,
     this.enabled = true,
@@ -155,6 +186,25 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
   /// Tracks the last successfully fetched value so that [keepPreviousData]
   /// can augment [Loading] / [Failure] states.
   T? _lastKnownData;
+
+  /// Snapshot used by [QoraBuilder.select]: state kind and selected value as
+  /// of the last rebuild.
+  Type? _lastKind;
+  Object? _lastSelected;
+
+  /// Records the snapshot for [state] and returns whether it differs from the
+  /// previous one. Without [QoraBuilder.select], every state change rebuilds.
+  bool _selectionChanged(QoraState<T> state) {
+    final select = widget.select;
+    if (select == null) return true;
+    final data = state.dataOrNull;
+    final selected = data == null ? null : select(data);
+    final kind = state.runtimeType;
+    final changed = kind != _lastKind || selected != _lastSelected;
+    _lastKind = kind;
+    _lastSelected = selected;
+    return changed;
+  }
 
   @override
   void didChangeDependencies() {
@@ -217,6 +267,7 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     _state = client.getQueryState<T>(widget.queryKey);
     final current = _state;
     if (current is Success<T>) _lastKnownData = current.data;
+    _selectionChanged(current);
 
     // When enabled, watchQuery owns the whole lifecycle: fetch on mount
     // (honouring refetchOnMount / staleTime), polling, and refetch on
@@ -234,10 +285,11 @@ class _QoraBuilderState<T> extends State<QoraBuilder<T>> {
     _stateSub = stream.listen(
       (state) {
         if (!mounted) return;
-        setState(() {
-          _state = state;
-          if (state is Success<T>) _lastKnownData = state.data;
-        });
+        // Always keep the latest state; select only decides whether to
+        // rebuild, so a later rebuild never shows stale data.
+        _state = state;
+        if (state is Success<T>) _lastKnownData = state.data;
+        if (_selectionChanged(state)) setState(() {});
       },
       onError: (Object error) {
         debugPrint('[QoraBuilder] Unexpected stream error: $error');

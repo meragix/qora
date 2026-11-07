@@ -16,11 +16,13 @@
 ### Added
 
 - `useQuery` seeds `QoraOptions.initialData` / `placeholderData` before the first build (#19).
+- `useQuery(select: ...)`: rebuild filter for derived data. The hook triggers a rebuild only when the state kind or the selected value changes and always returns the latest state (#22).
 
 ### Fixed
 
 - `useQuery`: refetches after its query is invalidated instead of staying in `Loading(previousData)` (fixed in `qora` core).
 - `useQuery`: background refetches use the latest `fetcher` closure instead of the one captured on first subscription.
+- `useQuery`: on key change, the first build reads the new key's cache instead of returning the previous key's state.
 
 ## [1.2.0] - 2026-06-15
 
