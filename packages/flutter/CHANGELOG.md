@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-07
+
 ### Added
 
 - `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).

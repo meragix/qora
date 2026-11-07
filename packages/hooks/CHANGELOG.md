@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-07
+
 ### Added
 
 - `useFetchStatus(key)`: exposes the `FetchStatus` axis (fetching / paused / idle) of a query to hooks, so a hook-based UI can show a background-refresh indicator or an offline badge independently of the data state.
