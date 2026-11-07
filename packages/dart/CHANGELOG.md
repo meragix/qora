@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
+
 ## [1.3.1] - 2026-11-07
 
 ### Fixed
@@ -56,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `QoraClientConfig.onBackgroundFetchError`: callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state — use this for logging, telemetry, or crash reporting.
+- `QoraClientConfig.onBackgroundFetchError`: callback invoked when a background fetch triggered by `watchQuery` fails; the error is already stored in the `Failure` state. Use this for logging, telemetry, or crash reporting.
 - `pubspec.yaml`: added `topics` field.
 
 ### Fixed
