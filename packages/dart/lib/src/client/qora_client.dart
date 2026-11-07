@@ -12,6 +12,7 @@ import 'package:qora/src/infinite/infinite_cache_entry.dart';
 import 'package:qora/src/infinite/infinite_data.dart';
 import 'package:qora/src/infinite/infinite_query_state.dart';
 import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/key_equality.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/managers/lifecycle_manager.dart';
@@ -935,6 +936,26 @@ class QoraClient implements MutationTracker {
     for (final key in matched) {
       invalidate(key);
     }
+  }
+
+  /// Invalidate every query whose key starts with [prefix].
+  ///
+  /// [prefix] accepts the same forms as a query key ([QoraKey] or [List]).
+  /// Elements are compared with the same deep equality as query keys, so maps
+  /// and nested lists match structurally. An empty prefix matches every
+  /// query. Active watchers refetch, exactly as with [invalidate].
+  ///
+  /// ```dart
+  /// // Matches ['posts'], ['posts', 1], ['posts', 1, 'comments'], ...
+  /// client.invalidatePrefix(['posts']);
+  ///
+  /// // Matches every query for user 42, whatever comes next.
+  /// client.invalidatePrefix(['users', 42]);
+  /// ```
+  void invalidatePrefix(Object prefix) {
+    _assertNotDisposed();
+    final normalizedPrefix = normalizeKey(prefix);
+    invalidateWhere((key) => _startsWith(key, normalizedPrefix));
   }
 
   /// Invalidate all queries matching [filter].
@@ -2222,6 +2243,12 @@ class QoraClient implements MutationTracker {
         _log('Evicted: $key');
       }
     }
+  }
+
+  /// Whether [key] starts with every element of [prefix] (deep equality).
+  static bool _startsWith(List<dynamic> key, List<dynamic> prefix) {
+    if (prefix.length > key.length) return false;
+    return equalsKey(key.sublist(0, prefix.length), prefix);
   }
 
   /// Map a raw error through [QoraClientConfig.errorMapper] if configured.
