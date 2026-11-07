@@ -5,10 +5,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added
-
-- `QoraClient.invalidate(prefix:)` : named parameter that invalidates all query keys starting with the given prefix (#23).
-
 ## [1.2.0] - 2026-06-15
 
 ### Added

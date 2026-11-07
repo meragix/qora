@@ -12,6 +12,7 @@ import 'package:qora/src/infinite/infinite_cache_entry.dart';
 import 'package:qora/src/infinite/infinite_data.dart';
 import 'package:qora/src/infinite/infinite_query_state.dart';
 import 'package:qora/src/key/key_cache_map.dart';
+import 'package:qora/src/key/key_equality.dart';
 import 'package:qora/src/key/qora_key.dart';
 import 'package:qora/src/managers/connectivity_manager.dart';
 import 'package:qora/src/managers/lifecycle_manager.dart';
@@ -866,36 +867,18 @@ class QoraClient implements MutationTracker {
   /// await api.createPost(payload);
   /// client.invalidate(['posts']);
   /// ```
-  ///
-  /// Pass [prefix] to invalidate all queries whose key starts with the given
-  /// prefix. When [prefix] is provided, [key] is ignored.
-  ///
-  /// ```dart
-  /// // Invalidate all post-related queries: ['posts'], ['posts', id], etc.
-  /// client.invalidate(prefix: ['posts']);
-  /// ```
-  void invalidate({Object? key, List<dynamic>? prefix}) {
+  void invalidate(Object key) {
     _assertNotDisposed();
-
-    if (prefix != null) {
-      final matched = _cache.findKeys((k) => _matchesPrefix(k, prefix));
-      for (final k in matched) {
-        _invalidateOne(k);
-      }
-      return;
-    }
-
-    if (key != null) {
-      _invalidateOne(normalizeKey(key));
-    }
-  }
-
-  void _invalidateOne(List<dynamic> normalized) {
+    final normalized = normalizeKey(key);
     final entry = _cache.get<dynamic>(normalized);
 
     if (entry != null) {
       _log('Invalidating: $normalized');
+
+      // We delegate the invalidation to the entry.
+      // The entry 'QueryEntry<T>' already knows its 'T'.
       entry.invalidate();
+
       _pendingRequests.remove(_stringKey(normalized));
       _emitFetchingCount();
       _tracker.onQueryInvalidated(_stringKey(normalized));
@@ -918,8 +901,28 @@ class QoraClient implements MutationTracker {
     // Collect first to avoid concurrent modification.
     final matched = _cache.findKeys(predicate);
     for (final key in matched) {
-      invalidate(key: key);
+      invalidate(key);
     }
+  }
+
+  /// Invalidate every query whose key starts with [prefix].
+  ///
+  /// [prefix] accepts the same forms as a query key ([QoraKey] or [List]).
+  /// Elements are compared with the same deep equality as query keys, so maps
+  /// and nested lists match structurally. An empty prefix matches every
+  /// query. Active watchers refetch, exactly as with [invalidate].
+  ///
+  /// ```dart
+  /// // Matches ['posts'], ['posts', 1], ['posts', 1, 'comments'], ...
+  /// client.invalidatePrefix(['posts']);
+  ///
+  /// // Matches every query for user 42, whatever comes next.
+  /// client.invalidatePrefix(['users', 42]);
+  /// ```
+  void invalidatePrefix(Object prefix) {
+    _assertNotDisposed();
+    final normalizedPrefix = normalizeKey(prefix);
+    invalidateWhere((key) => _startsWith(key, normalizedPrefix));
   }
 
   /// Invalidate all queries matching [filter].
@@ -949,7 +952,7 @@ class QoraClient implements MutationTracker {
       return filter(_stringKey(key), entry.state, entry.lastOptions);
     });
     for (final key in matched) {
-      invalidate(key: key);
+      invalidate(key);
     }
   }
 
@@ -989,7 +992,7 @@ class QoraClient implements MutationTracker {
     for (final sk in matched) {
       try {
         final key = jsonDecode(sk) as List<dynamic>;
-        invalidate(key: key);
+        invalidate(key);
       } catch (_) {
         // If the key cannot be decoded, skip it gracefully.
       }
@@ -2191,17 +2194,10 @@ class QoraClient implements MutationTracker {
     }
   }
 
-  /// Returns `true` when [key] starts with every element of [prefix].
-  ///
-  /// An empty [prefix] matches every key. A [prefix] longer than [key] never
-  /// matches. Elements are compared with `==` in order.
-  static bool _matchesPrefix(List<dynamic> key, List<dynamic> prefix) {
-    if (prefix.isEmpty) return true;
+  /// Whether [key] starts with every element of [prefix] (deep equality).
+  static bool _startsWith(List<dynamic> key, List<dynamic> prefix) {
     if (prefix.length > key.length) return false;
-    for (var i = 0; i < prefix.length; i++) {
-      if (key[i] != prefix[i]) return false;
-    }
-    return true;
+    return equalsKey(key.sublist(0, prefix.length), prefix);
   }
 
   /// Map a raw error through [QoraClientConfig.errorMapper] if configured.
