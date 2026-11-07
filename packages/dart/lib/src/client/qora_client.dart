@@ -572,6 +572,9 @@ class QoraClient implements MutationTracker {
     // Dependency subscription: cancelled in finally.
     StreamSubscription<QoraState<dynamic>>? depSub;
 
+    // Invalidation listener: cancelled in finally.
+    StreamSubscription<void>? invalidationSub;
+
     // Local polling timer: owned exclusively by this watcher instance.
     //
     // Previously this was stored on `entry.refetchTimer` (shared mutable
@@ -681,6 +684,34 @@ class QoraClient implements MutationTracker {
           }
         }
 
+        // Refetch when the query is invalidated while this watcher is active
+        // ([invalidate], tag/predicate invalidation, refetchOnWindowFocus).
+        // The signal is emitted only by an explicit invalidation, never by a
+        // fetch, so a fetch that fails immediately cannot re-trigger itself.
+        // Concurrent watchers on the same key are deduplicated by _doFetch.
+        invalidationSub = entry.invalidations.listen((_) {
+          if (_isDisposed || !entry.isActive) return;
+          if (cancelToken?.isCancelled == true) return;
+          if (opts.dependsOn != null) {
+            final depNorm = normalizeKey(opts.dependsOn!);
+            if (_cache.get<dynamic>(depNorm)?.state.dataOrNull == null) return;
+          }
+          unawaited(
+            _doFetch<T>(
+              normalized,
+              entry,
+              fetcher,
+              opts,
+              cancelToken: cancelToken,
+            ).then(
+              (_) {},
+              onError: (Object e, StackTrace s) {
+                config.onBackgroundFetchError?.call(e, s, normalized);
+              },
+            ),
+          );
+        });
+
         // Setup polling interval: stored in a local variable, not on the
         // shared entry, to prevent cross-watcher timer cancellation.
         if (opts.refetchInterval != null) {
@@ -703,6 +734,7 @@ class QoraClient implements MutationTracker {
       yield* entry.stream;
     } finally {
       depSub?.cancel();
+      invalidationSub?.cancel();
       localRefetchTimer?.cancel();
       entry.removeSubscriber();
       _scheduleGC(normalized);
@@ -858,9 +890,10 @@ class QoraClient implements MutationTracker {
 
   /// Mark a query as stale and cancel any in-flight request for it.
   ///
-  /// Active [watchQuery] streams will transition to
-  /// `Loading(previousData: ...)` immediately. The next time a subscriber
-  /// mounts or [fetchQuery] is called, a fresh network request will be made.
+  /// Active [watchQuery] streams transition to `Loading(previousData: ...)`
+  /// immediately and refetch in the background with their own fetcher.
+  /// Queries without an active watcher are refetched the next time a
+  /// subscriber mounts or [fetchQuery] is called.
   ///
   /// ```dart
   /// await api.createPost(payload);
@@ -1619,10 +1652,9 @@ class QoraClient implements MutationTracker {
       if (!entry.isActive) continue;
       if (opts?.refetchOnWindowFocus != true) continue;
       if (!entry.isStale(opts?.staleTime)) continue;
-      // Transitioning to Loading(previousData: ...) is the signal that
-      // QoraBuilder._subscribe() watches for: it calls _executeFetch() which
-      // invokes fetchQuery with the watcher's fetcher closure, completing the
-      // SWR on-focus revalidation cycle.
+      // invalidate() emits on CacheEntry.invalidations, which every active
+      // watchQuery stream listens to: the watcher refetches with its own
+      // fetcher closure, completing the SWR on-focus revalidation cycle.
       entry.invalidate();
       _log('refetchOnWindowFocus: invalidated ${mapEntry.key}');
     }

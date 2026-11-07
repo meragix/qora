@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `QoraClient.watchQuery`: active watchers now refetch when their query is invalidated (`invalidate`, `invalidateWhere`, `invalidateQueries`, `invalidateTags`, `MutationOptions.invalidates`, refetch on window focus). Previously the stream stayed in `Loading(previousData)` until the next mount, so `useQuery` consumers never saw fresh data after a mutation.
+- `CacheEntry.invalidations`: new stream that fires only on explicit invalidation (never on fetch transitions), used by `watchQuery` to refetch without any risk of a feedback loop.
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
