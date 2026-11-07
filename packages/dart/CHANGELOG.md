@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QoraClient.invalidatePrefix(prefix)`: invalidates every query whose key starts with `prefix`, comparing segments with deep key equality (#23). `invalidate(key)` stays exact and unchanged.
+- `QoraClient.prepopulateCache<T>(key, options)`: seeds the cache with `QoraOptions.initialData` or `placeholderData` before any fetch, so widgets and hooks render the seed on their first frame instead of `Initial` (#19). No-op when an entry already exists.
+
+### Fixed
+
+- `QoraClient.watchQuery`: active watchers now refetch when their query is invalidated (`invalidate`, `invalidateWhere`, `invalidateQueries`, `invalidateTags`, `MutationOptions.invalidates`, refetch on window focus). Previously the stream stayed in `Loading(previousData)` until the next mount, so `useQuery` consumers never saw fresh data after a mutation.
+- `CacheEntry.invalidations`: new stream that fires only on explicit invalidation (never on fetch transitions), used by `watchQuery` to refetch without any risk of a feedback loop.
+
 ## [1.2.0] - 2026-06-15
 
 ### Added
