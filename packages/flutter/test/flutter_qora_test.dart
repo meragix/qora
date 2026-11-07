@@ -119,6 +119,40 @@ void main() {
 
       expect(find.text('match'), findsOneWidget);
     });
+    testWidgets('parent rebuild keeps the same started managers',
+        (tester) async {
+      final client = QoraClient();
+      late StateSetter rebuildParent;
+      final seen = <ConnectivityManager?>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              rebuildParent = setState;
+              return QoraScope.auto(
+                client: client,
+                child: Builder(
+                  builder: (context) {
+                    seen.add(QoraScope.connectivityManagerOf(context));
+                    return const SizedBox.shrink();
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      rebuildParent(() {});
+      await tester.pump();
+      rebuildParent(() {});
+      await tester.pump();
+
+      expect(seen.length, greaterThanOrEqualTo(3));
+      expect(seen.toSet().length, 1,
+          reason: 'a rebuild must not swap in a new, unstarted manager');
+    });
   });
 
   group('QoraScope manual wiring (backward compat)', () {
