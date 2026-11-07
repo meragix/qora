@@ -204,6 +204,10 @@ Guides, recipes and API reference: **[qora.meragix.dev](https://qora.meragix.dev
 
 Runnable apps live in [examples/](examples).
 
+### Using an AI assistant
+
+Assistants tend to write TanStack Query code with Dart syntax. Add [`qora-rules.md`](https://qora.meragix.dev/qora-rules.md) to your project's `CLAUDE.md`, `AGENTS.md` or Cursor rules, and point the assistant at [`llms.txt`](https://qora.meragix.dev/llms.txt). See [AI Assistants](https://qora.meragix.dev/en/getting-started/ai-assistants).
+
 ## Contributing
 
 Issues and questions are welcome, including "I tried it and it did not fit". See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and [ROADMAP.md](ROADMAP.md) for what is next.
