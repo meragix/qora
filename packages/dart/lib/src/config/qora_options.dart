@@ -36,7 +36,8 @@ class QoraOptions {
   ///
   /// The SWR (stale-while-revalidate) pattern means stale data is returned
   /// immediately while the fetch runs in the background.
-  final Duration staleTime;
+  Duration get staleTime => _staleTime ?? Duration.zero;
+  final Duration? _staleTime;
 
   /// How long an *inactive* query is retained in cache before being garbage
   /// collected.
@@ -46,7 +47,8 @@ class QoraOptions {
   /// fresh fetch. Default: 5 minutes.
   ///
   /// Previously named `cacheTime`.
-  final Duration gcTime;
+  Duration get gcTime => _gcTime ?? Duration(minutes: 5);
+  final Duration? _gcTime;
 
   /// Deprecated - use [gcTime] instead.
   @Deprecated('Use gcTime instead')
@@ -66,13 +68,15 @@ class QoraOptions {
   ///   options: QoraOptions(enabled: userId != null),
   /// );
   /// ```
-  final bool enabled;
+  bool get enabled => _enabled ?? true;
+  final bool? _enabled;
 
   /// Number of automatic retry attempts after a fetch failure.
   ///
   /// Retries use exponential backoff by default (see [retryDelay]).
   /// Set to `0` to disable retries entirely. Default: 3.
-  final int retryCount;
+  int get retryCount => _retryCount ?? 3;
+  final int? _retryCount;
 
   /// Base delay between retry attempts.
   ///
@@ -82,7 +86,8 @@ class QoraOptions {
   /// - Attempt 2 → `retryDelay × 4` (e.g. 4 s)
   ///
   /// Override with [retryDelayCalculator] for custom backoff strategies.
-  final Duration retryDelay;
+  Duration get retryDelay => _retryDelay ?? Duration(seconds: 1);
+  final Duration? _retryDelay;
 
   /// Custom retry-delay calculator.
   ///
@@ -121,13 +126,15 @@ class QoraOptions {
   ///
   /// Requires a `LifecycleManager` to be configured on the [QoraClient].
   /// Default: `true`.
-  final bool refetchOnWindowFocus;
+  bool get refetchOnWindowFocus => _refetchOnWindowFocus ?? true;
+  final bool? _refetchOnWindowFocus;
 
   /// Whether to refetch this query when the network connection is restored.
   ///
   /// Requires a `ConnectivityManager` to be configured on the [QoraClient].
   /// Default: `true`.
-  final bool refetchOnReconnect;
+  bool get refetchOnReconnect => _refetchOnReconnect ?? true;
+  final bool? _refetchOnReconnect;
 
   /// Automatically refetch the query at this interval while at least one
   /// [QoraClient.watchQuery] subscriber is active.
@@ -161,7 +168,8 @@ class QoraOptions {
   /// Requires a [ConnectivityManager] to be attached to [QoraClient].
   /// If no manager is configured, this option is ignored and fetches always
   /// execute.
-  final NetworkMode networkMode;
+  NetworkMode get networkMode => _networkMode ?? NetworkMode.online;
+  final NetworkMode? _networkMode;
 
   /// Static data to pre-populate the cache before the first fetch completes.
   ///
@@ -280,7 +288,8 @@ class QoraOptions {
   /// // Disabled: always emit new references on every fetch
   /// QoraOptions(structuralSharing: false),
   /// ```
-  final bool structuralSharing;
+  bool get structuralSharing => _structuralSharing ?? true;
+  final bool? _structuralSharing;
 
   /// Transform function applied to successful fetch data before it enters the
   /// cache.
@@ -341,7 +350,8 @@ class QoraOptions {
   /// ```
   ///
   /// Default: `false`.
-  final bool keepPreviousData;
+  bool get keepPreviousData => _keepPreviousData ?? false;
+  final bool? _keepPreviousData;
 
   /// Tags that this query provides for tag-based cache invalidation.
   ///
@@ -388,29 +398,38 @@ class QoraOptions {
   final Object? Function(Object? data)? toJson;
 
   const QoraOptions({
-    this.staleTime = Duration.zero,
-    this.gcTime = const Duration(minutes: 5),
-    this.enabled = true,
-    this.retryCount = 3,
-    this.retryDelay = const Duration(seconds: 1),
+    Duration? staleTime,
+    Duration? gcTime,
+    bool? enabled,
+    int? retryCount,
+    Duration? retryDelay,
     this.retryDelayCalculator,
     this.retryCondition,
-    this.refetchOnWindowFocus = true,
-    this.refetchOnReconnect = true,
+    bool? refetchOnWindowFocus,
+    bool? refetchOnReconnect,
     this.refetchInterval,
     this.refetchOnMount,
-    this.networkMode = NetworkMode.online,
+    NetworkMode? networkMode,
     this.initialData,
     this.initialDataUpdatedAt,
     this.placeholderData,
     this.dependsOn,
-    this.structuralSharing = true,
-    this.keepPreviousData = false,
+    bool? structuralSharing,
+    bool? keepPreviousData,
     this.providesTags,
     this.toJson,
     this.transform,
     this.transformError,
-  });
+  })  : _staleTime = staleTime,
+        _gcTime = gcTime,
+        _enabled = enabled,
+        _retryCount = retryCount,
+        _retryDelay = retryDelay,
+        _refetchOnWindowFocus = refetchOnWindowFocus,
+        _refetchOnReconnect = refetchOnReconnect,
+        _networkMode = networkMode,
+        _structuralSharing = structuralSharing,
+        _keepPreviousData = keepPreviousData;
 
   /// Returns the retry delay for the given zero-based [attemptIndex].
   ///
@@ -425,30 +444,34 @@ class QoraOptions {
 
   /// Returns a new [QoraOptions] merging `this` with [other].
   ///
-  /// Fields from [other] take priority. Nullable fields in [other]
-  /// (e.g. [retryDelayCalculator], [refetchInterval], [refetchOnMount])
-  /// fall back to `this` when not set in [other].
+  /// Every field set in [other] takes priority; every field [other] leaves
+  /// unset falls back to `this`. A field is set when it is passed to the
+  /// constructor, even with its default value: `QoraOptions(staleTime:
+  /// Duration.zero)` overrides a global `staleTime`, `QoraOptions()` does
+  /// not. This is how per-query options inherit
+  /// [QoraClientConfig.defaultOptions].
   QoraOptions merge(QoraOptions? other) {
     if (other == null) return this;
     return QoraOptions(
-      staleTime: other.staleTime,
-      gcTime: other.gcTime,
-      enabled: other.enabled,
-      retryCount: other.retryCount,
-      retryDelay: other.retryDelay,
+      staleTime: other._staleTime ?? _staleTime,
+      gcTime: other._gcTime ?? _gcTime,
+      enabled: other._enabled ?? _enabled,
+      retryCount: other._retryCount ?? _retryCount,
+      retryDelay: other._retryDelay ?? _retryDelay,
       retryDelayCalculator: other.retryDelayCalculator ?? retryDelayCalculator,
       retryCondition: other.retryCondition ?? retryCondition,
-      refetchOnWindowFocus: other.refetchOnWindowFocus,
-      refetchOnReconnect: other.refetchOnReconnect,
+      refetchOnWindowFocus:
+          other._refetchOnWindowFocus ?? _refetchOnWindowFocus,
+      refetchOnReconnect: other._refetchOnReconnect ?? _refetchOnReconnect,
       refetchInterval: other.refetchInterval ?? refetchInterval,
       refetchOnMount: other.refetchOnMount ?? refetchOnMount,
-      networkMode: other.networkMode,
+      networkMode: other._networkMode ?? _networkMode,
       initialData: other.initialData ?? initialData,
       initialDataUpdatedAt: other.initialDataUpdatedAt ?? initialDataUpdatedAt,
       placeholderData: other.placeholderData ?? placeholderData,
       dependsOn: other.dependsOn ?? dependsOn,
-      structuralSharing: other.structuralSharing,
-      keepPreviousData: other.keepPreviousData,
+      structuralSharing: other._structuralSharing ?? _structuralSharing,
+      keepPreviousData: other._keepPreviousData ?? _keepPreviousData,
       providesTags: other.providesTags ?? providesTags,
       toJson: other.toJson ?? toJson,
       transform: other.transform ?? transform,
