@@ -35,7 +35,7 @@ These guidelines keep the codebase consistent and maintainable over time.
 
 ## AI Usage Guidelines
 
-AI tools (Claude, Cursor, GitHub Copilot, etc.) are welcome, with a few ground rules:
+AI tools (Claude, Cursor, GitHub Copilot, etc.) are welcome, with a few ground rules. Agents read [AGENTS.md](AGENTS.md), which lists the commands, invariants and conventions of this repository.
 
 - **You own the code.** Every line you submit is your responsibility. Be ready to explain the logic, complexity, and trade-offs of any AI-generated snippet during review.
 - **Verify suggestions.** Confirm that any package or method suggested by AI actually exists and is actively maintained.
@@ -70,7 +70,7 @@ Common commands:
 melos analyze         # dart analyze --fatal-infos on every package
 melos format          # format all packages
 melos format:check    # check formatting without modifying files
-melos test            # run all tests with coverage
+melos test:all        # run all tests (Dart, Flutter, then DevTools UI on Chrome)
 melos publish:check   # dry-run publish validation
 melos clean           # clean all build artifacts
 ```
@@ -86,7 +86,7 @@ cd packages/devtools/ui && flutter test
 To test your change against an example app, pick one from `examples/` and run:
 
 ```bash
-cd examples/todo && flutter run
+cd examples/ex_07_complete_todo_app && flutter run
 ```
 
 ---
