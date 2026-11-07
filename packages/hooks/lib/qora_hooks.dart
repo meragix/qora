@@ -44,10 +44,20 @@ export 'package:qora_flutter/qora_flutter.dart'
         Initial,
         Loading,
         Success,
-        Failure;
+        Failure,
+        FetchStatus,
+        QoraException,
+        QoraKey,
+        QueryTag,
+        MutationState,
+        MutationIdle,
+        MutationPending,
+        MutationSuccess,
+        MutationFailure;
 
 export 'src/hooks/use_query_client.dart';
 export 'src/hooks/use_query.dart';
+export 'src/hooks/use_fetch_status.dart';
 export 'src/hooks/use_mutation.dart' show MutationHandle, useMutation;
 export 'src/hooks/use_infinite_query.dart'
     show InfiniteQueryHandle, useInfiniteQuery;

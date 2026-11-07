@@ -1,20 +1,12 @@
 <!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 # Changelog
 
-## [1.1.0] - 2026-06-04
-
-### Added
-
-- `pubspec.yaml` : added `topics` field.
-
-### Fixed
-
-- `useQuery` / `useInfiniteQuery` : `Object.hashAll(key)` in `useEffect` dependency array caused hash collisions where different query keys produced the same hash, skipping re-subscription; replaced with a `_QueryKey` wrapper using deep equality.
-
 ## [Unreleased]
 
 ### Added
 
+- `useFetchStatus(key)`: exposes the `FetchStatus` axis (fetching / paused / idle) of a query to hooks, so a hook-based UI can show a background-refresh indicator or an offline badge independently of the data state.
+- `qora_hooks` now re-exports `FetchStatus`, `QoraException`, `QoraKey`, `QueryTag` and the `MutationState` family, so hook users no longer need a second `qora_flutter` import for common types.
 - `useQuery` seeds `QoraOptions.initialData` / `placeholderData` before the first build (#19).
 - `useQuery(select: ...)`: rebuild filter for derived data. The hook triggers a rebuild only when the state kind or the selected value changes and always returns the latest state (#22).
 
@@ -25,6 +17,16 @@
 - `useQuery`: on key change, the first build reads the new key's cache instead of returning the previous key's state.
 
 ## [1.2.0] - 2026-06-15
+
+## [1.1.0] - 2026-06-04
+
+### Added
+
+- `pubspec.yaml` : added `topics` field.
+
+### Fixed
+
+- `useQuery` / `useInfiniteQuery` : `Object.hashAll(key)` in `useEffect` dependency array caused hash collisions where different query keys produced the same hash, skipping re-subscription; replaced with a `_QueryKey` wrapper using deep equality.
 
 ## [1.0.0] - 2026-06-01
 
