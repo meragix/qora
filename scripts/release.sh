@@ -145,16 +145,13 @@ done
 # ── 6. Update version links at bottom of qora CHANGELOG ─────────────────
 CHANGELOG_CORE="packages/dart/CHANGELOG.md"
 if ! $DRY_RUN && [[ ! "$VERSION" =~ -dev\. ]] && [[ ! "$VERSION" =~ -beta\. ]] && [[ ! "$VERSION" =~ -alpha\. ]]; then
-  # Find the last stable version link
-  PREV_TAG=$(grep -oP '\[\K[^\]]+(?=\]: https://github.com/meragix/qora/compare)' "$CHANGELOG_CORE" \
-    | grep -v '^unreleased$' | tail -1)
-  PREV_TAG="${PREV_TAG:-1.0.0}"
+  # Previous release = latest reachable tag (portable: no GNU grep -P).
+  PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
 
-  grep -v "^\\[unreleased\\]:" "$CHANGELOG_CORE" > "${CHANGELOG_CORE}.tmp"
-  mv "${CHANGELOG_CORE}.tmp" "$CHANGELOG_CORE"
-
-  printf "[unreleased]: $REPO_URL/$TAG...HEAD\n" >> "$CHANGELOG_CORE"
-  printf "[$VERSION]: $REPO_URL/$PREV_TAG...$TAG\n" >> "$CHANGELOG_CORE"
+  # Drop the old [unreleased] link, then insert the new links above the
+  # first version link so the block stays ordered newest first.
+  perl -i -ne 'print unless /^\[unreleased\]:/' "$CHANGELOG_CORE"
+  perl -i -0pe "s{^(\[\d[^\]]*\]: )}{[unreleased]: $REPO_URL/$TAG...HEAD\n[$VERSION]: $REPO_URL/$PREV_TAG...$TAG\n\$1}m" "$CHANGELOG_CORE"
   success "Core CHANGELOG version links updated"
 fi
 
