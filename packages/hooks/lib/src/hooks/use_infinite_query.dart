@@ -116,9 +116,13 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
 
     isFetchingNextPage.value = true;
     try {
-      final newPage = await fetcher(nextParam);
+      final newPage = await _withRetry(
+        () => fetcher(nextParam),
+        client.config.defaultOptions.merge(options),
+      );
       pages.value = [...pages.value, newPage];
       hasNextPage.value = getNextPageParam(newPage) != null;
+      error.value = null;
     } catch (e) {
       error.value = e;
     } finally {
@@ -137,6 +141,24 @@ InfiniteQueryHandle<TData, TPageParam> useInfiniteQuery<TData, TPageParam>({
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+/// Runs [fetch] with the retry policy of [opts], as `fetchQuery` does for the
+/// first page: up to [QoraOptions.retryCount] retries, stopped early when
+/// [QoraOptions.retryCondition] returns `false`, spaced by
+/// [QoraOptions.getRetryDelay].
+Future<T> _withRetry<T>(Future<T> Function() fetch, QoraOptions opts) async {
+  for (var attempt = 0;; attempt++) {
+    try {
+      return await fetch();
+    } catch (e) {
+      if (attempt >= opts.retryCount) rethrow;
+      if (opts.retryCondition != null && !opts.retryCondition!(e, attempt)) {
+        rethrow;
+      }
+      await Future<void>.delayed(opts.getRetryDelay(attempt));
+    }
+  }
+}
 
 /// Fetches a single page via [QoraClient.fetchQuery] and dispatches results
 /// to the provided callbacks.

@@ -3,6 +3,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `useInfiniteQuery`: `fetchNextPage` called the fetcher once and exposed the first failure, while the first page went through `fetchQuery` and was retried. It now applies the same policy: `retryCount`, `retryCondition` and the backoff of `options`, merged over the client defaults.
+- `useInfiniteQuery`: `error` kept the last failure after a page loaded successfully; it is now cleared.
+
 ## [1.3.1] - 2026-11-07
 
 ### Fixed
