@@ -154,16 +154,24 @@ class QoraClient implements MutationTracker {
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
 
-  /// Sequence number of the latest fetch started for each cache entry.
+  /// Sequence number of the most recently started fetch that wrote each
+  /// cache entry's state.
   ///
-  /// A fetch whose number is no longer the latest was superseded (for
-  /// example after [invalidate]) and must not write the entry's state. An
-  /// [Expando] ties the number to the entry's lifetime: nothing to clean up
-  /// on eviction.
-  final Expando<int> _latestFetchSeq = Expando<int>('latestFetchSeq');
+  /// A fetch writes its result only if no fetch started after it has written
+  /// already, so a slow fetch superseded by [invalidate] never overwrites
+  /// fresher data. An [Expando] ties the number to the entry's lifetime:
+  /// nothing to clean up on eviction.
+  final Expando<int> _lastWriterSeq = Expando<int>('lastWriterSeq');
 
-  /// Source of unique fetch sequence numbers for [_latestFetchSeq].
+  /// Source of unique, increasing fetch sequence numbers.
   int _fetchSeqCounter = 0;
+
+  /// Entries dropped by [removeQuery] or [clearCache]. A fetch still in
+  /// flight for one of them writes nothing when it settles: no fetch status
+  /// (the key may belong to a new entry by then) and no persistence (the
+  /// caller asked for the data to go). LRU and GC eviction do not mark
+  /// entries: those fetches still persist their result, as before.
+  final Expando<bool> _removedEntries = Expando<bool>('removedEntries');
 
   /// Deserialized values awaiting typed injection into the cache.
   ///
@@ -1257,6 +1265,8 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
     final sk = _stringKey(normalized);
+    final removed = _cache.peek(normalized);
+    if (removed != null) _removedEntries[removed] = true;
     _cache.remove(normalized);
     _unregisterTags(sk);
     _pendingRequests.remove(sk);
@@ -1299,6 +1309,9 @@ class QoraClient implements MutationTracker {
   /// to wipe storage only.
   void clearCache() {
     _assertNotDisposed();
+    for (final cached in _cache.entries) {
+      _removedEntries[cached.value] = true;
+    }
     _cache.clear();
     _tagIndex.clear();
     for (final entry in _infiniteCache.values) {
@@ -1865,33 +1878,36 @@ class QoraClient implements MutationTracker {
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
-    // invalidate() drops this fetch's dedup entry, and a newer fetch may then
-    // take the key; removeQuery() and clear() dispose the entry itself. A
-    // superseded fetch still completes for its own callers, but leaves the
-    // state, the fetch status, persistence and the dedup entry alone:
-    // writing them would overwrite fresher data, stop the newer fetch from
-    // deduplicating, or persist data that was just removed.
+    // invalidate() drops this fetch's dedup entry, so a newer fetch may run
+    // for the same key while this one is still in flight. Every fetch
+    // completes for its own callers; what it writes follows three rules:
+    // - it writes its result only if no fetch started after it has written
+    //   already (the most recent fetch to write wins);
+    // - cancelled, it restores the previous state only if the state is still
+    //   the one it set, so it never undoes another fetch or an invalidate();
+    // - it releases the dedup entry only if that entry is still its own.
+    // An entry dropped by removeQuery() or clear() gets none of it.
     late final Future<T> future;
     final seq = ++_fetchSeqCounter;
-    final supersededOwner = _latestFetchSeq[entry];
-    _latestFetchSeq[entry] = seq;
-    bool isSuperseded() => entry.isDisposed || _latestFetchSeq[entry] != seq;
+    final stateAtStart = entry.state;
+    bool isRemoved() => _removedEntries[entry] ?? false;
+    bool mayWrite() => !isRemoved() && seq > (_lastWriterSeq[entry] ?? 0);
 
+    // Fetch status is per key: report idle only when no other fetch for the
+    // key is still registered.
     void release() {
       if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
       _emitFetchingCount();
+      if (!isRemoved() && !_pendingRequests.containsKey(sk)) {
+        _emitFetchStatus(sk, FetchStatus.idle);
+      }
     }
 
-    // Cancellation: discard the result and restore the pre-fetch state.
     var cancellationHandled = false;
     void cancel() {
       cancellationHandled = true;
-      if (!isSuperseded()) {
+      if (!isRemoved() && identical(entry.state, stateAtStart)) {
         entry.updateState(previousState);
-        // Hand the entry back to the fetch this one superseded, if it is
-        // still running: it owns the state again and writes its result.
-        _latestFetchSeq[entry] = supersededOwner;
-        _emitFetchStatus(sk, FetchStatus.idle);
         _tracker.onQueryCancelled(sk);
       }
       release();
@@ -1906,10 +1922,12 @@ class QoraClient implements MutationTracker {
           throw QoraCancelException(sk); // ignore: only_throw_errors
         }
 
-        if (isSuperseded()) {
-          _log('Superseded fetch settled, result left to the newer one: $key');
+        if (!mayWrite()) {
+          _log('Superseded fetch settled, result not written: $key');
+          release();
           return data;
         }
+        _lastWriterSeq[entry] = seq;
 
         entry.lastOptions = opts;
         if (opts.providesTags != null) {
@@ -1944,7 +1962,6 @@ class QoraClient implements MutationTracker {
         );
         onFetchSuccess<T>(key, data);
         release();
-        _emitFetchStatus(sk, FetchStatus.idle);
         return data;
       },
     ).catchError((Object error, StackTrace stackTrace) {
@@ -1966,23 +1983,21 @@ class QoraClient implements MutationTracker {
         transformErr = opts.transformError!(transformErr);
       }
       final mapped = _mapError(transformErr, stackTrace);
-      if (isSuperseded()) {
-        // The newer fetch owns the state; this caller still gets its error.
-        throw mapped; // ignore: only_throw_errors
-      }
-      if (opts.keepPreviousData && previousData != null) {
-        // Stay in Success with old data; the caller still gets the thrown error.
-      } else {
-        entry.updateState(
-          Failure<T>(
-            error: mapped,
-            stackTrace: stackTrace,
-            previousData: previousData,
-          ),
-        );
+      if (mayWrite()) {
+        _lastWriterSeq[entry] = seq;
+        if (opts.keepPreviousData && previousData != null) {
+          // Stay in Success with old data; the caller still gets the error.
+        } else {
+          entry.updateState(
+            Failure<T>(
+              error: mapped,
+              stackTrace: stackTrace,
+              previousData: previousData,
+            ),
+          );
+        }
       }
       release();
-      _emitFetchStatus(sk, FetchStatus.idle);
       // Re-throw so that await fetchQuery propagates the error to the caller.
       throw mapped; // ignore: only_throw_errors
     });
