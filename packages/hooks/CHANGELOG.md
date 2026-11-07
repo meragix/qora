@@ -13,6 +13,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `useQuery`: refetches after its query is invalidated instead of staying in `Loading(previousData)` (fixed in `qora` core).
+- `useQuery`: background refetches use the latest `fetcher` closure instead of the one captured on first subscription.
+
 ## [1.2.0] - 2026-06-15
 
 ## [1.0.0] - 2026-06-01
