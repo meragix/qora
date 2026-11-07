@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-03-16
+## [0.3.0] - 2026-11-07
+
+### Fixed
+
+- Installable again with `qora` 1.x: the published 0.2.0 depended on `qora: ^0.8.0`, so adding the overlay to a `qora_flutter` 1.x app failed version solving. Now depends on `qora: ^1.3.0`.
+- Requires `lucide_icons_flutter: ^3.1.25`; earlier 3.1.x releases do not compile on current Flutter (`IconData` became a final class).
 
 ### Added
 
