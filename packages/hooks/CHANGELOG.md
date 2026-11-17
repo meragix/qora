@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-17
+
 ### Added
 
 - `useMutationQueue()` returns the calls in the client's mutation queue and rebuilds when they change. `qora_hooks` now also exports `MutationQueue`, `QueuedMutation` and `QueuedMutationStatus`.
