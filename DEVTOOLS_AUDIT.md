@@ -113,7 +113,12 @@ Problems:
 4. **Layout mixed with navigation**: `panel_layout.dart` (395 lines) holds column constraints, dividers, the mobile slide stack and the mobile nav bar.
 5. **`domain/` is not a domain**: notifiers depend on the `QoraClient` and on DTOs from `shared`; there is no use case or model independent of transport. That is fine for a devtool, so do not add layers; just name it honestly.
 
-Target tree (feature-first; each feature owns its state and widgets):
+Target tree (feature-first; each feature owns its state and widgets). It is reached in steps, not in 0.4.0:
+
+- **0.5.0 (P1)** creates `source/` and `model/` with the cache-backed rewrite;
+- **0.6.0 (P2)** creates `shell/`, `design/` and the rest of `features/` with the redesign.
+
+0.4.0 keeps the current tree and only deletes dead code, so files are not moved twice. Its Queue tab follows the current layout (`ui/panel/list/queue/`, `ui/panel/inspector/queue/`).
 
 ```
 lib/
@@ -520,13 +525,18 @@ A `flutter_driver` or `integration_test` profile-mode benchmark: 500 queries, 5 
 
 ## 11. Roadmap
 
-### P0: make it truthful (overlay 0.4.0, plus small core changes)
+### P0: make it truthful (overlay 0.4.0, `qora` 1.4.1)
 
-1. Core: report fetch failures to the tracker. One test, no public API change. Fixes P1 for the overlay and `VmTracker`.
-2. Overlay: fix the `createdAtMs!` crash (P3b). Bug-fix test first.
-3. Overlay: remove the lying UI: no-op mutation buttons, "Refetch" relabelled "Invalidate" until a real refetch exists, Widget Tree stub, Data Diff tab, unreachable large-payload text, fake `rollbackContext` / `submittedAt` / `retryCount`.
-4. Overlay: emit a query event on cancellation (P2) and treat `setQueryData` as a data update, not an optimistic marker (P3a). Stopgap until P1 item 1 below lands.
-5. Hygiene: em dashes, French comments, unused PNG, README, CHANGELOG.
+Decided 2026-11-17: P0 plus a read-only Queue tab; the core fix ships as `qora` 1.4.1. Status: implemented on `feat/devtools-overlay-0.4`, not released.
+
+1. Core: report fetch failures to the tracker (`onQueryFetched(key, null, 'error')`), including a failure that keeps previous data. No public API change. Fixes P1 for the overlay and `VmTracker`. Done.
+2. Overlay: fix the `createdAtMs!` crash (P3b). Done.
+3. Overlay: remove the lying UI: no-op mutation buttons, "Refetch" (Invalidate already exists), "Is Invalidated", gc countdown, "Optimistic" badge, Widget Tree stub, Data Diff tab, unreachable large-payload text, fake `rollbackContext` / `submittedAt` / `retryCount`. Done.
+4. Overlay: a cancelled fetch shows the previous event again, or an `idle` row (P2); `setQueryData` creates or updates the row (P3a). Stopgap until the cache-backed model of P1. Done.
+5. Hygiene: em dashes, French comments, unused PNG, README, CHANGELOG. Done.
+6. Queue tab: reads `client.mutationQueue.entries` and `entriesStream` (status, attempts, scope, last error, variables). Read only; retry and discard stay in the app. Done.
+
+Still open after 0.4.0: hydration and `initialData` create no row (no tracker hook); the overlay keeps `provider`; actions keep their 0.3 labels (Mark Stale, Simulate Error) until the wording of P2.
 
 ### P1: cache-backed model and performance (overlay 0.5.0, `qora` 1.5.0)
 
