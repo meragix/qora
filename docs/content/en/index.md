@@ -114,7 +114,7 @@ Not a refetch-on-reconnect flag: three pieces that work together, wired by one w
   #title
   [Writes that wait for the network]{.text-primary}
   #description
-  Mutations made offline return an optimistic result right away and are replayed in order on reconnect. The queue is held in memory today; persisting it across app restarts is the focus of 1.4.
+  Mutations made offline return an optimistic result right away and are replayed in order on reconnect. Registered writes are stored with `PersistQoraClient`, so they survive an app restart.
   :::
 ::
 

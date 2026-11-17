@@ -1,51 +1,30 @@
-/// A single todo item.
-///
-/// [isPending] is a **local-only** flag set to `true` for todos created
-/// offline via an optimistic response.  It is never stored on the server;
-/// it transitions to `false` once the real server response replaces the
-/// temp entry after the offline queue is replayed.
+import 'dart:math';
+
+/// A todo as the server knows it.
 class Todo {
   final String id;
   final String title;
   final bool completed;
 
-  /// `true` while this todo only exists locally (enqueued offline).
-  final bool isPending;
+  const Todo({required this.id, required this.title, required this.completed});
 
-  const Todo({
-    required this.id,
-    required this.title,
-    required this.completed,
-    this.isPending = false,
-  });
-
-  Todo copyWith({
-    String? id,
-    String? title,
-    bool? completed,
-    bool? isPending,
-  }) => Todo(
-    id: id ?? this.id,
+  Todo copyWith({String? title, bool? completed}) => Todo(
+    id: id,
     title: title ?? this.title,
     completed: completed ?? this.completed,
-    isPending: isPending ?? this.isPending,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
     'completed': completed,
-    // isPending is never persisted — it is always false on disk.
   };
 
-  factory Todo.fromJson(dynamic json) {
-    final map = json as Map<String, dynamic>;
-    return Todo(
-      id: map['id'] as String,
-      title: map['title'] as String,
-      completed: map['completed'] as bool,
-    );
-  }
+  factory Todo.fromJson(Map<String, dynamic> json) => Todo(
+    id: json['id'] as String,
+    title: json['title'] as String,
+    completed: json['completed'] as bool,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -53,32 +32,64 @@ class Todo {
       other is Todo &&
           id == other.id &&
           title == other.title &&
-          completed == other.completed &&
-          isPending == other.isPending;
+          completed == other.completed;
 
   @override
-  int get hashCode => Object.hash(id, title, completed, isPending);
+  int get hashCode => Object.hash(id, title, completed);
 
   @override
-  String toString() =>
-      'Todo(id: $id, title: $title, completed: $completed, isPending: $isPending)';
+  String toString() => 'Todo(id: $id, title: $title, completed: $completed)';
 }
 
-/// Input for the create-todo mutation.
+final _random = Random();
+
+/// Input of `todos.create`.
+///
+/// The id is generated on the device, not by the server: a todo created
+/// offline has its final id right away, so a toggle or a delete queued after
+/// it can target it, and its scope (`todo:<id>`) orders them behind the
+/// create.
 class CreateTodoInput {
+  final String id;
   final String title;
-  const CreateTodoInput({required this.title});
+
+  const CreateTodoInput({required this.id, required this.title});
+
+  factory CreateTodoInput.newTodo(String title) => CreateTodoInput(
+    id: '${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 30)}',
+    title: title,
+  );
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title};
+
+  factory CreateTodoInput.fromJson(Map<String, dynamic> json) =>
+      CreateTodoInput(id: json['id'] as String, title: json['title'] as String);
 }
 
-/// Input for the toggle-complete mutation.
+/// Input of `todos.toggle`.
 class ToggleTodoInput {
   final String id;
   final bool completed;
+
   const ToggleTodoInput({required this.id, required this.completed});
+
+  Map<String, dynamic> toJson() => {'id': id, 'completed': completed};
+
+  factory ToggleTodoInput.fromJson(Map<String, dynamic> json) =>
+      ToggleTodoInput(
+        id: json['id'] as String,
+        completed: json['completed'] as bool,
+      );
 }
 
-/// Input for the delete-todo mutation.
+/// Input of `todos.delete`.
 class DeleteTodoInput {
   final String id;
+
   const DeleteTodoInput({required this.id});
+
+  Map<String, dynamic> toJson() => {'id': id};
+
+  factory DeleteTodoInput.fromJson(Map<String, dynamic> json) =>
+      DeleteTodoInput(id: json['id'] as String);
 }

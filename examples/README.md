@@ -24,8 +24,8 @@ Learn Qora step-by-step with these examples.
 
 ### 04. Offline First
 
-**What**: App that works without internet  
-**Features**: Persistence, Hive storage, hydration  
+**What**: App that works without internet, and keeps its offline writes across restarts  
+**Features**: Persistence, hydration, registered mutations, persisted mutation queue, sync panel  
 📂 [View Code](./ex_04_offline_first)
 
 ### 05. Network Awareness

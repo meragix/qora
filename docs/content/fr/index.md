@@ -114,7 +114,7 @@ Pas un simple flag de refetch à la reconnexion : trois briques qui travaillent 
   #title
   [Des écritures qui attendent le réseau]{.text-primary}
   #description
-  Les mutations faites hors-ligne renvoient un résultat optimiste immédiatement et sont rejouées dans l'ordre à la reconnexion. La file est en mémoire aujourd'hui ; la persister entre deux redémarrages est l'objectif de la 1.4.
+  Les mutations faites hors-ligne renvoient un résultat optimiste immédiatement et sont rejouées dans l'ordre à la reconnexion. Les écritures enregistrées sont stockées avec `PersistQoraClient` : elles survivent à un redémarrage.
   :::
 ::
 

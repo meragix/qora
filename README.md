@@ -124,7 +124,7 @@ QoraMutationBuilder<Comment, String, void>(
 
 `context.qora.pendingOfflineMutations` exposes the queue, for a "3 changes waiting to sync" badge.
 
-**Current limit:** the offline mutation queue lives in memory. It survives connectivity changes, not an app restart. Persisting it is the next milestone; see the [roadmap](ROADMAP.md).
+That queue lives in memory. For writes that must survive an app restart, register the mutation once with `client.registerMutation` and call it with `mutationKey`: its calls go through `client.mutationQueue`, which retries transient failures, keeps dependent writes in order with scopes, and, with `PersistQoraClient`, stores each call until the server confirms it. See [the queue of registered mutations](https://qora.meragix.dev/en/core-concepts/offline#the-queue-of-registered-mutations).
 
 ## Pure Dart
 

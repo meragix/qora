@@ -105,7 +105,7 @@ QoraMutationBuilder<Comment, String, void>(
 )
 ```
 
-The queue is held in memory: it survives connectivity changes, not an app restart.
+This queue is held in memory. Registered mutations (`client.registerMutation`, called with `mutationKey`) go through `client.mutationQueue` instead, which `PersistQoraClient` stores so they survive an app restart. See [the queue of registered mutations](https://qora.meragix.dev/en/core-concepts/offline#the-queue-of-registered-mutations).
 
 ## Optimistic updates
 

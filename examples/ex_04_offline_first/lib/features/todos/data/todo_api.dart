@@ -1,56 +1,89 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
+import '../../../shared/connectivity/simulated_connectivity_manager.dart';
 import '../models/todo.dart';
 
-/// Simulated in-memory HTTP layer for the offline-first demo.
+/// Simulated REST API, kept in memory for the demo.
 ///
-/// Mimics the behavior of a real REST API:
-/// - Artificial 600 ms latency on every call.
-/// - Throws [OfflineException] when [isOffline] is `true` — this is what
-///   triggers `FetchStatus.paused` and the offline mutation queue.
+/// - Every call takes [latency], then fails with [OfflineException] if the
+///   device is offline by then.
+/// - Writes take an idempotency key and apply each key once: a write sent
+///   again, after a restart or a lost response, returns the first result
+///   instead of being applied twice.
+/// - A title containing "reject" fails with a 422, to show a write the server
+///   refuses for good.
 ///
-/// In a real app, replace this with an actual HTTP client (e.g. Dio).
+/// It is the server: it outlives the app's simulated restarts.
 class TodoApi {
+  TodoApi(this._network, {this.latency = const Duration(milliseconds: 600)});
+
+  final SimulatedNetwork _network;
+  final Duration latency;
+
   final List<Todo> _store = [
     const Todo(id: '1', title: 'Buy groceries', completed: false),
     const Todo(id: '2', title: 'Read a book', completed: true),
     const Todo(id: '3', title: 'Go for a walk', completed: false),
   ];
 
-  int _nextId = 4;
+  final Map<String, Object?> _applied = {};
 
-  /// Controlled externally by [SimulatedConnectivityManager].
-  bool isOffline = false;
+  /// What the server holds, without a request.
+  @visibleForTesting
+  List<Todo> get serverTodos => List.unmodifiable(_store);
 
-  Future<void> _simulateLatency() async {
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (isOffline) throw const OfflineException();
+  Future<void> _roundTrip() async {
+    if (_network.isOffline) throw const OfflineException();
+    await Future<void>.delayed(latency);
+    if (_network.isOffline) throw const OfflineException();
   }
 
   Future<List<Todo>> getTodos() async {
-    await _simulateLatency();
-    return List<Todo>.from(_store);
+    await _roundTrip();
+    return List.unmodifiable(_store);
   }
 
-  Future<Todo> createTodo(CreateTodoInput input) async {
-    await _simulateLatency();
-    final todo = Todo(id: '${_nextId++}', title: input.title, completed: false);
-    _store.add(todo);
+  Future<Todo> createTodo(
+    CreateTodoInput input, {
+    required String idempotencyKey,
+  }) => _once(idempotencyKey, () {
+    if (input.title.toLowerCase().contains('reject')) {
+      throw const ApiException(422, 'This title is not allowed');
+    }
+    final todo = Todo(id: input.id, title: input.title, completed: false);
+    // Create-as-upsert on the client-generated id.
+    _store
+      ..removeWhere((t) => t.id == input.id)
+      ..add(todo);
     return todo;
-  }
+  });
 
-  Future<Todo> toggleTodo(ToggleTodoInput input) async {
-    await _simulateLatency();
+  Future<Todo> toggleTodo(
+    ToggleTodoInput input, {
+    required String idempotencyKey,
+  }) => _once(idempotencyKey, () {
     final index = _store.indexWhere((t) => t.id == input.id);
-    if (index == -1) throw StateError('Todo ${input.id} not found');
-    final updated = _store[index].copyWith(completed: input.completed);
-    _store[index] = updated;
-    return updated;
-  }
+    if (index == -1) throw const ApiException(404, 'Todo not found');
+    return _store[index] = _store[index].copyWith(completed: input.completed);
+  });
 
-  Future<void> deleteTodo(DeleteTodoInput input) async {
-    await _simulateLatency();
+  Future<void> deleteTodo(
+    DeleteTodoInput input, {
+    required String idempotencyKey,
+  }) => _once(idempotencyKey, () {
     _store.removeWhere((t) => t.id == input.id);
+  });
+
+  Future<T> _once<T>(String idempotencyKey, T Function() apply) async {
+    await _roundTrip();
+    if (_applied.containsKey(idempotencyKey)) {
+      return _applied[idempotencyKey] as T;
+    }
+    final result = apply();
+    _applied[idempotencyKey] = result;
+    return result;
   }
 }
 
@@ -58,5 +91,18 @@ class OfflineException implements Exception {
   const OfflineException();
 
   @override
-  String toString() => 'OfflineException: No network connection';
+  String toString() => 'No network connection';
+}
+
+class ApiException implements Exception {
+  const ApiException(this.statusCode, this.message);
+
+  final int statusCode;
+  final String message;
+
+  /// A 4xx means the request itself is wrong: sending it again cannot help.
+  bool get isClientError => statusCode >= 400 && statusCode < 500;
+
+  @override
+  String toString() => '$statusCode: $message';
 }

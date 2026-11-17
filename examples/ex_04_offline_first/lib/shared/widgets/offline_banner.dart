@@ -5,7 +5,7 @@ import 'package:qora_flutter/qora_flutter.dart';
 ///
 /// Wraps [child] and overlays a custom amber banner at the bottom of the
 /// screen whenever the device is offline.  Uses [NetworkStatusIndicator]'s
-/// [offlineBanner] escape-hatch — no custom [builder] needed.
+/// [offlineBanner] escape hatch: no custom [builder] needed.
 class OfflineBannerWrapper extends StatelessWidget {
   final Widget child;
 
@@ -37,7 +37,7 @@ class _OfflineBanner extends StatelessWidget {
               Icon(Icons.wifi_off, size: 14, color: Colors.white),
               SizedBox(width: 8),
               Text(
-                'Offline — changes will sync on reconnect',
+                'Offline: changes will sync on reconnect',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,

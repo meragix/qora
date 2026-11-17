@@ -1,5 +1,5 @@
 name: ex_04_offline_first
-description: "Offline-first todo app: PersistQoraClient, OfflineMutationQueue, and NetworkMode.offlineFirst."
+description: "Offline-first todo app: PersistQoraClient, the persisted queue of registered mutations, and NetworkMode.offlineFirst."
 publish_to: 'none'
 
 version: 1.0.0
@@ -14,6 +14,10 @@ dependencies:
   # Qora packages (local path for monorepo)
   qora_flutter:
     path: ../../packages/flutter
+
+dependency_overrides:
+  qora:
+    path: ../../packages/dart
 
 dev_dependencies:
   flutter_test:
