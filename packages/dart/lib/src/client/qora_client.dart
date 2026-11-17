@@ -195,6 +195,20 @@ class QoraClient implements MutationTracker {
   /// itself in a loop (at zero delay with `gcTime: Duration.zero`).
   final Expando<bool> _gcDeferred = Expando<bool>('gcDeferred');
 
+  /// The longest [QoraOptions.gcTime] any call asked for an entry. Entries
+  /// no call configured (hydrated, set with [setQueryData]) use the client
+  /// default. The longest wins so that one caller never shortens how long
+  /// another caller expects the data to stay cached.
+  final Expando<Duration> _entryGcTimes = Expando<Duration>('gcTime');
+
+  Duration _gcTimeOf(CacheEntry<dynamic> entry) =>
+      _entryGcTimes[entry] ?? config.defaultOptions.gcTime;
+
+  void _requestGcTime(CacheEntry<dynamic> entry, Duration gcTime) {
+    final current = _entryGcTimes[entry];
+    if (current == null || gcTime > current) _entryGcTimes[entry] = gcTime;
+  }
+
   /// Deserialized values awaiting typed injection into the cache.
   ///
   /// Keyed by JSON-encoded normalised key (same encoding as
@@ -561,6 +575,7 @@ class QoraClient implements MutationTracker {
     }
 
     final entry = _getOrCreateEntry<T>(normalized);
+    _requestGcTime(entry, opts.gcTime);
 
     // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
     _applyPendingHydration<T>(normalized);
@@ -647,6 +662,7 @@ class QoraClient implements MutationTracker {
     final normalized = normalizeKey(key);
     final opts = config.defaultOptions.merge(options);
     final entry = _getOrCreateEntry<T>(normalized);
+    _requestGcTime(entry, opts.gcTime);
 
     // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
     _applyPendingHydration<T>(normalized);
@@ -886,6 +902,7 @@ class QoraClient implements MutationTracker {
     }
 
     final entry = _getOrCreateEntry<T>(normalized);
+    _requestGcTime(entry, opts.gcTime);
 
     // Inject any pending hydration data (from PersistQoraClient or SsrHydrator).
     _applyPendingHydration<T>(normalized);
@@ -2328,6 +2345,7 @@ class QoraClient implements MutationTracker {
     final existingEntry = _cache.peek(normalized);
     if (existingEntry != null) return;
     final entry = _getOrCreateEntry<T>(normalized);
+    _requestGcTime(entry, config.defaultOptions.merge(options).gcTime);
     _applyInitialData<T>(entry, options);
   }
 
@@ -2343,8 +2361,8 @@ class QoraClient implements MutationTracker {
     // after it is written, so the check would drop an entry created earlier
     // in the same call (a hydration followed by a fetch). The GC timer
     // already removes those on the next event-loop turn.
-    final gcTime = config.defaultOptions.gcTime;
     final idle = _cache.peek(key);
+    final gcTime = idle == null ? Duration.zero : _gcTimeOf(idle);
     if (idle != null &&
         gcTime > Duration.zero &&
         !idle.isActive &&
@@ -2402,7 +2420,7 @@ class QoraClient implements MutationTracker {
     if (entry == null || entry.isActive) return;
 
     entry.gcTimer?.cancel();
-    entry.gcTimer = Timer(config.defaultOptions.gcTime, () {
+    entry.gcTimer = Timer(_gcTimeOf(entry), () {
       if (entry.isActive) return;
       if (!_isEvictable(key, entry)) {
         _gcDeferred[entry] = true; // its fetch reschedules GC on settling
@@ -2432,7 +2450,6 @@ class QoraClient implements MutationTracker {
   void _scheduleNextEviction() {
     if (_isDisposed) return;
 
-    final gcTime = config.defaultOptions.gcTime;
     DateTime? earliest;
 
     for (final entry in _cache.entries) {
@@ -2440,7 +2457,7 @@ class QoraClient implements MutationTracker {
       // A busy entry is skipped: counting it, already expired, would re-arm
       // the timer at zero delay for as long as its fetch runs.
       if (e.isActive || !_isEvictable(entry.key, e)) continue;
-      final expiry = e.lastAccessedAt.add(gcTime);
+      final expiry = e.lastAccessedAt.add(_gcTimeOf(e));
       if (earliest == null || expiry.isBefore(earliest)) {
         earliest = expiry;
       }
@@ -2452,7 +2469,11 @@ class QoraClient implements MutationTracker {
       delay = const Duration(minutes: 1);
     } else {
       final d = earliest.difference(DateTime.now());
-      delay = d.isNegative ? Duration.zero : d;
+      // Capped at the heartbeat: with per-query gcTime, an entry settling
+      // after this timer is armed can expire before the earliest one seen.
+      delay = d.isNegative
+          ? Duration.zero
+          : (d > const Duration(minutes: 1) ? const Duration(minutes: 1) : d);
     }
 
     _evictionTimer = Timer(delay, _evictionTick);
@@ -2469,12 +2490,13 @@ class QoraClient implements MutationTracker {
   /// Zero-allocation fast path: the removal list is only allocated when at
   /// least one expired entry is found.
   void _evictExpiredEntries() {
-    final gcTime = config.defaultOptions.gcTime;
     List<List<dynamic>>? toRemove;
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (!e.isActive && e.shouldEvict(gcTime) && _isEvictable(entry.key, e)) {
+      if (!e.isActive &&
+          e.shouldEvict(_gcTimeOf(e)) &&
+          _isEvictable(entry.key, e)) {
         (toRemove ??= []).add(entry.key);
       }
     }
