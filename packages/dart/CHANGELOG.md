@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A throwing `transformError`, `errorMapper` or model `==` no longer leaves the query stuck in `Loading`; the fetch fails with that error.
 - `keepPreviousData` and `Failure.previousData` now keep data written by an older fetch that settled first.
 - `FetchStatus` no longer reports `idle` while a fetch for the key is paused offline.
+- A query's own `QoraOptions.gcTime` was ignored: garbage collection always used the client default. It now applies per query; when calls for one key ask for different values, the longest wins.
 
 ### Fixed
 
