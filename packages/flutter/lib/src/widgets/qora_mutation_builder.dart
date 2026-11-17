@@ -48,7 +48,7 @@ import 'package:qora/qora.dart';
 ///       MutationPending() => const CircularProgressIndicator(),
 ///       MutationSuccess(:final data, :final isOptimistic) => ListTile(
 ///           title: Text(data.title),
-///           // Clock icon while optimistic — not yet confirmed by server.
+///           // Clock icon while optimistic: not yet confirmed by server.
 ///           trailing: isOptimistic ? const Icon(Icons.schedule) : null,
 ///         ),
 ///       MutationFailure(:final error) => ErrorBanner(error),
@@ -88,14 +88,19 @@ import 'package:qora/qora.dart';
 /// ```
 class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
   /// The async function that performs the server-side write.
-  final MutatorFunction<TData, TVariables> mutator;
+  ///
+  /// Leave it `null` when [options] names a registered mutation with
+  /// `MutationOptions.mutationKey`: the mutator registered on the client with
+  /// `QoraClient.registerMutation` runs instead. Passing both, or neither,
+  /// throws an [ArgumentError] when the widget mounts.
+  final MutatorFunction<TData, TVariables>? mutator;
 
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
 
   /// Associates a query key with this mutation for DevTools observability.
   ///
-  /// Accepts the same key shapes as [QoraClient.fetchQuery] — a [List] or
+  /// Accepts the same key shapes as [QoraClient.fetchQuery]: a [List] or
   /// a [QoraKey]. When provided, the key is visible in the DevTools overlay
   /// timeline alongside every mutation event (started, success, error).
   ///
@@ -145,8 +150,8 @@ class QoraMutationBuilder<TData, TVariables, TContext> extends StatefulWidget {
 
   const QoraMutationBuilder({
     super.key,
-    required this.mutator,
     required this.builder,
+    this.mutator,
     this.queryKey,
     this.options,
     this.metadata,
@@ -175,12 +180,9 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       _createController(client);
       _subscribe();
     } else if (client != _client) {
-      // The QoraScope client changed — rebuild the controller against the new client.
+      // The QoraScope client changed: rebuild the controller against the new client.
       _client = client;
-      _controller!.dispose();
-      _subscription?.cancel();
-      _createController(client);
-      _subscribe();
+      _replaceController(client);
     }
   }
 
@@ -194,24 +196,42 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
         !identical(widget.options, oldWidget.options) ||
         !identical(widget.metadata, oldWidget.metadata) ||
         !identical(widget.queryKey, oldWidget.queryKey)) {
-      _controller!.dispose();
-      _subscription?.cancel();
-      _createController(_client);
-      _subscribe();
+      _replaceController(_client);
     }
   }
 
   @override
   void dispose() {
     _subscription?.cancel();
-    _controller!.dispose();
+    // Null when the first controller could not be built.
+    _controller?.dispose();
     super.dispose();
   }
 
+  /// Builds the new controller before disposing the current one, so a
+  /// constructor error (an unregistered `mutationKey`, for example) leaves
+  /// the widget on its working controller instead of a disposed one.
+  void _replaceController(QoraClient? client) {
+    final next = _buildController(client);
+    _subscription?.cancel();
+    _controller!.dispose();
+    _controller = next;
+    _state = next.state;
+    _subscribe();
+  }
+
   void _createController(QoraClient? client) {
-    _controller = MutationController<TData, TVariables, TContext>(
+    _controller = _buildController(client);
+    _state = _controller!.state;
+  }
+
+  MutationController<TData, TVariables, TContext> _buildController(
+    QoraClient? client,
+  ) {
+    return MutationController<TData, TVariables, TContext>(
       mutator: widget.mutator,
       options: widget.options,
+      registry: client?.mutationRegistry,
       tracker: client,
       metadata: _buildMetadata(),
       // Wire offline support when a QoraScope with connectivity is present.
@@ -222,7 +242,6 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       invalidateTags:
           client != null ? (tags) async => client.invalidateTags(tags) : null,
     );
-    _state = _controller!.state;
   }
 
   Map<String, Object?>? _buildMetadata() {

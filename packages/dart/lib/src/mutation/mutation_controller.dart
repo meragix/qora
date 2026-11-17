@@ -5,9 +5,12 @@ import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/network/offline_mutation_queue.dart';
 import 'package:qora/src/network/pending_mutation.dart';
 import 'package:qora/src/tag/query_tag.dart';
+import 'package:qora/src/utils/mutation_id.dart';
 import 'package:qora/src/utils/query_function.dart';
 
+import 'mutation_meta.dart';
 import 'mutation_options.dart';
+import 'mutation_registry.dart';
 import 'mutation_state.dart';
 import 'mutation_tracker.dart';
 import 'mutation_update.dart';
@@ -99,7 +102,21 @@ class MutationController<TData, TVariables, TContext> {
   /// The async function that performs the mutation.
   ///
   /// Named [mutator] to mirror the [fetcher] naming used in queries.
-  final MutatorFunction<TData, TVariables> mutator;
+  ///
+  /// For a registered mutation ([MutationOptions.mutationKey]), this calls
+  /// the registered mutator with a fresh `mutationId`. [mutate] does not go
+  /// through it: it keeps one `mutationId` across retries and replays.
+  late final MutatorFunction<TData, TVariables> mutator = _callSiteMutator ??
+      (variables) => _registration!.run(
+            variables,
+            MutationMeta(mutationId: generateMutationId(), attempt: 0),
+          );
+
+  final MutatorFunction<TData, TVariables>? _callSiteMutator;
+
+  /// The registered mutation named by [MutationOptions.mutationKey], or
+  /// `null` when the call site provides its own mutator.
+  final MutationRegistration<TData, TVariables>? _registration;
 
   /// Lifecycle callbacks and retry configuration.
   final MutationOptions<TData, TVariables, TContext>? options;
@@ -129,7 +146,7 @@ class MutationController<TData, TVariables, TContext> {
   /// Reports whether the device is currently online.
   ///
   /// Injected by [QoraMutationBuilder] from [QoraClient.isOnline]. When
-  /// `null`, offline-queue logic is disabled — the mutation always executes
+  /// `null`, offline-queue logic is disabled: the mutation always executes
   /// immediately.
   final bool Function()? isOnline;
 
@@ -170,8 +187,14 @@ class MutationController<TData, TVariables, TContext> {
 
   bool _isDisposed = false;
 
+  /// Creates a controller for one mutation.
+  ///
+  /// Pass either a [mutator], or [MutationOptions.mutationKey] together with
+  /// the [registry] holding that key (`QoraClient.mutationRegistry`), not
+  /// both. Throws an [ArgumentError] when both or neither are given, and a
+  /// [StateError] when the key is not registered.
   MutationController({
-    required this.mutator,
+    MutatorFunction<TData, TVariables>? mutator,
     this.options,
     this.tracker,
     this.metadata,
@@ -179,7 +202,51 @@ class MutationController<TData, TVariables, TContext> {
     this.offlineQueue,
     this.invalidateQuery,
     this.invalidateTags,
-  });
+    MutationRegistry? registry,
+  })  : _callSiteMutator = mutator,
+        _registration = _resolveRegistration<TData, TVariables>(
+          hasMutator: mutator != null,
+          mutationKey: options?.mutationKey,
+          registry: registry,
+        );
+
+  static MutationRegistration<TData, TVariables>?
+      _resolveRegistration<TData, TVariables>({
+    required bool hasMutator,
+    required String? mutationKey,
+    required MutationRegistry? registry,
+  }) {
+    if (mutationKey == null) {
+      if (!hasMutator) {
+        throw ArgumentError(
+          'A mutator is required unless MutationOptions.mutationKey names a '
+          'registered mutation.',
+        );
+      }
+      return null;
+    }
+    if (hasMutator) {
+      throw ArgumentError(
+        'Pass either a mutator or MutationOptions.mutationKey, not both: '
+        'the mutation registered under "$mutationKey" already has one.',
+      );
+    }
+    if (registry == null) {
+      throw StateError(
+        'MutationOptions.mutationKey is "$mutationKey", but no mutation '
+        'registry is available. Use the mutation under a QoraScope, or pass '
+        'registry: client.mutationRegistry.',
+      );
+    }
+    final registration = registry.lookup<TData, TVariables>(mutationKey);
+    if (registration == null) {
+      throw StateError(
+        'No mutation is registered under "$mutationKey". Call '
+        'client.registerMutation("$mutationKey", ...) at startup.',
+      );
+    }
+    return registration;
+  }
 
   /// The current state of this mutation.
   ///
@@ -192,7 +259,7 @@ class MutationController<TData, TVariables, TContext> {
   /// Each new subscriber **immediately** receives the current state (synchronous
   /// capture at subscribe time), then every subsequent transition.
   ///
-  /// Multiple concurrent subscriptions are supported — each gets its own
+  /// Multiple concurrent subscriptions are supported: each gets its own
   /// single-subscription stream backed by the shared broadcast controller.
   ///
   /// ### Why not `async*`?
@@ -211,7 +278,7 @@ class MutationController<TData, TVariables, TContext> {
       onListen: () {
         // Capture and emit current state synchronously at subscribe time.
         sc.add(_state);
-        // Forward all future broadcast events — subscription set up before
+        // Forward all future broadcast events: subscription set up before
         // listen() returns, so no events can slip through the gap.
         forwardSub = _streamController.stream.listen(
           sc.add,
@@ -228,7 +295,7 @@ class MutationController<TData, TVariables, TContext> {
   ///
   /// ### Normal flow (online)
   ///
-  /// 1. Calls [MutationOptions.onMutate] — optimistic update + snapshot.
+  /// 1. Calls [MutationOptions.onMutate]: optimistic update + snapshot.
   /// 2. Transitions to [MutationPending].
   /// 3. On success → [MutationSuccess] (`isOptimistic: false`),
   ///    [MutationOptions.onSuccess], [MutationOptions.onSettled].
@@ -259,11 +326,14 @@ class MutationController<TData, TVariables, TContext> {
         isOnline != null &&
         isOnline!() == false;
 
+    // One identity per call, shared by every retry and replay of it.
+    final mutationId = _registration != null ? generateMutationId() : null;
+
     if (shouldQueueOffline) {
-      return _handleOfflineMutate(variables, opts!);
+      return _handleOfflineMutate(variables, opts!, mutationId: mutationId);
     }
 
-    return _executeOnline(variables);
+    return _executeOnline(variables, mutationId: mutationId);
   }
 
   /// Resets the state back to [MutationIdle].
@@ -302,10 +372,11 @@ class MutationController<TData, TVariables, TContext> {
     TVariables variables, {
     TContext? existingContext,
     bool skipOnMutate = false,
+    String? mutationId,
   }) async {
     TContext? context = existingContext;
 
-    // 1. onMutate — optimistic update + snapshot (skipped on offline replay)
+    // 1. onMutate: optimistic update + snapshot (skipped on offline replay)
     if (!skipOnMutate && options?.onMutate != null) {
       try {
         context = await options!.onMutate!(variables);
@@ -326,7 +397,7 @@ class MutationController<TData, TVariables, TContext> {
 
     // 3. Execute mutator (with optional retry)
     try {
-      final data = await _executeWithRetry(variables);
+      final data = await _executeWithRetry(variables, mutationId);
 
       _setState(
         MutationSuccess<TData, TVariables>(
@@ -338,7 +409,21 @@ class MutationController<TData, TVariables, TContext> {
       // 4a. onSuccess
       await options?.onSuccess?.call(data, variables, context);
 
-      // 4b. Auto-invalidate queries declared in invalidates
+      // 4b. Invalidations declared on the registration, then the call site's.
+      if (_registration case final registration?) {
+        if (registration.invalidates case final keys?
+            when invalidateQuery != null) {
+          for (final key in keys) {
+            await invalidateQuery!(key);
+          }
+        }
+        if (registration.invalidatesTags case final tags?
+            when invalidateTags != null) {
+          await invalidateTags!(tags);
+        }
+      }
+
+      // Auto-invalidate queries declared in invalidates
       if (options?.invalidates case final keys? when invalidateQuery != null) {
         for (final key in keys) {
           await invalidateQuery!(key);
@@ -364,7 +449,7 @@ class MutationController<TData, TVariables, TContext> {
         ),
       );
 
-      // 5. onError — rollback optimistic update
+      // 5. onError: rollback optimistic update
       await options?.onError?.call(e, variables, context);
 
       // 6. onSettled (failure branch)
@@ -378,16 +463,17 @@ class MutationController<TData, TVariables, TContext> {
   ///
   /// Calls [MutationOptions.onMutate] immediately (so optimistic cache updates
   /// work offline), then enqueues a [PendingMutation] that replays
-  /// [_executeOnline] on reconnect — skipping [onMutate] on replay to avoid
+  /// [_executeOnline] on reconnect: skipping [onMutate] on replay to avoid
   /// applying the cache update twice.
   ///
   /// Emits an optimistic [MutationSuccess] if [MutationOptions.optimisticResponse]
   /// is provided, or [MutationPending] otherwise.
   Future<TData?> _handleOfflineMutate(
     TVariables variables,
-    MutationOptions<TData, TVariables, TContext> opts,
-  ) async {
-    // 1. onMutate — run immediately so cache updates happen even while offline.
+    MutationOptions<TData, TVariables, TContext> opts, {
+    String? mutationId,
+  }) async {
+    // 1. onMutate: run immediately so cache updates happen even while offline.
     TContext? context;
     if (opts.onMutate != null) {
       try {
@@ -417,13 +503,14 @@ class MutationController<TData, TVariables, TContext> {
             variables,
             existingContext: context,
             skipOnMutate: true,
+            mutationId: mutationId,
           );
         },
       ),
     );
 
     if (opts.optimisticResponse != null) {
-      // Immediately show optimistic success — data is local, not server-confirmed.
+      // Immediately show optimistic success: data is local, not server-confirmed.
       final optimisticData = opts.optimisticResponse!(variables);
       _setState(
         MutationSuccess<TData, TVariables>(
@@ -435,12 +522,15 @@ class MutationController<TData, TVariables, TContext> {
       return Future.value(optimisticData);
     }
 
-    // No optimistic response — stay pending until replay.
+    // No optimistic response: stay pending until replay.
     _setState(MutationPending<TData, TVariables>(variables: variables));
     return Future.value(null);
   }
 
-  Future<TData> _executeWithRetry(TVariables variables) async {
+  Future<TData> _executeWithRetry(
+    TVariables variables,
+    String? mutationId,
+  ) async {
     final retryCount = options?.retryCount ?? 0;
     final retryDelay = options?.retryDelay ?? const Duration(seconds: 1);
 
@@ -449,6 +539,13 @@ class MutationController<TData, TVariables, TContext> {
 
     for (var attempt = 0; attempt <= retryCount; attempt++) {
       try {
+        final registration = _registration;
+        if (registration != null) {
+          return await registration.run(
+            variables,
+            MutationMeta(mutationId: mutationId!, attempt: attempt),
+          );
+        }
         return await mutator(variables);
       } catch (e, st) {
         lastError = e;

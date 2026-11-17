@@ -68,6 +68,12 @@ class MutationHandle<TData, TVariables> {
 /// `onMutate` is not passed on to `onError`. For a snapshot-based rollback,
 /// use `QoraMutationBuilder`, whose `TContext` type parameter carries it.
 ///
+/// Leave [mutator] `null` when [options] names a registered mutation with
+/// `MutationOptions.mutationKey`: the mutator registered on the client with
+/// `QoraClient.registerMutation` runs instead. Whether a mutator is given,
+/// and the `mutationKey`, are read on the first build only, like the rest of
+/// the controller setup.
+///
 /// ```dart
 /// class EditProfileScreen extends HookWidget {
 ///   @override
@@ -93,7 +99,7 @@ class MutationHandle<TData, TVariables> {
 /// }
 /// ```
 MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
-  required Future<TData> Function(TVariables variables) mutator,
+  Future<TData> Function(TVariables variables)? mutator,
   MutationOptions<TData, TVariables, void>? options,
 }) {
   final state = useState<MutationState<TData, TVariables>>(
@@ -114,8 +120,21 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
 
   final controller = useMemoized(
     () => MutationController<TData, TVariables, void>(
-      mutator: (v) => mutatorRef.value(v),
+      mutator: mutatorRef.value == null
+          ? null
+          : (v) {
+              final mutator = mutatorRef.value;
+              if (mutator == null) {
+                throw StateError(
+                  'useMutation was first built with a mutator and later '
+                  'without one. Keep passing a mutator, or use a mutationKey '
+                  'from the first build.',
+                );
+              }
+              return mutator(v);
+            },
       options: optionsRef.value,
+      registry: client?.mutationRegistry,
       // Same wiring as QoraMutationBuilder: report to DevTools, and queue
       // the call while offline when MutationOptions.offlineQueue is set.
       tracker: client,

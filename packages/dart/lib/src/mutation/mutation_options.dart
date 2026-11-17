@@ -42,7 +42,7 @@ import 'mutation_state.dart';
 ///   invalidates: [['posts']],
 ///   networkMode: NetworkMode.online,
 ///   offlineQueue: true,
-///   // Optional — show an immediate optimistic result while offline.
+///   // Optional: show an immediate optimistic result while offline.
 ///   optimisticResponse: (title) => Post.draft(title),
 /// )
 /// ```
@@ -51,7 +51,7 @@ class MutationOptions<TData, TVariables, TContext> {
   ///
   /// Use this to apply optimistic updates before the server confirms them.
   /// The return value is stored as [TContext] and forwarded to [onError],
-  /// [onSuccess], and [onSettled] — use it to hold a snapshot for rollback.
+  /// [onSuccess], and [onSettled]: use it to hold a snapshot for rollback.
   ///
   /// If this callback throws, the mutator is **not** called and the state
   /// transitions directly to [MutationFailure].
@@ -115,9 +115,9 @@ class MutationOptions<TData, TVariables, TContext> {
 
   /// Controls how this mutation behaves when the device is offline.
   ///
-  /// - [NetworkMode.online] (default) — if offline and [offlineQueue] is
+  /// - [NetworkMode.online] (default): if offline and [offlineQueue] is
   ///   `true`, the mutation is enqueued; otherwise it fails immediately.
-  /// - [NetworkMode.always] — always execute regardless of network status.
+  /// - [NetworkMode.always]: always execute regardless of network status.
   ///
   /// Requires a [ConnectivityManager] to be attached to [QoraClient] (done
   /// automatically when using [QoraScope] with [FlutterConnectivityManager]).
@@ -198,6 +198,24 @@ class MutationOptions<TData, TVariables, TContext> {
   /// ```
   final List<QueryTag>? invalidatesTags;
 
+  /// Runs the mutation registered under this key instead of a call-site
+  /// mutator.
+  ///
+  /// Register the key once at startup with `QoraClient.registerMutation`,
+  /// then pass no `mutator` where the mutation is used. The registered
+  /// mutator runs for every call made with this key, and receives a stable
+  /// `MutationMeta.mutationId` to send as an idempotency key.
+  ///
+  /// Everything the write needs must be in the variables: a queued call can
+  /// outlive the widget that made it. Callbacks set here ([onMutate],
+  /// [onSuccess], [onError], [onSettled]) still run for calls made in this
+  /// session, even after that widget is unmounted, so an [onError] rollback
+  /// still reaches the cache. Do not use a `BuildContext` in them without
+  /// checking that it is still mounted.
+  ///
+  /// When `null` (the default), the call site's mutator runs, as before.
+  final String? mutationKey;
+
   const MutationOptions({
     this.onMutate,
     this.onSuccess,
@@ -211,5 +229,6 @@ class MutationOptions<TData, TVariables, TContext> {
     this.optimisticResponse,
     this.invalidates,
     this.invalidatesTags,
+    this.mutationKey,
   });
 }

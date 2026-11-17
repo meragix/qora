@@ -21,6 +21,7 @@ import 'package:qora/src/network/fetch_status.dart';
 import 'package:qora/src/network/network_mode.dart';
 import 'package:qora/src/network/offline_mutation_queue.dart';
 import 'package:qora/src/persistence/persist_qora_client.dart';
+import 'package:qora/src/persistence/qora_serializer.dart';
 import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/tag/query_tag.dart';
 import 'package:qora/src/tracking/no_op_tracker.dart';
@@ -256,6 +257,8 @@ class QoraClient implements MutationTracker {
   /// mutations triggered while offline.
   final OfflineMutationQueue _offlineMutationQueue;
 
+  final MutationRegistry _mutationRegistry = MutationRegistry();
+
   // ── Mutation tracking ─────────────────────────────────────────────────────
 
   /// Snapshot of all **currently pending** mutations, keyed by controller ID.
@@ -336,6 +339,61 @@ class QoraClient implements MutationTracker {
   /// )
   /// ```
   OfflineMutationQueue get offlineMutationQueue => _offlineMutationQueue;
+
+  // ── Registered mutations ──────────────────────────────────────────────────
+
+  /// The mutations registered on this client, by key.
+  ///
+  /// [QoraMutationBuilder] and `useMutation` pass it to their
+  /// [MutationController] automatically. Pass it yourself when you create a
+  /// controller for a registered mutation by hand.
+  MutationRegistry get mutationRegistry => _mutationRegistry;
+
+  /// Registers a mutation under [key], so call sites can run it with
+  /// `MutationOptions(mutationKey: key)` instead of passing a mutator.
+  ///
+  /// The registered [mutator] runs for every call made with [key], and
+  /// receives a [MutationMeta] whose `mutationId` stays the same across the
+  /// retries and replays of one call. Send it as an idempotency key so the
+  /// server can drop a write it already applied.
+  ///
+  /// [variables] converts the call's variables to and from JSON, so a queued
+  /// call can be stored. [invalidates] and [invalidatesTags] run after every
+  /// successful call, in addition to the call site's own.
+  ///
+  /// Register each key once, at startup, before any call site uses it.
+  /// Throws a [StateError] if [key] is already registered.
+  ///
+  /// ```dart
+  /// client.registerMutation<Todo, NewTodo>(
+  ///   'todos.create',
+  ///   mutator: (input, meta) =>
+  ///       api.createTodo(input, idempotencyKey: meta.mutationId),
+  ///   variables: QoraSerializer<NewTodo>(
+  ///     toJson: (v) => v.toJson(),
+  ///     fromJson: (json) => NewTodo.fromJson(json as Map<String, dynamic>),
+  ///   ),
+  ///   invalidates: [['todos']],
+  /// );
+  /// ```
+  void registerMutation<TData, TVariables>(
+    String key, {
+    required RegisteredMutator<TData, TVariables> mutator,
+    required QoraSerializer<TVariables> variables,
+    List<Object>? invalidates,
+    List<QueryTag>? invalidatesTags,
+  }) {
+    _assertNotDisposed();
+    _mutationRegistry.register<TData, TVariables>(
+      MutationRegistration<TData, TVariables>(
+        key: key,
+        mutator: mutator,
+        variables: variables,
+        invalidates: invalidates,
+        invalidatesTags: invalidatesTags,
+      ),
+    );
+  }
 
   /// Attaches a [ConnectivityManager] and begins listening to network status
   /// changes.
