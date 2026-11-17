@@ -8,9 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `QueryCache(canEvict:)`: an optional predicate that keeps an entry from LRU eviction.
+
 ### Changed
 
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
+- `QoraClient.prefetch()` no longer throws for a fetch failure. The failure is still recorded in the query state and is now passed once to `QoraClientConfig.onBackgroundFetchError` (not when the prefetch joined a fetch started elsewhere, which reports or delivers its own error); a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
+- `QoraClientConfig.onBackgroundFetchError` now fires once per failed background fetch, from the call that started it. Callers that join an in-flight fetch (a watcher mounting during a prefetch, a reconnect replay) no longer report the same failure again. A fetch started by `fetchQuery` delivers its error to that caller and is not reported, even when background callers joined it. Cancellations and real offline pauses are no longer reported (a `QoraOfflineException` thrown by a fetcher, `errorMapper` or `transformError` still is): `watchQuery` used to pass a `QoraOfflineException` when it paused with no cached data.
+
+### Fixed
+
+- Infinite queries ignored `QoraOptions.retryCondition`: every page fetch failure was retried up to `retryCount`, including errors the condition rejects (a 401 or a 404). `InfiniteQueryObserver`, and through it `InfiniteQueryBuilder`, now applies it like `fetchQuery` does.
+- `InfiniteQueryObserver` kept retrying, and calling the fetcher, after `dispose()`. It now stops after the current retry delay.
+- A query paused offline whose fetch failed on reconnect crashed the current `Zone` with an uncaught error. The failure also skipped the remaining paused queries and the offline mutation replay. Replayed fetches now record the failure in the query state and pass it to `onBackgroundFetchError`.
+- A throwing `onBackgroundFetchError` no longer makes `prefetch` throw or stops the reconnect replay; its error goes to the current `Zone`.
+- A slow fetch superseded by `invalidate()` no longer overwrites newer data or breaks deduplication of the newer fetch. After `removeQuery()` or `clear()`, a fetch still in flight no longer writes or persists the removed query.
+- A fetcher that throws `QoraCancelException` no longer leaves the query stuck in `Loading`.
+- A query evicted (LRU, GC) while a fetch was in flight or waiting for reconnect no longer loses the result, and `maxCacheSize` eviction now brings the cache back under the limit.
+- Lazy eviction of expired queries now works, and no longer drops hydrated data with `gcTime: Duration.zero`.
+- A throwing `transformError`, `errorMapper` or model `==` no longer leaves the query stuck in `Loading`; the fetch fails with that error.
+- `keepPreviousData` and `Failure.previousData` now keep data written by an older fetch that settled first.
+- `FetchStatus` no longer reports `idle` while a fetch for the key is paused offline.
+
+### Fixed
+
+- Per-query `QoraOptions` now inherit `QoraClientConfig.defaultOptions`, as documented. `merge` reset every field a query did not pass (`staleTime`, `gcTime`, `enabled`, `retryCount`, `retryDelay`, `refetchOnWindowFocus`, `refetchOnReconnect`, `networkMode`, `structuralSharing`, `keepPreviousData`) to its constructor default: a global `retryCount: 0` became 3 as soon as a query passed `QoraOptions(staleTime: ...)`. These constructor parameters are now nullable; a field left out is unset, reads as its default, and falls back to the global value on `merge`. Reading the fields and existing call sites are unchanged. If a query relied on the reset, pass the default explicitly, for example `QoraOptions(staleTime: Duration.zero)`.
 
 ## [1.3.1] - 2026-11-07
 
