@@ -146,13 +146,53 @@ class QoraClient implements MutationTracker {
   /// in debug/profile builds to enable DevTools reporting.
   QoraTracker _tracker;
 
-  final QueryCache _cache;
+  late final QueryCache _cache = QueryCache(
+    maxSize: config.maxCacheSize,
+    onEvict: config.onCacheEvict,
+    canEvict: _isEvictable,
+  );
 
   /// In-flight request futures, keyed by stringified normalised key.
   ///
   /// Enables deduplication: concurrent [fetchQuery] or [watchQuery] calls
   /// with the same key share a single network request.
   final Map<String, Future<dynamic>> _pendingRequests = {};
+
+  /// Sequence number of the most recently started fetch that wrote each
+  /// cache entry's state.
+  ///
+  /// A fetch writes its result only if no fetch started after it has written
+  /// already, so a slow fetch superseded by [invalidate] never overwrites
+  /// fresher data. An [Expando] ties the number to the entry's lifetime:
+  /// nothing to clean up on eviction.
+  final Expando<int> _lastWriterSeq = Expando<int>('lastWriterSeq');
+
+  /// Source of unique, increasing fetch sequence numbers.
+  int _fetchSeqCounter = 0;
+
+  /// Entries dropped by [removeQuery] or [clearCache]. A fetch still in
+  /// flight for one of them writes nothing when it settles: no fetch status
+  /// (the key may belong to a new entry by then) and no persistence (the
+  /// caller asked for the data to go). LRU and GC eviction do not mark
+  /// entries: those fetches still persist their result, as before.
+  final Expando<bool> _removedEntries = Expando<bool>('removedEntries');
+
+  /// Number of fetches still running for each cache entry, superseded ones
+  /// included. An entry with a fetch in flight is never evicted: its result
+  /// would land on a disposed entry while the next caller of the key joined
+  /// the old fetch on a fresh, empty one.
+  final Expando<int> _inFlightFetches = Expando<int>('inFlightFetches');
+
+  /// Whether the inactive [entry] may be evicted (LRU, GC timer, sweep, lazy
+  /// eviction): not while a fetch runs for it or is paused offline for it.
+  bool _isEvictable(List<dynamic> key, CacheEntry<dynamic> entry) =>
+      (_inFlightFetches[entry] ?? 0) == 0 &&
+      (_pausedFetches.isEmpty || !_pausedFetches.containsKey(_stringKey(key)));
+
+  /// Entries whose GC timer fired while a fetch ran for them. The fetch
+  /// reschedules their GC when it settles, instead of the timer re-arming
+  /// itself in a loop (at zero delay with `gcTime: Duration.zero`).
+  final Expando<bool> _gcDeferred = Expando<bool>('gcDeferred');
 
   /// Deserialized values awaiting typed injection into the cache.
   ///
@@ -246,10 +286,6 @@ class QoraClient implements MutationTracker {
   QoraClient({QoraClientConfig? config, QoraTracker? tracker})
       : config = config ?? const QoraClientConfig(),
         _tracker = tracker ?? const NoOpTracker(),
-        _cache = QueryCache(
-          maxSize: config?.maxCacheSize,
-          onEvict: config?.onCacheEvict,
-        ),
         _offlineMutationQueue = OfflineMutationQueue() {
     _startEvictionTimer();
   }
@@ -1246,6 +1282,8 @@ class QoraClient implements MutationTracker {
     _assertNotDisposed();
     final normalized = normalizeKey(key);
     final sk = _stringKey(normalized);
+    final removed = _cache.peek(normalized);
+    if (removed != null) _removedEntries[removed] = true;
     _cache.remove(normalized);
     _unregisterTags(sk);
     _pendingRequests.remove(sk);
@@ -1288,6 +1326,9 @@ class QoraClient implements MutationTracker {
   /// to wipe storage only.
   void clearCache() {
     _assertNotDisposed();
+    for (final cached in _cache.entries) {
+      _removedEntries[cached.value] = true;
+    }
     _cache.clear();
     _tagIndex.clear();
     for (final entry in _infiniteCache.values) {
@@ -1833,8 +1874,7 @@ class QoraClient implements MutationTracker {
       final cached = entry.state.dataOrNull;
       if (cached != null) {
         // Serve cache now; queue a background refetch for when online.
-        _pausedFetches[sk] =
-            () => _backgroundFetch<T>(key, entry, fetcher, opts);
+        _pausedFetches[sk] = _replayOf<T>(key, entry, fetcher, opts);
         _emitFetchStatus(sk, FetchStatus.paused);
         _log('offlineFirst: serving cache, queuing refetch: $key');
         return Future.value(cached as T);
@@ -1854,18 +1894,66 @@ class QoraClient implements MutationTracker {
     _emitFetchStatus(sk, FetchStatus.fetching);
     _tracker.onQueryFetching(sk);
 
-    final future =
-        _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
+    // invalidate() drops this fetch's dedup entry, so a newer fetch may run
+    // for the same key while this one is still in flight. Every fetch
+    // completes for its own callers; what it writes follows three rules:
+    // - it writes its result only if no fetch started after it has written
+    //   already (the most recent fetch to write wins);
+    // - cancelled, it restores the previous state only if the state is still
+    //   the one it set, so it never undoes another fetch or an invalidate();
+    // - it releases the dedup entry only if that entry is still its own.
+    // An entry dropped by removeQuery() or clear() gets none of it.
+    late final Future<T> future;
+    final seq = ++_fetchSeqCounter;
+    final stateAtStart = entry.state;
+    _inFlightFetches[entry] = (_inFlightFetches[entry] ?? 0) + 1;
+    bool isRemoved() => _removedEntries[entry] ?? false;
+    bool mayWrite() => !isRemoved() && seq > (_lastWriterSeq[entry] ?? 0);
+
+    // Fetch status is per key: report idle only when no other fetch for the
+    // key is still registered or paused.
+    var released = false;
+    void release() {
+      if (released) return;
+      released = true;
+      final stillRunning =
+          _inFlightFetches[entry] = _inFlightFetches[entry]! - 1;
+      if (stillRunning == 0 && (_gcDeferred[entry] ?? false)) {
+        _gcDeferred[entry] = null;
+        if (identical(_cache.peek(key), entry)) _scheduleGC(key);
+      }
+      if (identical(_pendingRequests[sk], future)) _pendingRequests.remove(sk);
+      _emitFetchingCount();
+      if (!isRemoved() &&
+          !_pendingRequests.containsKey(sk) &&
+          !_pausedFetches.containsKey(sk)) {
+        _emitFetchStatus(sk, FetchStatus.idle);
+      }
+    }
+
+    var cancellationHandled = false;
+    void cancel() {
+      cancellationHandled = true;
+      if (!isRemoved() && identical(entry.state, stateAtStart)) {
+        entry.updateState(previousState);
+        _tracker.onQueryCancelled(sk);
+      }
+      release();
+    }
+
+    future = _executeWithRetry<T>(key: key, fetcher: fetcher, opts: opts).then(
       (result) {
         final data = result.value;
         // Mid-flight cancellation: discard result, restore pre-fetch state.
         if (cancelToken?.isCancelled == true) {
-          entry.updateState(previousState);
-          _pendingRequests.remove(sk);
-          _emitFetchingCount();
-          _emitFetchStatus(sk, FetchStatus.idle);
-          _tracker.onQueryCancelled(sk);
+          cancel();
           throw QoraCancelException(sk); // ignore: only_throw_errors
+        }
+
+        if (!mayWrite()) {
+          _log('Superseded fetch settled, result not written: $key');
+          release();
+          return data;
         }
 
         entry.lastOptions = opts;
@@ -1876,9 +1964,15 @@ class QoraClient implements MutationTracker {
           // previous fetch with different options are cleaned up.
           _unregisterTags(sk);
         }
-        final sharedData = opts.structuralSharing && previousData != null
-            ? structuralShare(previousData, data)
+        // Share against the data shown now, not at fetch start: a superseded
+        // fetch may have written since.
+        final currentData = entry.state.dataOrNull;
+        final sharedData = opts.structuralSharing && currentData != null
+            ? structuralShare(currentData, data)
             : data;
+        // Marked only now: a throw above (tags, structural sharing) must
+        // still let the failure path write Failure instead of leaving Loading.
+        _lastWriterSeq[entry] = seq;
         entry.updateState(
           Success<T>(data: sharedData, updatedAt: DateTime.now()),
         );
@@ -1900,45 +1994,59 @@ class QoraClient implements MutationTracker {
               : null,
         );
         onFetchSuccess<T>(key, data);
-        _pendingRequests.remove(sk);
-        _emitFetchingCount();
-        _emitFetchStatus(sk, FetchStatus.idle);
+        release();
         return data;
       },
     ).catchError((Object error, StackTrace stackTrace) {
-      // If the token was cancelled and the underlying HTTP client threw its own
-      // cancellation error, normalise it into QoraCancelException.
-      if (cancelToken?.isCancelled == true && error is! QoraCancelException) {
-        entry.updateState(previousState);
-        _pendingRequests.remove(sk);
-        _emitFetchingCount();
-        _emitFetchStatus(sk, FetchStatus.idle);
-        _tracker.onQueryCancelled(sk);
-        throw QoraCancelException(sk); // ignore: only_throw_errors
-      }
-      // QoraCancelException thrown from the .then() callback: re-throw as-is.
+      // A QoraCancelException from the .then() above is already handled. One
+      // thrown by the fetcher itself (a nested fetch, an HTTP client adapter)
+      // is not: without this, the key stayed deduplicated onto a dead future.
       if (error is QoraCancelException) {
+        if (!cancellationHandled) cancel();
         throw error; // ignore: only_throw_errors
       }
-      var transformErr = error;
-      if (opts.transformError != null) {
-        transformErr = opts.transformError!(transformErr);
+      // If the token was cancelled and the underlying HTTP client threw its own
+      // cancellation error, normalise it into QoraCancelException.
+      if (cancelToken?.isCancelled == true) {
+        cancel();
+        throw QoraCancelException(sk); // ignore: only_throw_errors
       }
-      final mapped = _mapError(transformErr, stackTrace);
-      if (opts.keepPreviousData && previousData != null) {
-        // Stay in Success with old data; the caller still gets the thrown error.
-      } else {
-        entry.updateState(
-          Failure<T>(
-            error: mapped,
-            stackTrace: stackTrace,
-            previousData: previousData,
-          ),
-        );
+      Object mapped;
+      var failureStack = stackTrace;
+      try {
+        var transformErr = error;
+        if (opts.transformError != null) {
+          transformErr = opts.transformError!(transformErr);
+        }
+        mapped = _mapError(transformErr, stackTrace);
+      } catch (mappingError, mappingStack) {
+        // A throwing transformError or errorMapper is a bug in the app: its
+        // error becomes the fetch's error, instead of skipping the cleanup
+        // below and leaving the key deduplicated onto a dead request.
+        mapped = mappingError;
+        failureStack = mappingStack;
       }
-      _pendingRequests.remove(sk);
-      _emitFetchingCount();
-      _emitFetchStatus(sk, FetchStatus.idle);
+      try {
+        if (mayWrite()) {
+          _lastWriterSeq[entry] = seq;
+          // The data shown now, which a superseded fetch may have written
+          // since this one started.
+          final currentData = entry.state.dataOrNull;
+          if (opts.keepPreviousData && currentData != null) {
+            // Stay in Success with old data; the caller still gets the error.
+          } else {
+            entry.updateState(
+              Failure<T>(
+                error: mapped,
+                stackTrace: failureStack,
+                previousData: currentData,
+              ),
+            );
+          }
+        }
+      } finally {
+        release();
+      }
       // Re-throw so that await fetchQuery propagates the error to the caller.
       throw mapped; // ignore: only_throw_errors
     });
@@ -1946,6 +2054,39 @@ class QoraClient implements MutationTracker {
     _pendingRequests[sk] = future;
     _emitFetchingCount();
     return future;
+  }
+
+  /// The closure that replays a paused fetch on reconnect.
+  ///
+  /// Replays run in batches after a jitter, and [_replayPausedFetches] drops
+  /// every key from [_pausedFetches] up front, so a query waiting for a later
+  /// batch can be evicted meanwhile. The replay then targets the live entry
+  /// for the key, as a new [fetchQuery] would, instead of the disposed one:
+  /// otherwise a watcher mounting on the new entry joined a fetch writing to
+  /// the old entry and stayed in [Initial]. Entries dropped by [removeQuery]
+  /// or [clear] never get here: those remove the paused fetch too.
+  Future<void> Function() _replayOf<T>(
+    List<dynamic> key,
+    CacheEntry<T> entry,
+    Future<T> Function() fetcher,
+    QoraOptions opts,
+  ) {
+    return () {
+      var live = entry;
+      if (entry.isDisposed) {
+        final current = _cache.peek(key);
+        if (current == null) {
+          live = _getOrCreateEntry<T>(key);
+        } else if (current is CacheEntry<T>) {
+          live = current;
+        } else {
+          // The key now holds another type: this replay has nothing to fill.
+          _log('Replay skipped, key reused with another type: $key');
+          return Future<void>.value();
+        }
+      }
+      return _backgroundFetch<T>(key, live, fetcher, opts);
+    };
   }
 
   /// Runs a fetch that no caller awaits: background revalidations
@@ -1977,10 +2118,31 @@ class QoraClient implements MutationTracker {
       // Without one, the exception came from the fetcher, errorMapper or
       // transformError: it is a failure like any other.
       if (ownsFetch && !_pausedFetches.containsKey(sk)) {
-        config.onBackgroundFetchError?.call(e, s, key);
+        _reportBackgroundError(e, s, key);
       }
     } catch (e, s) {
-      if (ownsFetch) config.onBackgroundFetchError?.call(e, s, key);
+      if (ownsFetch) _reportBackgroundError(e, s, key);
+    }
+  }
+
+  /// Passes a background fetch failure to
+  /// [QoraClientConfig.onBackgroundFetchError].
+  ///
+  /// A callback that throws must not turn a fire-and-forget fetch into a
+  /// thrown error, abort a replay batch, or hide the original failure: its
+  /// error goes to the current [Zone]'s uncaught-error handler instead, where
+  /// crash reporting sees it.
+  void _reportBackgroundError(
+    Object error,
+    StackTrace stack,
+    List<dynamic> key,
+  ) {
+    final callback = config.onBackgroundFetchError;
+    if (callback == null) return;
+    try {
+      callback(error, stack, key);
+    } catch (callbackError, callbackStack) {
+      Zone.current.handleUncaughtError(callbackError, callbackStack);
     }
   }
 
@@ -2006,7 +2168,7 @@ class QoraClient implements MutationTracker {
     }
 
     // Register for replay on reconnect.
-    _pausedFetches[sk] = () => _backgroundFetch<T>(key, entry, fetcher, opts);
+    _pausedFetches[sk] = _replayOf<T>(key, entry, fetcher, opts);
 
     _emitFetchStatus(sk, FetchStatus.paused);
     _log('Paused (offline): $key');
@@ -2116,16 +2278,24 @@ class QoraClient implements MutationTracker {
   /// Performs lazy eviction: if the existing entry has expired, it is
   /// disposed and replaced with a new [Initial] entry.
   CacheEntry<T> _getOrCreateEntry<T>(List<dynamic> key) {
-    final existing = _cache.get<T>(key);
-
-    if (existing != null) {
-      if (existing.shouldEvict(config.defaultOptions.gcTime) &&
-          !existing.isActive) {
-        _log('Lazy evict: $key');
-        _cache.remove(key);
-      } else {
-        return existing;
-      }
+    // Peek first: get() touches the entry, which would reset the very idle
+    // time checked here, so an expired entry was never lazily evicted.
+    //
+    // Skipped with gcTime zero: every inactive entry is expired a microsecond
+    // after it is written, so the check would drop an entry created earlier
+    // in the same call (a hydration followed by a fetch). The GC timer
+    // already removes those on the next event-loop turn.
+    final gcTime = config.defaultOptions.gcTime;
+    final idle = _cache.peek(key);
+    if (idle != null &&
+        gcTime > Duration.zero &&
+        !idle.isActive &&
+        idle.shouldEvict(gcTime) &&
+        _isEvictable(key, idle)) {
+      _log('Lazy evict: $key');
+      _cache.remove(key);
+    } else if (idle != null) {
+      return _cache.get<T>(key)!; // type check and LRU touch
     }
 
     _log('Cache MISS: $key');
@@ -2175,10 +2345,13 @@ class QoraClient implements MutationTracker {
 
     entry.gcTimer?.cancel();
     entry.gcTimer = Timer(config.defaultOptions.gcTime, () {
-      if (!entry.isActive) {
-        _cache.remove(key);
-        _log('GC removed: $key');
+      if (entry.isActive) return;
+      if (!_isEvictable(key, entry)) {
+        _gcDeferred[entry] = true; // its fetch reschedules GC on settling
+        return;
       }
+      _cache.remove(key);
+      _log('GC removed: $key');
     });
   }
 
@@ -2206,7 +2379,9 @@ class QoraClient implements MutationTracker {
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (e.isActive) continue;
+      // A busy entry is skipped: counting it, already expired, would re-arm
+      // the timer at zero delay for as long as its fetch runs.
+      if (e.isActive || !_isEvictable(entry.key, e)) continue;
       final expiry = e.lastAccessedAt.add(gcTime);
       if (earliest == null || expiry.isBefore(earliest)) {
         earliest = expiry;
@@ -2241,7 +2416,7 @@ class QoraClient implements MutationTracker {
 
     for (final entry in _cache.entries) {
       final e = entry.value;
-      if (!e.isActive && e.shouldEvict(gcTime)) {
+      if (!e.isActive && e.shouldEvict(gcTime) && _isEvictable(entry.key, e)) {
         (toRemove ??= []).add(entry.key);
       }
     }
