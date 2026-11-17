@@ -30,9 +30,9 @@ class QoraOptions {
   /// How long cached data is considered fresh before a background
   /// revalidation is triggered.
   ///
-  /// - `Duration.zero` (default) — data is immediately stale; always
+  /// - `Duration.zero` (default): data is immediately stale; always
   ///   revalidated on the next access.
-  /// - `null`-equivalent large value — effectively never stale.
+  /// - `null`-equivalent large value: effectively never stale.
   ///
   /// The SWR (stale-while-revalidate) pattern means stale data is returned
   /// immediately while the fetch runs in the background.
@@ -45,6 +45,10 @@ class QoraOptions {
   /// A query is inactive when it has no [QoraClient.watchQuery] subscribers. Once the GC
   /// timer fires, the entry is removed and the next access will trigger a
   /// fresh fetch. Default: 5 minutes.
+  ///
+  /// Passed to a query, it applies to that key only. When several calls for
+  /// one key pass different values, the longest applies, so one caller never
+  /// shortens how long another expects the data to stay cached.
   ///
   /// Previously named `cacheTime`.
   Duration get gcTime => _gcTime ?? Duration(minutes: 5);
@@ -94,12 +98,12 @@ class QoraOptions {
   /// Receives the zero-based attempt index and returns the delay to wait
   /// before that retry. Overrides the default exponential backoff when set.
   ///
-  /// Example — constant 500 ms delay:
+  /// Example: constant 500 ms delay:
   /// ```dart
   /// retryDelayCalculator: (_) => const Duration(milliseconds: 500),
   /// ```
   ///
-  /// Example — jittered exponential backoff:
+  /// Example: jittered exponential backoff:
   /// ```dart
   /// retryDelayCalculator: (i) =>
   ///   Duration(milliseconds: (500 * pow(2, i) + Random().nextInt(200)).toInt()),
@@ -151,18 +155,18 @@ class QoraOptions {
   /// Whether to trigger a fetch when a [QoraClient.watchQuery] stream is first
   /// subscribed to (mounted).
   ///
-  /// - `true` — always refetch on mount, even if data is fresh.
-  /// - `false` — only fetch if no data or data is stale.
-  /// - `null` (default) — falls back to [QoraClientConfig.refetchOnMount].
+  /// - `true`: always refetch on mount, even if data is fresh.
+  /// - `false`: only fetch if no data or data is stale.
+  /// - `null` (default): falls back to [QoraClientConfig.refetchOnMount].
   final bool? refetchOnMount;
 
   /// Controls how this query behaves when the device is offline.
   ///
-  /// - [NetworkMode.online] (default) — pause while offline, replay on
+  /// - [NetworkMode.online] (default): pause while offline, replay on
   ///   reconnect. The query transitions to `Loading(paused)` so the UI can
   ///   show an "Awaiting connection…" indicator.
-  /// - [NetworkMode.always] — always execute regardless of network status.
-  /// - [NetworkMode.offlineFirst] — serve cache immediately, refetch in the
+  /// - [NetworkMode.always]: always execute regardless of network status.
+  /// - [NetworkMode.offlineFirst]: serve cache immediately, refetch in the
   ///   background when online.
   ///
   /// Requires a [ConnectivityManager] to be attached to [QoraClient].
@@ -174,7 +178,7 @@ class QoraOptions {
   /// Static data to pre-populate the cache before the first fetch completes.
   ///
   /// When set, the query immediately starts in [Success] state with this value
-  /// instead of [Initial] — eliminating the first loading flash entirely.
+  /// instead of [Initial]: eliminating the first loading flash entirely.
   ///
   /// The data is marked with [initialDataUpdatedAt] (default: epoch) so it
   /// is considered immediately stale and a background refetch is triggered on
@@ -214,7 +218,7 @@ class QoraOptions {
   ///
   /// Called once when the cache entry is first created (state is [Initial]).
   /// If it returns a non-null value of the correct type, the entry transitions
-  /// to [Success] immediately — same semantics as [initialData] (epoch
+  /// to [Success] immediately: same semantics as [initialData] (epoch
   /// timestamp → always stale → background refetch).
   ///
   /// Prefer [placeholderData] over [initialData] when the value must be
@@ -238,7 +242,7 @@ class QoraOptions {
   ///
   /// [QoraClient.watchQuery] subscribes to the dependency reactively: when the
   /// dependency first reaches [Success], the fetch for this query is triggered
-  /// automatically — no re-mount required.
+  /// automatically: no re-mount required.
   ///
   /// [QoraClient.fetchQuery] throws [StateError] if the dependency is not
   /// resolved; prefer [QoraClient.watchQuery] for reactive dependent queries.
@@ -246,13 +250,13 @@ class QoraOptions {
   /// [QoraClient.prefetch] is a silent no-op when the dependency is not ready.
   ///
   /// ```dart
-  /// // Step 1 — fetch the authenticated user's id.
+  /// // Step 1: fetch the authenticated user's id.
   /// client.watchQuery<Auth>(
   ///   key: ['auth'],
   ///   fetcher: api.getAuth,
   /// );
   ///
-  /// // Step 2 — dependent query: fires only after ['auth'] has data.
+  /// // Step 2: dependent query: fires only after ['auth'] has data.
   /// client.watchQuery<Profile>(
   ///   key: ['profile'],
   ///   fetcher: () {
@@ -357,7 +361,7 @@ class QoraOptions {
   ///
   /// When a mutation invalidates a matching tag (via
   /// [MutationOptions.invalidatesTags]), all queries that provide that tag are
-  /// automatically refetched — regardless of their query key.
+  /// automatically refetched: regardless of their query key.
   ///
   /// This decouples invalidation logic from query-key structure, making it
   /// easier to invalidate related queries across different key patterns:

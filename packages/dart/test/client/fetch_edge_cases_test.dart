@@ -410,8 +410,7 @@ void main() {
     });
 
     test('the GC timer waits for the fetch, then collects the query', () async {
-      // The GC timer reads the client defaults: the entry has no options of
-      // its own until a fetch succeeds.
+      // _noRetry sets no gcTime, so the client default applies.
       final client = QoraClient(
         config: const QoraClientConfig(
           defaultOptions: QoraOptions(gcTime: Duration(milliseconds: 10)),
