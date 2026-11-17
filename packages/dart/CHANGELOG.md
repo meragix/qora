@@ -43,9 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `keepPreviousData` and `Failure.previousData` now keep data written by an older fetch that settled first.
 - `FetchStatus` no longer reports `idle` while a fetch for the key is paused offline.
 - A query's own `QoraOptions.gcTime` was ignored: garbage collection always used the client default. It now applies per query; when calls for one key ask for different values, the longest wins.
-
-### Fixed
-
 - Per-query `QoraOptions` now inherit `QoraClientConfig.defaultOptions`, as documented. `merge` reset every field a query did not pass (`staleTime`, `gcTime`, `enabled`, `retryCount`, `retryDelay`, `refetchOnWindowFocus`, `refetchOnReconnect`, `networkMode`, `structuralSharing`, `keepPreviousData`) to its constructor default: a global `retryCount: 0` became 3 as soon as a query passed `QoraOptions(staleTime: ...)`. These constructor parameters are now nullable; a field left out is unset, reads as its default, and falls back to the global value on `merge`. Reading the fields and existing call sites are unchanged. If a query relied on the reset, pass the default explicitly, for example `QoraOptions(staleTime: Duration.zero)`.
 
 ## [1.3.1] - 2026-11-07
