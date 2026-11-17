@@ -3,9 +3,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- `useMutationQueue()` returns the calls in the client's mutation queue and rebuilds when they change. `qora_hooks` now also exports `MutationQueue`, `QueuedMutation` and `QueuedMutationStatus`.
+
 ### Changed
 
 - `useMutation`'s `mutator` is optional when `options.mutationKey` names a mutation registered with `QoraClient.registerMutation`.
+- `useMutation` sends registered mutations with `offlineQueue: true` through `QoraClient.mutationQueue`.
 
 ### Fixed
 

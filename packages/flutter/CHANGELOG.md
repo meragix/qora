@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `MutationQueueBuilder` rebuilds with the calls in the client's mutation queue each time they change.
+
 ### Changed
 
 - `QoraMutationBuilder.mutator` is optional when `options.mutationKey` names a mutation registered with `QoraClient.registerMutation`. Code that reads `widget.mutator` now gets a nullable value.
+- `QoraMutationBuilder` sends registered mutations with `offlineQueue: true` through `QoraClient.mutationQueue`.
 
 ## [1.3.1] - 2026-11-07
 

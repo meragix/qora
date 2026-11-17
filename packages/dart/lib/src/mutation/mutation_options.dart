@@ -98,11 +98,17 @@ class MutationOptions<TData, TVariables, TContext> {
   ///
   /// Unlike queries, mutations typically should **not** retry automatically
   /// because re-sending (e.g. a payment) can have unintended side effects.
+  ///
+  /// Not used by a registered mutation with [offlineQueue] set to `true`:
+  /// the client's `MutationQueueConfig` replaces it.
   final int retryCount;
 
   /// Base delay between retries. Defaults to 1 second.
   ///
   /// Uses exponential backoff: attempt 0 → 1 s, attempt 1 → 2 s, etc.
+  ///
+  /// Not used by a registered mutation with [offlineQueue] set to `true`:
+  /// the client's `MutationQueueConfig` replaces it.
   final Duration retryDelay;
 
   /// Predicate that determines whether a failed mutation should be retried.
@@ -111,6 +117,9 @@ class MutationOptions<TData, TVariables, TContext> {
   /// Return `false` to skip further retries for this error.
   ///
   /// When `null` (default), all failures up to [retryCount] are retried.
+  ///
+  /// Not used by a registered mutation with [offlineQueue] set to `true`:
+  /// the client's `MutationQueueConfig` replaces it; use its `isPermanent`.
   final bool Function(Object error, int attemptIndex)? retryCondition;
 
   /// Controls how this mutation behaves when the device is offline.
@@ -118,6 +127,7 @@ class MutationOptions<TData, TVariables, TContext> {
   /// - [NetworkMode.online] (default): if offline and [offlineQueue] is
   ///   `true`, the mutation is enqueued; otherwise it fails immediately.
   /// - [NetworkMode.always]: always execute regardless of network status.
+  ///   A registered mutation then skips the mutation queue.
   ///
   /// Requires a [ConnectivityManager] to be attached to [QoraClient] (done
   /// automatically when using [QoraScope] with [FlutterConnectivityManager]).
@@ -131,6 +141,13 @@ class MutationOptions<TData, TVariables, TContext> {
   ///
   /// Combine with [optimisticResponse] to give the user immediate feedback
   /// while the mutation waits for connectivity.
+  ///
+  /// With a `mutationKey` registered through `QoraClient.registerMutation`,
+  /// every call goes through the client's `mutationQueue`, online or not:
+  /// calls are sent in order per scope and retried by the queue's policy.
+  /// [MutationController.mutate] then returns when the call succeeds, fails
+  /// for good, or starts waiting (offline, or behind another call), and the
+  /// callbacks run when the queued call settles.
   ///
   /// ```dart
   /// MutationOptions(
@@ -152,7 +169,9 @@ class MutationOptions<TData, TVariables, TContext> {
   /// 4. On successful replay, the state updates with the real server response
   ///    (`isOptimistic: false`).
   /// 5. On failure, the state transitions to [MutationFailure] and [onError]
-  ///    is called so you can roll back any cache changes.
+  ///    is called so you can roll back any cache changes. A registered call
+  ///    discarded from the mutation queue also lands here, with a
+  ///    `MutationDiscardedException`.
   ///
   /// Use `MutationSuccess.isOptimistic` in your widget to render a "pending
   /// sync" visual indicator (e.g. greyed text, clock icon).

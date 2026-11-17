@@ -14,6 +14,8 @@ import 'mutation_registry.dart';
 import 'mutation_state.dart';
 import 'mutation_tracker.dart';
 import 'mutation_update.dart';
+import 'queue/mutation_discarded_exception.dart';
+import 'queue/mutation_queue.dart';
 
 /// Controls and tracks the lifecycle of a single mutation.
 ///
@@ -157,6 +159,15 @@ class MutationController<TData, TVariables, TContext> {
   /// executing the mutator. [QoraClient] replays the queue on reconnect.
   final OfflineMutationQueue? offlineQueue;
 
+  /// The queue of registered mutations owned by [QoraClient]
+  /// (`QoraClient.mutationQueue`).
+  ///
+  /// A call made with [MutationOptions.mutationKey] and
+  /// [MutationOptions.offlineQueue] goes through it, online or not, so calls
+  /// in one scope are sent in order. Its retry policy then replaces
+  /// [MutationOptions.retryCount] and [MutationOptions.retryDelay].
+  final MutationQueue? mutationQueue;
+
   /// Callback to invalidate a single query key on successful mutation.
   ///
   /// Wired automatically by [QoraMutationBuilder] and [useMutation] from
@@ -200,6 +211,7 @@ class MutationController<TData, TVariables, TContext> {
     this.metadata,
     this.isOnline,
     this.offlineQueue,
+    this.mutationQueue,
     this.invalidateQuery,
     this.invalidateTags,
     MutationRegistry? registry,
@@ -312,6 +324,18 @@ class MutationController<TData, TVariables, TContext> {
   /// - Otherwise: transitions to [MutationPending] and enqueues for replay.
   ///   The state remains pending until the queue is replayed.
   ///
+  /// ### Registered flow (with [mutationQueue])
+  ///
+  /// A mutation registered with `QoraClient.registerMutation`, called with
+  /// [MutationOptions.offlineQueue] `true` and a [NetworkMode] other than
+  /// [NetworkMode.always], always goes through [mutationQueue]. The call
+  /// takes its place in the queue before `onMutate` runs, so calls keep the
+  /// order of their `mutate` calls. The returned future completes when the
+  /// call succeeds, fails for good, or starts waiting (offline, or behind
+  /// another call). The callbacks run once, when the call settles; a later
+  /// `MutationQueue.retry` runs only the registration's invalidations, and
+  /// leaves this controller in [MutationFailure].
+  ///
   /// Returns the result data on success, or `null` on failure / when queued.
   /// Errors are captured in [MutationFailure] state and do **not** propagate
   /// to the caller.
@@ -325,6 +349,14 @@ class MutationController<TData, TVariables, TContext> {
         opts?.networkMode != NetworkMode.always &&
         isOnline != null &&
         isOnline!() == false;
+
+    final queue = mutationQueue;
+    if (_registration != null &&
+        queue != null &&
+        opts?.offlineQueue == true &&
+        opts?.networkMode != NetworkMode.always) {
+      return _enqueueRegistered(variables, opts!, queue);
+    }
 
     // One identity per call, shared by every retry and replay of it.
     final mutationId = _registration != null ? generateMutationId() : null;
@@ -398,65 +430,159 @@ class MutationController<TData, TVariables, TContext> {
     // 3. Execute mutator (with optional retry)
     try {
       final data = await _executeWithRetry(variables, mutationId);
+      await _settleSuccess(data, variables, context);
+      return data;
+    } catch (e, st) {
+      await _settleFailure(e, st, variables, context);
+      return null;
+    }
+  }
 
-      _setState(
-        MutationSuccess<TData, TVariables>(
-          data: data,
-          variables: variables,
-        ),
-      );
+  /// Success state, then `onSuccess`, the invalidations (the registration's,
+  /// then the call site's) and `onSettled`. Shared by direct and queued
+  /// calls so both run callbacks in the same order.
+  Future<void> _settleSuccess(
+    TData data,
+    TVariables variables,
+    TContext? context,
+  ) async {
+    _setState(
+      MutationSuccess<TData, TVariables>(
+        data: data,
+        variables: variables,
+      ),
+    );
 
-      // 4a. onSuccess
-      await options?.onSuccess?.call(data, variables, context);
+    await options?.onSuccess?.call(data, variables, context);
 
-      // 4b. Invalidations declared on the registration, then the call site's.
-      if (_registration case final registration?) {
-        if (registration.invalidates case final keys?
-            when invalidateQuery != null) {
-          for (final key in keys) {
-            await invalidateQuery!(key);
-          }
-        }
-        if (registration.invalidatesTags case final tags?
-            when invalidateTags != null) {
-          await invalidateTags!(tags);
-        }
-      }
-
-      // Auto-invalidate queries declared in invalidates
-      if (options?.invalidates case final keys? when invalidateQuery != null) {
+    if (_registration case final registration?) {
+      if (registration.invalidates case final keys?
+          when invalidateQuery != null) {
         for (final key in keys) {
           await invalidateQuery!(key);
         }
       }
-
-      // 4c. Auto-invalidate tags declared in invalidatesTags
-      if (options?.invalidatesTags case final tags?
+      if (registration.invalidatesTags case final tags?
           when invalidateTags != null) {
         await invalidateTags!(tags);
       }
+    }
 
-      // 4d. onSettled (success branch)
-      await options?.onSettled?.call(data, null, variables, context);
+    if (options?.invalidates case final keys? when invalidateQuery != null) {
+      for (final key in keys) {
+        await invalidateQuery!(key);
+      }
+    }
 
-      return data;
-    } catch (e, st) {
-      _setState(
-        MutationFailure<TData, TVariables>(
-          error: e,
-          stackTrace: st,
-          variables: variables,
-        ),
+    if (options?.invalidatesTags case final tags? when invalidateTags != null) {
+      await invalidateTags!(tags);
+    }
+
+    await options?.onSettled?.call(data, null, variables, context);
+  }
+
+  /// Failure state, then `onError` (rollback) and `onSettled`.
+  Future<void> _settleFailure(
+    Object error,
+    StackTrace stackTrace,
+    TVariables variables,
+    TContext? context,
+  ) async {
+    _setState(
+      MutationFailure<TData, TVariables>(
+        error: error,
+        stackTrace: stackTrace,
+        variables: variables,
+      ),
+    );
+    await options?.onError?.call(error, variables, context);
+    await options?.onSettled?.call(null, error, variables, context);
+  }
+
+  /// Queued path for registered mutations.
+  ///
+  /// Reserves the call's place in [mutationQueue], runs `onMutate`, then
+  /// releases the call to the queue. Resolves when
+  /// the call succeeds, fails for good, or starts waiting (offline, behind a
+  /// held scope, before a retry). In the last case it resolves with the
+  /// optimistic data, or `null`, and later transitions arrive through
+  /// [state] while this controller is alive.
+  Future<TData?> _enqueueRegistered(
+    TVariables variables,
+    MutationOptions<TData, TVariables, TContext> opts,
+    MutationQueue queue,
+  ) async {
+    final completer = Completer<TData?>();
+    final listener =
+        _QueueListener<TData, TVariables, TContext>(this, completer);
+
+    // Take the place in the queue before onMutate, which may await: calls
+    // keep the order in which mutate was called.
+    final String mutationId;
+    try {
+      mutationId = queue.reserve(
+        key: _registration!.key,
+        variables: variables,
+        listener: listener,
       );
-
-      // 5. onError: rollback optimistic update
-      await options?.onError?.call(e, variables, context);
-
-      // 6. onSettled (failure branch)
-      await options?.onSettled?.call(null, e, variables, context);
-
+    } catch (e, st) {
+      // A disposed client runs no callbacks.
+      if (queue.isDisposed) return null;
+      // A throwing scope: nothing was queued.
+      await _settleFailure(e, st, variables, null);
       return null;
     }
+
+    TContext? context;
+    if (opts.onMutate != null) {
+      try {
+        context = await opts.onMutate!(variables);
+      } catch (e, st) {
+        queue.cancelReservation(mutationId);
+        _setState(
+          MutationFailure<TData, TVariables>(
+            error: e,
+            stackTrace: st,
+            variables: variables,
+          ),
+        );
+        return null;
+      }
+    }
+
+    // Shown once the call is stored (onQueued), never for a write that
+    // only exists in memory.
+    final TData? optimistic =
+        isOnline?.call() == false && opts.optimisticResponse != null
+            ? opts.optimisticResponse!(variables)
+            : null;
+    _setState(MutationPending<TData, TVariables>(variables: variables));
+    listener.becomeReady(variables, context, optimistic);
+
+    try {
+      final kept = await queue.release(mutationId);
+      if (queue.isDisposed) return null;
+      if (!kept) {
+        // Discarded while onMutate ran: settle with the real context.
+        await _settleFailure(
+          MutationDiscardedException(
+            mutationId: mutationId,
+            key: _registration.key,
+          ),
+          StackTrace.current,
+          variables,
+          context,
+        );
+        return null;
+      }
+    } catch (e, st) {
+      // A disposed client runs no callbacks.
+      if (queue.isDisposed) return null;
+      // The call could not be stored: it fails instead of looking saved.
+      await _settleFailure(e, st, variables, context);
+      return null;
+    }
+    return completer.future;
   }
 
   /// Offline enqueue path.
@@ -576,6 +702,108 @@ class MutationController<TData, TVariables, TContext> {
   void _assertNotDisposed() {
     if (_isDisposed) {
       throw StateError('MutationController has been disposed.');
+    }
+  }
+}
+
+/// Connects one queued call to the controller that made it.
+class _QueueListener<TData, TVariables, TContext>
+    implements QueuedCallListener {
+  _QueueListener(this._controller, this._completer);
+
+  final MutationController<TData, TVariables, TContext> _controller;
+  final Completer<TData?> _completer;
+
+  /// Set when onMutate finished. Before that the queue does not report to
+  /// this listener, and a discard is settled by the controller itself.
+  bool _ready = false;
+  TVariables? _variables;
+  TContext? _context;
+
+  /// What [MutationController.mutate] returns when the call starts waiting.
+  TData? _parked;
+
+  void becomeReady(TVariables variables, TContext? context, TData? parked) {
+    _variables = variables;
+    _context = context;
+    _parked = parked;
+    _ready = true;
+  }
+
+  void _complete(TData? value) {
+    if (!_completer.isCompleted) _completer.complete(value);
+  }
+
+  @override
+  void onQueued() {
+    if (!_ready) return;
+    final optimistic = _parked;
+    final variables = _variables;
+    if (optimistic != null && variables is TVariables) {
+      _controller._setState(
+        MutationSuccess<TData, TVariables>(
+          data: optimistic,
+          variables: variables,
+          isOptimistic: true,
+        ),
+      );
+    }
+  }
+
+  @override
+  void onParked() {
+    if (_ready) _complete(_parked);
+  }
+
+  @override
+  Future<void> onDropped(MutationDiscardedException? reason) async {
+    if (!_ready) return;
+    try {
+      if (reason != null) {
+        await _controller._settleFailure(
+          reason,
+          StackTrace.current,
+          _variables as TVariables,
+          _context,
+        );
+      }
+    } finally {
+      _complete(null);
+    }
+  }
+
+  @override
+  Future<void> onSuccess(Object? data, Object? variables) async {
+    try {
+      final typed = data as TData;
+      final vars = variables as TVariables;
+      try {
+        await _controller._settleSuccess(typed, vars, _context);
+        _complete(typed);
+      } catch (e, st) {
+        // Same as a direct call: a throwing success callback fails the call.
+        await _controller._settleFailure(e, st, vars, _context);
+      }
+    } finally {
+      _complete(null);
+    }
+  }
+
+  @override
+  Future<void> onFailure(
+    Object error,
+    StackTrace stackTrace,
+    Object? variables,
+  ) async {
+    try {
+      await _controller._settleFailure(
+        error,
+        stackTrace,
+        variables as TVariables,
+        _context,
+      );
+    } finally {
+      _complete(null);
     }
   }
 }

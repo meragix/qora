@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `QueryCache(canEvict:)`: an optional predicate that keeps an entry from LRU eviction.
 - `QoraClient.registerMutation` and `MutationOptions.mutationKey`: register a mutation once by key and run it from any call site without a mutator. Its mutator receives a `mutationId` that stays the same across retries and replays, to send as an idempotency key.
 - `QoraClient.mutationRegistry` lists the registered mutations (`MutationRegistry`, `MutationRegistration`), and `MutationMeta` carries the call's identity.
+- `QoraClient.mutationQueue`: registered mutations with `offlineQueue: true` are queued, retried with backoff on transient errors, ordered by `scope`, and held when a write they depend on is rejected; the app decides with `retry`, `discard` and `discardScope`. Configure it with `QoraClientConfig.mutationQueue` and `registerMutation(scope:, isPermanent:)`; a hand-built `MutationController` takes it as `mutationQueue`.
+- `MutationDiscardedException`: passed to `onError` when the app discards a queued call, so its rollback runs.
+- `PersistQoraClient` persists the mutation queue: each registered call is stored before it counts as queued, `hydrate()` restores the queue, and `clearStorage()` empties it.
+- `MutationQueue.entriesStream` emits the queue's entries when they change; a queued call with no caller left reports to `mutationEvents`.
 
 ### Changed
 
@@ -20,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
 - `QoraClient.prefetch()` no longer throws for a fetch failure. The failure is still recorded in the query state and is now passed once to `QoraClientConfig.onBackgroundFetchError` (not when the prefetch joined a fetch started elsewhere, which reports or delivers its own error); a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
 - `QoraClientConfig.onBackgroundFetchError` now fires once per failed background fetch, from the call that started it. Callers that join an in-flight fetch (a watcher mounting during a prefetch, a reconnect replay) no longer report the same failure again. A fetch started by `fetchQuery` delivers its error to that caller and is not reported, even when background callers joined it. Cancellations and real offline pauses are no longer reported (a `QoraOfflineException` thrown by a fetcher, `errorMapper` or `transformError` still is): `watchQuery` used to pass a `QoraOfflineException` when it paused with no cached data.
+
+### Deprecated
+
+- `OfflineMutationQueue.stopOnFirstError`: it never had an effect. Use a registered mutation with a `scope` to hold dependent writes.
 
 ### Fixed
 

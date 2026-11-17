@@ -68,16 +68,21 @@ class OfflineReplayResult {
 /// 3. [OfflineReplayResult.failedMutations] and [.skipped] describe what
 ///    happened so the UI can surface a recovery action.
 class OfflineMutationQueue {
-  /// When `true` (default), replay stops at the first failed mutation.
+  /// Meant to stop replay at the first failed mutation. It has no effect: a
+  /// replayed call records its failure in its controller's state instead of
+  /// reporting it to the queue.
   ///
-  /// The failed mutation and all subsequent ones stay in the queue. Set to
-  /// `false` to continue past failures — only safe when mutations are
-  /// independent and idempotent.
+  /// For calls whose failures must hold the ones that depend on them, use a
+  /// registered mutation with a `scope` (`QoraClient.registerMutation`).
+  @Deprecated(
+    'Has no effect. Use a registered mutation with a scope; see '
+    'QoraClient.registerMutation.',
+  )
   final bool stopOnFirstError;
 
   final List<PendingMutation> _queue = [];
 
-  // StorageAdapter slot — reserved for v0.7+ persistence.
+  // StorageAdapter slot: reserved for v0.7+ persistence.
   // ignore: unused_field
   final Object? _storage;
 
@@ -91,7 +96,7 @@ class OfflineMutationQueue {
 
   /// An unmodifiable snapshot of the pending queue in FIFO order.
   ///
-  /// Use this for DevTools — e.g. display a badge with `queue.length` and
+  /// Use this for DevTools: e.g. display a badge with `queue.length` and
   /// a list of pending operations.
   List<PendingMutation> get snapshot => List.unmodifiable(_queue);
 
@@ -130,11 +135,12 @@ class OfflineMutationQueue {
     final failedMutations = <PendingMutation>[];
     final skipped = <PendingMutation>[];
 
-    // Snapshot to iterate — we will re-enqueue leftovers as needed.
+    // Snapshot to iterate: we will re-enqueue leftovers as needed.
     final toReplay = List<PendingMutation>.from(_queue);
     _queue.clear();
 
     for (final mutation in toReplay) {
+      // ignore: deprecated_member_use_from_same_package
       if (failed > 0 && stopOnFirstError) {
         skipped.add(mutation);
         continue;
@@ -150,6 +156,7 @@ class OfflineMutationQueue {
     }
 
     // Re-enqueue anything that did not run so it survives the next reconnect.
+    // ignore: deprecated_member_use_from_same_package
     if (stopOnFirstError && failedMutations.isNotEmpty) {
       _queue.addAll(failedMutations);
     }

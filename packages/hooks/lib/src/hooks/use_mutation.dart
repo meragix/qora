@@ -135,6 +135,7 @@ MutationHandle<TData, TVariables> useMutation<TData, TVariables>({
             },
       options: optionsRef.value,
       registry: client?.mutationRegistry,
+      mutationQueue: client?.mutationQueue,
       // Same wiring as QoraMutationBuilder: report to DevTools, and queue
       // the call while offline when MutationOptions.offlineQueue is set.
       tracker: client,

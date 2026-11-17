@@ -6,6 +6,7 @@ import 'package:qora/src/client/qora_client.dart';
 import 'package:qora/src/config/qora_client_config.dart';
 import 'package:qora/src/config/qora_options.dart';
 import 'package:qora/src/key/qora_key.dart';
+import 'package:qora/src/mutation/queue/mutation_queue.dart';
 import 'package:qora/src/state/qora_state.dart';
 
 import 'qora_serializer.dart';
@@ -111,6 +112,13 @@ class _StorageEntry {
 /// older than `staleTime`, the first [watchQuery] mount triggers a SWR
 /// background revalidation automatically.
 ///
+/// ## Mutation queue
+///
+/// Registered mutations queued with `offlineQueue: true` are stored in the
+/// same [StorageAdapter], one entry per call, before they count as queued.
+/// [hydrate] restores them after the cache, and [clearStorage] deletes
+/// them. See [MutationQueue].
+///
 /// ## Storage eviction
 ///
 /// | Method             | In-memory cache | [StorageAdapter] |
@@ -118,6 +126,7 @@ class _StorageEntry {
 /// | [invalidate]       | Marks stale     | **Untouched**    |
 /// | [removeQuery]      | Removed         | Deleted          |
 /// | [clear]            | Cleared         | Cleared          |
+/// | [clearStorage]     | Untouched       | Cleared          |
 /// | [evictFromStorage] | Untouched       | Deleted          |
 ///
 /// ## Name-based registration (obfuscation-safe)
@@ -154,7 +163,9 @@ class PersistQoraClient extends QoraClient {
     super.config,
     super.tracker,
   })  : _storage = storage,
-        _persistDuration = persistDuration;
+        _persistDuration = persistDuration {
+    mutationQueue.attachStorage(storage);
+  }
 
   // ── Serializer registry ───────────────────────────────────────────────────
 
@@ -291,16 +302,43 @@ class PersistQoraClient extends QoraClient {
   /// Old entries have no matching serializer and are deleted by the next
   /// [hydrate]; the next fetch writes a fresh entry under the new name.
   ///
+  /// ### Mutation queue
+  ///
+  /// After the cache, [hydrate] restores the queued registered mutations,
+  /// ahead of the calls made before it that are not sent yet, and starts
+  /// sending them. A call made before [hydrate] may already be in flight:
+  /// call [hydrate] before the app can mutate. Register
+  /// every mutation with [registerMutation] before calling it: a stored call
+  /// whose key is not registered is kept in storage but not restored.
+  ///
   /// Hydration is idempotent: calling it multiple times is safe but
   /// redundant.
   Future<void> hydrate() async {
+    // A logout in progress first: the records it has not deleted yet belong
+    // to the previous user.
+    final clearing = _clearing;
+    if (clearing != null) await clearing.then((_) {}, onError: (_) {});
+    // Read before the keys: a logout from here on restores nothing.
+    final generation = mutationQueue.generation;
+    final storageGeneration = _storageGeneration;
     final allKeys = await _storage.keys();
+    await _hydrateQueries(allKeys, storageGeneration);
+    await mutationQueue.restore(allKeys, generation: generation);
+  }
 
+  Future<void> _hydrateQueries(List<String> allKeys, int generation) async {
     for (final storageKey in allKeys) {
       // Keys Qora did not write belong to the app: never read or delete them.
       if (!_isQueryStorageKey(storageKey)) continue;
 
-      final raw = await _storage.read(storageKey);
+      final String? raw;
+      try {
+        raw = await _storage.read(storageKey);
+      } catch (error) {
+        // Kept for the next start; the other entries and the queue go on.
+        _persistLog('Cannot read "$storageKey": $error, skipping');
+        continue;
+      }
       if (raw == null) continue;
 
       _StorageEntry envelope;
@@ -310,7 +348,7 @@ class PersistQoraClient extends QoraClient {
         );
       } catch (_) {
         _persistLog('Corrupt entry at "$storageKey", deleting');
-        await _storage.delete(storageKey);
+        await _deleteQuietly(storageKey);
         continue;
       }
 
@@ -318,7 +356,7 @@ class PersistQoraClient extends QoraClient {
         _persistLog(
           'Expired "${envelope.typeName}" at "$storageKey", deleting',
         );
-        await _storage.delete(storageKey);
+        await _deleteQuietly(storageKey);
         continue;
       }
 
@@ -328,7 +366,7 @@ class PersistQoraClient extends QoraClient {
           'No serializer for "${envelope.typeName}", deleting "$storageKey". '
           'Call registerSerializer<${envelope.typeName}>() before hydrate().',
         );
-        await _storage.delete(storageKey);
+        await _deleteQuietly(storageKey);
         continue;
       }
 
@@ -340,13 +378,16 @@ class PersistQoraClient extends QoraClient {
           'fromJson failed for "${envelope.typeName}" '
           'at "$storageKey": $e, deleting',
         );
-        await _storage.delete(storageKey);
+        await _deleteQuietly(storageKey);
         continue;
       }
 
       // storageKey is already a JSON-encoded normalised key; pass it directly
       // as the raw key. queueHydration normalizes internally, producing the
       // same encoding used by _encodeStorageKey.
+      // The storage was cleared during the reads (a logout): this entry
+      // belongs to the previous user.
+      if (generation != _storageGeneration) return;
       final queueKey = jsonDecode(storageKey);
       queueHydration(
         queueKey as Object,
@@ -356,6 +397,16 @@ class PersistQoraClient extends QoraClient {
       _persistLog(
         'Queued "${envelope.typeName}" for lazy hydration ($storageKey)',
       );
+    }
+  }
+
+  /// Hydration goes on when an entry cannot be deleted: it is retried at the
+  /// next start, and the queue still gets restored.
+  Future<void> _deleteQuietly(String storageKey) async {
+    try {
+      await _storage.delete(storageKey);
+    } catch (error) {
+      _persistLog('Cannot delete "$storageKey": $error');
     }
   }
 
@@ -379,24 +430,84 @@ class PersistQoraClient extends QoraClient {
 
   @override
   void clear() {
+    // The queue before the cache: discarding a call runs its onError, and a
+    // rollback would write the previous user's data back into the cache.
+    mutationQueue.clear();
     super.clear();
-    unawaited(clearStorage());
+    unawaited(
+      clearStorage().catchError(
+        (Object error) => _persistLog('clearStorage failed: $error'),
+      ),
+    );
   }
 
   // ── Storage utilities ─────────────────────────────────────────────────────
 
-  /// Delete every entry Qora wrote to [StorageAdapter] without affecting the
+  /// Delete every entry Qora wrote to [StorageAdapter] without clearing the
   /// in-memory cache.
+  ///
+  /// The mutation queue is emptied too, in memory and in storage, whatever
+  /// the status of its calls: a queued write belongs to the user who made
+  /// it, so call this (or [clear]) on logout. The calls made in this session
+  /// are settled as with [MutationQueue.clear]: their `onError` runs, and a
+  /// rollback there writes to the cache. On logout, prefer [clear], which
+  /// empties the queue before the cache. A [hydrate] called meanwhile waits
+  /// for this to complete.
+  ///
+  /// Every key is tried. If a delete fails, this throws the first error at
+  /// the end, and a queue record that could not be deleted is overwritten
+  /// with a marker so the next [hydrate] deletes it instead of sending it.
   ///
   /// Keys that Qora did not write (app settings in a shared Hive box or
   /// `SharedPreferences` instance) are left untouched, as in [hydrate]. To
   /// wipe the whole adapter, call [StorageAdapter.clear] on it directly.
   ///
   /// Use [clear] to wipe both in-memory cache and storage simultaneously.
-  Future<void> clearStorage() async {
+  Future<void> clearStorage() {
+    final clearing = _clearStorage();
+    _clearing = clearing;
+    unawaited(
+      clearing.then((_) {}, onError: (_) {}).whenComplete(() {
+        if (identical(_clearing, clearing)) _clearing = null;
+      }),
+    );
+    return clearing;
+  }
+
+  Future<void>? _clearing;
+
+  /// Changes each time the storage is cleared.
+  int _storageGeneration = 0;
+
+  Future<void> _clearStorage() async {
+    // In memory first, before any await: a queued call left there would
+    // write its record again on its next attempt.
+    mutationQueue.clear();
+    _storageGeneration++;
     final keys = await _storage.keys();
+    Object? firstError;
+    StackTrace? firstStackTrace;
     for (final key in keys) {
-      if (_isQueryStorageKey(key)) await _storage.delete(key);
+      final isMutation = MutationQueue.isStorageKey(key);
+      if (!isMutation && !_isQueryStorageKey(key)) continue;
+      try {
+        await _storage.delete(key);
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+        // A record left behind must never be sent for the next user: mark
+        // it discarded, and the next restore deletes it.
+        if (isMutation) {
+          try {
+            await _storage.write(key, MutationQueue.tombstone);
+          } catch (_) {}
+        }
+      }
+    }
+    // Records of calls that were being written when the queue was cleared.
+    await mutationQueue.flushDeletes();
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
     }
   }
 
