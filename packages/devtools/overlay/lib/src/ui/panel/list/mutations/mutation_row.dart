@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:qora_devtools_overlay/src/ui/shared/num_ext.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
@@ -56,22 +55,6 @@ class MutationRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: DevtoolsTypography.queryKey,
                   ),
-                  if (mutation.isOptimistic)
-                    Padding(
-                      padding: 4.edgeInsetsT,
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.zap,
-                              size: 13, color: DevtoolsColors.amber400),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Optimistic',
-                            style: TextStyle(
-                                color: DevtoolsColors.amber400, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Row(
@@ -91,14 +74,6 @@ class MutationRow extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 10,
                                 color: DevtoolsColors.textDisabled),
-                          ),
-                        ],
-                        if (mutation.retryCount > 0) ...[
-                          const SizedBox(width: 12),
-                          Text(
-                            'Retries: ${mutation.retryCount}',
-                            style: const TextStyle(
-                                fontSize: 10, color: DevtoolsColors.orange400),
                           ),
                         ],
                       ],

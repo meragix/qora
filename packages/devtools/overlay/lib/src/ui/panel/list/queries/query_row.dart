@@ -61,6 +61,7 @@ class QueryRow extends StatelessWidget {
   _QueryStatus _queryStatus(QueryEvent q) {
     if (q.status == 'loading') return _QueryStatus.fetching;
     if (q.status == 'error') return _QueryStatus.error;
+    if (q.status == 'idle') return _QueryStatus.idle;
     if (q.status == 'success') {
       if (q.staleTimeMs != null && q.staleTimeMs! > 0) {
         final staleAt = q.timestampMs + q.staleTimeMs!;
@@ -80,7 +81,8 @@ enum _QueryStatus {
   fetching(DevtoolsColors.statusFetching),
   error(DevtoolsColors.statusError),
   fresh(DevtoolsColors.statusFresh),
-  stale(DevtoolsColors.statusStale);
+  stale(DevtoolsColors.statusStale),
+  idle(DevtoolsColors.statusIdle);
 
   const _QueryStatus(this.color);
   final Color color;
@@ -115,12 +117,12 @@ class _MetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    // staleTimeMs is a duration — remaining time = (fetchedAt + duration) - now
-    final staleTimeLeft = query.staleTimeMs != null
+    // Stale time counts from the last data update. No gc countdown: gc
+    // starts when the last observer leaves, which the overlay cannot see.
+    // Only a success row was updated at its timestamp; an error or idle row
+    // was not, so a countdown from it would be wrong.
+    final staleTimeLeft = query.staleTimeMs != null && query.status == 'success'
         ? (query.timestampMs + query.staleTimeMs!) - now
-        : null;
-    final gcTimeLeft = query.gcTimeMs != null
-        ? (query.timestampMs + query.gcTimeMs!) - now
         : null;
 
     return Wrap(
@@ -134,18 +136,10 @@ class _MetaRow extends StatelessWidget {
         ),
         _MetaChip(
           label: 'stale: ',
-          value: staleTimeLeft != null ? staleTimeLeft.fmtQueryTime() : '—',
+          value: staleTimeLeft != null ? staleTimeLeft.fmtQueryTime() : '-',
           icon: LucideIcons.clock,
           color: staleTimeLeft != null && staleTimeLeft <= 0
               ? DevtoolsColors.orange400
-              : null,
-        ),
-        _MetaChip(
-          label: 'gc: ',
-          value: gcTimeLeft != null ? gcTimeLeft.fmtQueryTime() : '—',
-          icon: LucideIcons.trash2,
-          color: gcTimeLeft != null && gcTimeLeft <= 0
-              ? DevtoolsColors.red400
               : null,
         ),
       ],

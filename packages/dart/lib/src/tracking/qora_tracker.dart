@@ -10,7 +10,7 @@ import 'no_op_tracker.dart';
 /// Observability interface injected into [QoraClient] to report cache and
 /// mutation lifecycle events.
 ///
-/// ## Design rationale — Dependency Inversion
+/// ## Design rationale: Dependency Inversion
 ///
 /// [QoraClient] calls `_tracker` hooks without knowing whether they go to a
 /// DevTools UI, a logging sink, or nowhere at all.  This keeps the core
@@ -27,7 +27,7 @@ import 'no_op_tracker.dart';
 ///
 /// | Class          | Package                  | Purpose                         |
 /// |----------------|--------------------------|---------------------------------|
-/// | [NoOpTracker]  | `qora`                   | Default — empty no-ops           |
+/// | [NoOpTracker]  | `qora`                   | Default: empty no-ops            |
 /// | `VmTracker`    | `qora_devtools_extension`| Publishes DevTools events via VM |
 ///
 /// ## Injecting a custom tracker
@@ -40,7 +40,7 @@ import 'no_op_tracker.dart';
 /// class LoggingTracker implements QoraTracker {
 ///   @override
 ///   void onQueryFetched(String key, Object? data, dynamic status) =>
-///       print('[$key] fetched — status: $status');
+///       print('[$key] fetched, status: $status');
 ///   // implement remaining methods …
 /// }
 /// ```
@@ -62,7 +62,7 @@ abstract interface class QoraTracker {
   /// production apps using [NoOpTracker] never pay the serialization cost.
   bool get needsSerialization;
 
-  /// Called when a fetch transitions to the [Loading] state — immediately
+  /// Called when a fetch transitions to the [Loading] state, immediately
   /// before the async fetcher is invoked.
   ///
   /// [key] is the string-serialised normalised key. Pair this event with the
@@ -70,23 +70,35 @@ abstract interface class QoraTracker {
   /// implementations such as `VmTracker`.
   void onQueryFetching(String key);
 
-  /// Called after a query fetch completes successfully and the [Success] state
-  /// is committed to the cache.
+  /// Called when the outcome of a query fetch becomes the query's state, and
+  /// by a few debug writes.
   ///
   /// [key] is the string-serialised normalised key (e.g. `'["users", 1]'`).
-  /// [data] is the raw fetch result (may be large; `VmTracker` applies lazy
-  /// chunking when data exceeds 80 KB).
-  /// [status] is `'success'` for a normal fetch; implementations may receive
-  /// other string values for future SWR sub-states.
+  /// [data] is the fetch result, serialized when [needsSerialization] is
+  /// `true` (may be large; `VmTracker` applies lazy chunking when data
+  /// exceeds 80 KB), or `null` when the fetch failed.
+  ///
+  /// [status] is:
+  /// - `'success'` for a successful fetch;
+  /// - `'error'` for a failed one, including a failure with
+  ///   [QoraOptions.keepPreviousData], where the query keeps showing its
+  ///   previous data, and for [QoraClient.debugSetQueryError];
+  /// - the state's type name (`'InfiniteSuccess<...>'`, ...) for
+  ///   [QoraClient.updateInfiniteQueryState], which infinite queries call
+  ///   after each page fetch.
+  ///
+  /// A fetch whose result was overwritten by a fetch started after it, or
+  /// whose query was removed, reports nothing. A cancelled fetch reports
+  /// [onQueryCancelled] instead.
   ///
   /// Named parameters carry cache metadata for DevTools display:
-  /// - [staleTimeMs] — configured stale threshold in milliseconds (`null` =
+  /// - [staleTimeMs]: configured stale threshold in milliseconds (`null` =
   ///   never stale).
-  /// - [gcTimeMs] — cache time (GC delay after last subscriber) in
+  /// - [gcTimeMs]: cache time (GC delay after last subscriber) in
   ///   milliseconds.
-  /// - [observerCount] — number of active stream subscribers at the moment
+  /// - [observerCount]: number of active stream subscribers at the moment
   ///   the fetch settled.
-  /// - [dependsOnKey] — string-serialised key of the [QoraOptions.dependsOn]
+  /// - [dependsOnKey]: string-serialised key of the [QoraOptions.dependsOn]
   ///   dependency, or `null` when this query has no declarative dependency.
   ///   [VmTracker] and [OverlayTracker] embed this in the [QueryEvent] so the
   ///   DevTools dependency graph can draw real Query→Query edges instead of
@@ -102,8 +114,14 @@ abstract interface class QoraTracker {
     String? dependsOnKey,
   });
 
-  /// Called when a fetch was cancelled via [CancelToken] — either before the
-  /// request started or while it was in-flight.
+  /// Called when a fetch was cancelled via [CancelToken] and the query went
+  /// back to its state from before the fetch.
+  ///
+  /// A call cancelled before it started reports this only when no other
+  /// fetch for the key is in flight (including one detached by
+  /// [QoraClient.invalidate]) or paused. A cancelled fetch whose state
+  /// was replaced meanwhile (by [QoraClient.invalidate] or
+  /// [QoraClient.setQueryData], for example) reports nothing.
   ///
   /// [key] is the string-serialised normalised key. Use this event in DevTools
   /// to mark the query on the timeline as "cancelled" instead of "failed", so
@@ -148,7 +166,8 @@ abstract interface class QoraTracker {
   /// (typically an optimistic update before the server confirms).
   ///
   /// [key] is the string-serialised normalised key.
-  /// [optimisticData] is the value written to cache.
+  /// [optimisticData] is the value written to cache, serialized when
+  /// [needsSerialization] is `true`.
   void onOptimisticUpdate(String key, Object? optimisticData);
 
   /// Called when [QoraClient.clear] removes all entries from the cache.

@@ -10,8 +10,8 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// Manages the selected query for the Inspector column (column 2).
 ///
 /// The list column calls [select] when the user taps a query row.
-/// When a [QoraClient] is provided, the action methods (refetch, invalidate,
-/// remove, markStale, simulateError) operate directly on the live cache.
+/// When a [QoraClient] is provided, the action methods (invalidate, remove,
+/// markStale, simulateError) operate directly on the live cache.
 class QueryInspectorNotifier extends ChangeNotifier {
   final OverlayTracker _tracker;
   final QoraClient? _client;
@@ -19,20 +19,12 @@ class QueryInspectorNotifier extends ChangeNotifier {
 
   QueryEvent? _selected;
 
-  /// Sticky flag: `true` from the moment the selected query is invalidated
-  /// until a non-loading fetch result (success or error) clears it.
-  ///
-  /// Tracked separately because `invalidate()` triggers an immediate refetch
-  /// that replaces the `invalidated` event before the UI can render it.
-  bool _isInvalidated = false;
-
   /// The currently selected query event, or `null` when nothing is selected.
   QueryEvent? get selected => _selected;
 
   /// View-model for the inspector panel, derived from [selected].
-  QueryDetail? get detail => _selected == null
-      ? null
-      : QueryDetail.fromEvent(_selected!, isInvalidated: _isInvalidated);
+  QueryDetail? get detail =>
+      _selected == null ? null : QueryDetail.fromEvent(_selected!);
 
   /// Whether action buttons should be enabled.
   bool get hasClient => _client != null;
@@ -41,18 +33,7 @@ class QueryInspectorNotifier extends ChangeNotifier {
       : _client = client {
     _sub = _tracker.onQuery.listen((event) {
       if (_selected == null || event.key != _selected!.key) return;
-      if (event.type == QueryEventType.removed) {
-        _selected = null;
-        _isInvalidated = false;
-      } else {
-        if (event.type == QueryEventType.invalidated) {
-          _isInvalidated = true;
-        } else if (event.type == QueryEventType.fetched &&
-            event.status != 'loading') {
-          _isInvalidated = false;
-        }
-        _selected = event;
-      }
+      _selected = event.type == QueryEventType.removed ? null : event;
       notifyListeners();
     });
   }
@@ -65,10 +46,8 @@ class QueryInspectorNotifier extends ChangeNotifier {
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
-  /// Marks the selected query stale, causing active observers to refetch.
-  void refetch() => _withKey(_client!.invalidate);
-
-  /// Marks the selected query as stale (same effect as [refetch] in Qora).
+  /// Marks the selected query stale; Qora refetches it if a widget observes
+  /// it. An unobserved query is only marked stale.
   void invalidate() => _withKey(_client!.invalidate);
 
   /// Removes the selected query from the cache entirely.

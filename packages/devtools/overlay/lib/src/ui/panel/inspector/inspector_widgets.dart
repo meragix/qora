@@ -82,7 +82,7 @@ class InspectorMetaRow extends StatelessWidget {
 
 /// A small action button rendered inside inspector ACTIONS sections.
 ///
-/// [accentColor] tints the background and icon — use it to colour-code
+/// [accentColor] tints the background and icon; use it to colour-code
 /// actions by severity (blue = safe, orange = warning, red = destructive).
 class InspectorActionButton extends StatefulWidget {
   final String label;

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A failed fetch is now reported to the `QoraTracker` (`onQueryFetched` with status `'error'`), so DevTools no longer show the query fetching forever
+- `setQueryData` now sends serialized data to a `QoraTracker` with `needsSerialization`, and a call cancelled before it starts no longer reports a cancellation while another fetch for the key runs
+- A `QoraOptions.toJson` that throws no longer fails the fetch or `setQueryData` when a DevTools tracker is attached
+
 ## [1.4.0] - 2026-11-17
 
 ### Added

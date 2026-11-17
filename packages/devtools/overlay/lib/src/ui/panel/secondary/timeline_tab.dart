@@ -9,7 +9,7 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 
 typedef EventStyle = ({IconData icon, Color color});
 
-/// Timeline tab — column 3, first tab of the Mutations panel.
+/// Timeline tab: column 3, first tab of the Mutations panel.
 ///
 /// Shows all [TimelineEvent]s in reverse-chronological order with a filter
 /// input, pause toggle, and clear button. Reads [TimelineNotifier] from the
@@ -174,7 +174,7 @@ class _TimelineTabState extends State<TimelineTab> {
 
 // ── Event row ────────────────────────────────────────────────────────────────
 
-/// Single row in the timeline list — coloured icon + event type + key + timestamp.
+/// Single row in the timeline list: coloured icon + event type + key + timestamp.
 class TimelineEventRow extends StatelessWidget {
   final TimelineEvent event;
 
@@ -208,7 +208,11 @@ class TimelineEventRow extends StatelessWidget {
                 children: [
                   Text.rich(
                     TextSpan(
-                      text: event.type.displayName,
+                      // setQueryData reports through the optimistic hook,
+                      // but it is not always optimistic: name what happened.
+                      text: event.type == TimelineEventType.optimisticUpdate
+                          ? 'Set Query Data'
+                          : event.type.displayName,
                       style: const TextStyle(
                         color: DevtoolsColors.zinc300,
                         fontSize: 12,

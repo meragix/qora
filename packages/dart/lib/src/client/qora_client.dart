@@ -985,7 +985,14 @@ class QoraClient implements MutationTracker {
         ? structuralShare(existingData, data)
         : data;
     entry.updateState(Success<T>(data: sharedData, updatedAt: DateTime.now()));
-    _tracker.onOptimisticUpdate(_stringKey(normalized), sharedData);
+    _tracker.onOptimisticUpdate(
+      _stringKey(normalized),
+      // Serialized like a fetch result, so DevTools show a model written
+      // here as a JSON tree instead of its toString().
+      _tracker.needsSerialization
+          ? _serializeForTracker(sharedData, entry.lastOptions ?? opts)
+          : sharedData,
+    );
     _log('setQueryData: $normalized');
   }
 
@@ -1954,7 +1961,14 @@ class QoraClient implements MutationTracker {
 
     // Pre-flight cancellation check: before dedup and offline checks.
     if (cancelToken?.isCancelled == true) {
-      _tracker.onQueryCancelled(sk);
+      // Reported only when nothing runs for the key: a tracker reads the
+      // event as "the fetch for this key stopped", which is false while
+      // another call's fetch is in flight (even one invalidate() detached
+      // from deduplication) or paused.
+      if ((_inFlightFetches[entry] ?? 0) == 0 &&
+          !_pausedFetches.containsKey(sk)) {
+        _tracker.onQueryCancelled(sk);
+      }
       return Future.error(QoraCancelException(sk));
     }
 
@@ -2157,6 +2171,20 @@ class QoraClient implements MutationTracker {
               ),
             );
           }
+          // Without this, a tracker saw onQueryFetching and nothing after it,
+          // so DevTools showed the query fetching forever. Reported only by
+          // the fetch whose outcome is current, like a success.
+          _tracker.onQueryFetched(
+            sk,
+            null,
+            'error',
+            staleTimeMs: opts.staleTime.inMilliseconds,
+            gcTimeMs: opts.gcTime.inMilliseconds,
+            observerCount: entry.subscriberCount,
+            dependsOnKey: opts.dependsOn != null
+                ? _stringKey(normalizeKey(opts.dependsOn!))
+                : null,
+          );
         }
       } finally {
         release();
@@ -2581,9 +2609,19 @@ class QoraClient implements MutationTracker {
   /// 4. Structured fallback: never throws; always returns a diagnostic map.
   ///
   /// Only called when [QoraTracker.needsSerialization] is `true`.
+  /// Never throws: a DevTools tracker must not turn a successful fetch into a
+  /// failure, or make [setQueryData] throw, because the app's `toJson` did.
   Object? _serializeForTracker(Object? data, QoraOptions opts) {
-    if (opts.toJson != null) return opts.toJson!(data);
-    return _toJsonSafe(data);
+    final toJson = opts.toJson;
+    if (toJson == null) return _toJsonSafe(data);
+    try {
+      return toJson(data);
+    } catch (error) {
+      return {
+        '__type': data.runtimeType.toString(),
+        '__warning': 'QoraOptions.toJson threw: $error',
+      };
+    }
   }
 
   Object? _toJsonSafe(Object? data) {

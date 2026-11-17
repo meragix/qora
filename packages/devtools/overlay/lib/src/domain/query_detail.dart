@@ -3,7 +3,7 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// View-model for the Query Inspector panel.
 ///
 /// Derived from a [QueryEvent] snapshot; exposes computed fields that the
-/// inspector panel renders directly — query key, status, cached data,
+/// inspector panel renders directly: query key, status, cached data,
 /// and cache timing metadata (updatedAt, staleAt, gcTime, observers).
 class QueryDetail {
   /// Serialised query key (e.g. `'["user","42"]'`).
@@ -17,9 +17,6 @@ class QueryDetail {
 
   /// Truncated string representation for quick preview.
   final String? dataPreview;
-
-  /// `true` when the payload exceeded the inline threshold.
-  final bool hasLargePayload;
 
   /// Wall-clock fetch duration in milliseconds, or `null` when not available.
   final int? fetchDurationMs;
@@ -48,19 +45,11 @@ class QueryDetail {
   /// The type of the last event received for this query.
   final QueryEventType eventType;
 
-  /// Sticky invalidated flag managed by [QueryInspectorNotifier].
-  ///
-  /// Remains `true` even after the invalidate triggers an immediate refetch
-  /// (which would overwrite [eventType]). Cleared only when a non-loading
-  /// fetch result arrives.
-  final bool isInvalidated;
-
   const QueryDetail({
     required this.key,
     required this.status,
     this.data,
     this.dataPreview,
-    this.hasLargePayload = false,
     this.fetchDurationMs,
     this.createdAt,
     required this.updatedAt,
@@ -69,16 +58,17 @@ class QueryDetail {
     this.observerCount = 0,
     this.retryCount,
     this.eventType = QueryEventType.updated,
-    this.isInvalidated = false,
   });
 
   /// Builds a [QueryDetail] from the latest [QueryEvent] snapshot.
-  factory QueryDetail.fromEvent(QueryEvent event,
-      {bool isInvalidated = false}) {
+  factory QueryDetail.fromEvent(QueryEvent event) {
     final rawData = event.data;
     final preview = rawData?.toString().truncate(max: 300);
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(event.timestampMs);
-    final staleAt = event.staleTimeMs != null && event.staleTimeMs! > 0
+    // Only a success updated the data at this event's time.
+    final staleAt = event.status == 'success' &&
+            event.staleTimeMs != null &&
+            event.staleTimeMs! > 0
         ? updatedAt.add(Duration(milliseconds: event.staleTimeMs!))
         : null;
 
@@ -87,16 +77,14 @@ class QueryDetail {
       status: event.status.orDefault('unknown'),
       data: rawData,
       dataPreview: preview,
-      hasLargePayload: event.hasLargePayload,
       fetchDurationMs: event.fetchDurationMs,
-      createdAt: event.createdAtMs!.toNullOrDateTime(),
+      createdAt: event.createdAtMs?.toDateTime(),
       updatedAt: updatedAt,
       staleAt: staleAt,
       gcTimeMs: event.gcTimeMs,
       observerCount: event.observerCount,
       retryCount: event.retryCount,
       eventType: event.type,
-      isInvalidated: isInvalidated,
     );
   }
 }

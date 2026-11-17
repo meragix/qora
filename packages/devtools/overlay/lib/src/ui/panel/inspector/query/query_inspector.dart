@@ -99,12 +99,6 @@ class _QueryInspectorState extends State<QueryInspector>
                         runSpacing: 6,
                         children: [
                           InspectorActionButton(
-                            label: 'Refetch',
-                            icon: LucideIcons.refreshCw,
-                            accentColor: const Color(0xFF4F46E5),
-                            onTap: notifier.refetch,
-                          ),
-                          InspectorActionButton(
                             label: 'Invalidate',
                             icon: LucideIcons.circleAlert,
                             accentColor: DevtoolsColors.zinc700,
@@ -184,13 +178,6 @@ class _QueryInspectorState extends State<QueryInspector>
                                     : DevtoolsColors.textDisabled,
                               ),
                               InspectorMetaRow(
-                                'Is Invalidated:',
-                                detail.isInvalidated ? 'true' : 'false',
-                                valueColor: detail.isInvalidated
-                                    ? DevtoolsColors.highlight
-                                    : DevtoolsColors.textDisabled,
-                              ),
-                              InspectorMetaRow(
                                 'Is Stale:',
                                 isStale ? 'true' : 'false',
                                 valueColor: isStale
@@ -213,25 +200,20 @@ class _QueryInspectorState extends State<QueryInspector>
                   InspectorSection(
                     label: 'CACHED DATA',
                     showDivider: false,
-                    child: detail.hasLargePayload
-                        ? Text(
-                            'Large payload — pull via DevTools extension',
-                            style: DevtoolsTypography.smallMuted,
-                          )
-                        : Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: .3),
-                              borderRadius: 8.borderRadiusA,
-                            ),
-                            child: Padding(
-                              padding: 12.edgeInsetsA,
-                              child: JsonViewer(
-                                key: ValueKey(detail.key),
-                                data: detail.data,
-                              ),
-                            ),
-                          ),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: .3),
+                        borderRadius: 8.borderRadiusA,
+                      ),
+                      child: Padding(
+                        padding: 12.edgeInsetsA,
+                        child: JsonViewer(
+                          key: ValueKey(detail.key),
+                          data: detail.data,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
