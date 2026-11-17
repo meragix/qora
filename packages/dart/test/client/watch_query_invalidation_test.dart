@@ -3,8 +3,19 @@ import 'dart:async';
 import 'package:qora/qora.dart';
 import 'package:test/test.dart';
 
+/// A fixed wait, for checks that something does NOT happen.
 Future<void> _settle() =>
     Future<void>.delayed(const Duration(milliseconds: 20));
+
+/// Waits until [condition] holds, for at most 2 s. Fetches run on real
+/// timers and test files run in parallel: a fixed 20 ms wait for something
+/// that must happen failed under load.
+Future<void> _until(bool Function() condition) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 2));
+  while (!condition() && DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
 
 void main() {
   group('watchQuery invalidation refetch', () {
@@ -22,11 +33,11 @@ void main() {
         fetcher: () async => 'v${++calls}',
       ).listen(states.add);
 
-      await _settle();
+      await _until(() => calls == 1 && states.lastOrNull is Success);
       expect(calls, 1);
 
       client.invalidate(['k']);
-      await _settle();
+      await _until(() => calls == 2 && states.last is Success);
 
       expect(calls, 2);
       expect(states.last, isA<Success<String>>());
@@ -48,11 +59,15 @@ void main() {
         options: const QoraOptions(retryCount: 0),
       ).listen((_) {});
 
-      await _settle();
+      await _until(
+        () => client.getQueryState<String>(['k']) is Success<String>,
+      );
       final before = calls;
       fail = true;
       client.invalidate(['k']);
-      await _settle();
+      await _until(
+        () => client.getQueryState<String>(['k']) is Failure<String>,
+      );
       await _settle();
 
       expect(calls - before, 1, reason: 'no refetch feedback loop');
@@ -74,9 +89,14 @@ void main() {
       final subA = a.listen((_) {});
       final subB = b.listen((_) {});
 
-      await _settle();
+      await _until(
+        () => client.getQueryState<String>(['k']) is Success<String>,
+      );
       final before = calls;
       client.invalidate(['k']);
+      await _until(
+        () => client.getQueryState<String>(['k']) is Success<String>,
+      );
       await _settle();
 
       expect(calls - before, 1);
@@ -108,7 +128,7 @@ void main() {
         fetcher: () async => 'v${++calls}',
       ).listen((_) {});
 
-      await _settle();
+      await _until(() => calls == 1);
       await sub.cancel();
       client.invalidate(['k']);
       await _settle();
@@ -125,13 +145,15 @@ void main() {
         options: const QoraOptions(providesTags: [QueryTag('post', '1')]),
       ).listen((_) {});
 
-      await _settle();
+      await _until(
+        () => client.getQueryState<String>(['posts', 1]) is Success<String>,
+      );
       client.invalidateWhere((key) => key.first == 'posts');
-      await _settle();
+      await _until(() => calls == 2);
       expect(calls, 2);
 
       await client.invalidateTags([QueryTag('post')]);
-      await _settle();
+      await _until(() => calls == 3);
       expect(calls, 3);
       await sub.cancel();
     });

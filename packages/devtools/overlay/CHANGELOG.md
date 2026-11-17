@@ -5,19 +5,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-17
+
 ### Added
 
 - Queue tab: the calls waiting in `client.mutationQueue`, with their status, attempts, scope, last error and variables. Needs `QoraInspector(client:)`.
 
 ### Changed
 
-- Requires `qora` 1.4.0 or later, for the Queue tab.
+- Requires `qora` 1.4.1 and `qora_devtools_shared` 0.3.0.
 
 ### Fixed
 
-- A failed fetch no longer stays `loading` (needs `qora` 1.4.1).
+- Compiles again: 0.3.0 used `qora_devtools_shared` APIs that were never published, so adding it to an app failed to build.
+- A failed fetch no longer stays `loading`.
 - A cancelled fetch no longer stays `loading`: the row goes back to its previous state.
-- `setQueryData` now creates or updates the row with the written data, shown as JSON with `qora` 1.4.1.
+- `setQueryData` now creates or updates the row with the written data, shown as JSON.
 - An error row keeps showing the data from before the failure, as the query does.
 - `clear()` now removes every row, and rows removed before the panel opened no longer reappear.
 - Selecting a query that was invalidated before any fetch no longer throws.
