@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qora_flutter/qora_flutter.dart';
@@ -87,6 +89,45 @@ void main() {
       );
 
       expect(tester.takeException(), isA<ArgumentError>());
+    });
+
+    testWidgets('sends offlineQueue calls through the mutation queue',
+        (tester) async {
+      final gate = Completer<String>();
+      client.registerMutation<String, String>(
+        'todos.slow',
+        mutator: (title, meta) => gate.future,
+        variables: _stringSerializer,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: QoraScope(
+            client: client,
+            child: QoraMutationBuilder<String, String, void>(
+              options: const MutationOptions(
+                mutationKey: 'todos.slow',
+                offlineQueue: true,
+              ),
+              builder: (context, state, mutate) => TextButton(
+                onPressed: () => mutate('milk'),
+                child: Text(state.dataOrNull ?? 'none'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('none'));
+      await tester.pump();
+      expect(
+        client.mutationQueue.entries.single.status,
+        QueuedMutationStatus.sending,
+      );
+
+      gate.complete('done');
+      await tester.pumpAndSettle();
+      expect(client.mutationQueue.isEmpty, isTrue);
+      expect(find.text('done'), findsOneWidget);
     });
   });
 }

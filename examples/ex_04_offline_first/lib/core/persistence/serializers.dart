@@ -2,7 +2,9 @@ import 'package:qora_flutter/qora_flutter.dart';
 
 import '../../features/todos/models/todo.dart';
 
-/// Registers every type that should survive app restarts in [PersistQoraClient].
+/// Registers every query data type that should survive app restarts in
+/// [PersistQoraClient]. Queued writes use the `variables` serializer of their
+/// registration instead (see `todo_mutations.dart`).
 ///
 /// This function is the single authoritative list of persisted types.
 /// Explicit [name] values are required so the registry survives Dart
@@ -13,7 +15,9 @@ void registerAllSerializers(PersistQoraClient client) {
   client.registerSerializer<List<Todo>>(
     QoraSerializer(
       toJson: (list) => list.map((t) => t.toJson()).toList(),
-      fromJson: (json) => (json as List).map((e) => Todo.fromJson(e)).toList(),
+      fromJson: (json) => (json as List)
+          .map((e) => Todo.fromJson(e as Map<String, dynamic>))
+          .toList(),
     ),
     name: 'List<Todo>',
   );

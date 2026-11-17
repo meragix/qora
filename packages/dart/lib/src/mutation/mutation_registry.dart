@@ -37,6 +37,19 @@ final class MutationRegistration<TData, TVariables> {
   /// site's `MutationOptions.invalidatesTags`.
   final List<QueryTag>? invalidatesTags;
 
+  /// Returns the scope of a queued call, or `null` for the global lane.
+  ///
+  /// Queued calls in one scope are sent in order, one at a time, and a call
+  /// that fails for good holds the rest of its scope. Different scopes do
+  /// not wait for each other. Return the narrowest value that covers the
+  /// dependencies, usually the record's ID, or the parent's ID for children.
+  final String? Function(TVariables variables)? scope;
+
+  /// Whether an error rejects a queued call for good, instead of being
+  /// retried. Overrides `MutationQueueConfig.isPermanent`. When neither is
+  /// set, every error is transient.
+  final bool Function(Object error)? isPermanent;
+
   /// Creates a registration. Prefer [MutationRegistry.register] or
   /// `QoraClient.registerMutation`, which build it for you.
   const MutationRegistration({
@@ -45,6 +58,8 @@ final class MutationRegistration<TData, TVariables> {
     required this.variables,
     this.invalidates,
     this.invalidatesTags,
+    this.scope,
+    this.isPermanent,
   });
 
   /// The variables type this mutation was registered with.
@@ -53,6 +68,29 @@ final class MutationRegistration<TData, TVariables> {
   /// Runs [mutator] with the given identity.
   Future<TData> run(TVariables variables, MutationMeta meta) =>
       mutator(variables, meta);
+
+  /// Whether [variables] can be passed to this mutation.
+  @internal
+  bool accepts(Object? variables) => variables is TVariables;
+
+  /// [variables] `toJson` for the queue, which holds variables without
+  /// their type.
+  @internal
+  Object? encodeVariables(Object? value) =>
+      variables.toJson(value as TVariables);
+
+  /// [variables] `fromJson`, typed for [runErased].
+  @internal
+  Object? decodeVariables(Object? json) => variables.fromJson(json);
+
+  /// [run] for the queue, which holds variables without their type.
+  @internal
+  Future<Object?> runErased(Object? variables, MutationMeta meta) =>
+      Future.sync(() => mutator(variables as TVariables, meta));
+
+  /// [scope] for the queue, which holds variables without their type.
+  @internal
+  String? scopeOf(Object? variables) => scope?.call(variables as TVariables);
 }
 
 /// The mutations a client knows by key.
@@ -105,4 +143,8 @@ final class MutationRegistry {
     }
     return entry;
   }
+
+  /// The registration for [key] without its types, for the queue.
+  @internal
+  MutationRegistration<Object?, Object?>? entryOf(String key) => _entries[key];
 }

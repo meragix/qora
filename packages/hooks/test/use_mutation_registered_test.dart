@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qora_flutter/qora_flutter.dart'
-    show MutationMeta, QoraSerializer;
+    show MutationMeta, QoraSerializer, QueuedMutationStatus;
 import 'package:qora_hooks/qora_hooks.dart';
 
 final _stringSerializer = QoraSerializer<String>(
@@ -88,5 +90,42 @@ void main() {
         contains('first built with a mutator'),
       ),
     );
+  });
+
+  testWidgets('useMutation sends offlineQueue calls through the queue',
+      (tester) async {
+    final gate = Completer<String>();
+    client.registerMutation<String, String>(
+      'todos.slow',
+      mutator: (title, meta) => gate.future,
+      variables: _stringSerializer,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: QoraScope(
+          client: client,
+          child: HookBuilder(
+            builder: (context) {
+              handle = useMutation<String, String>(
+                options: const MutationOptions(
+                  mutationKey: 'todos.slow',
+                  offlineQueue: true,
+                ),
+              );
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+
+    handle.mutate('milk');
+    await tester.pump();
+    expect(client.mutationQueue.entries.single.status,
+        QueuedMutationStatus.sending);
+
+    gate.complete('done');
+    await tester.pump();
+    expect(client.mutationQueue.isEmpty, isTrue);
   });
 }

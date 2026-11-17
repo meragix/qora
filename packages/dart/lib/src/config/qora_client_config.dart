@@ -1,4 +1,5 @@
 import 'package:qora/src/client/qora_client.dart';
+import 'package:qora/src/mutation/queue/mutation_queue_config.dart';
 import 'package:qora/src/network/reconnect_strategy.dart';
 import 'package:qora/src/state/qora_state.dart';
 import 'package:qora/src/utils/qora_exception.dart';
@@ -77,7 +78,7 @@ class QoraClientConfig {
   /// `null` (default) means unbounded.
   final int? maxCacheSize;
 
-  /// Callback invoked whenever a cache entry is evicted — either via LRU,
+  /// Callback invoked whenever a cache entry is evicted: either via LRU,
   /// GC timer, [QoraClient.removeQuery], or [QoraClient.clear].
   ///
   /// Receives the normalised key of the evicted query. Useful for logging,
@@ -112,8 +113,8 @@ class QoraClientConfig {
   ///
   /// Can be overridden per-query via [QoraOptions.refetchOnMount].
   ///
-  /// - `true` (default) — always refetch on mount.
-  /// - `false` — only fetch if no data or data is stale.
+  /// - `true` (default): always refetch on mount.
+  /// - `false`: only fetch if no data or data is stale.
   final bool refetchOnMount;
 
   /// Controls how paused queries are replayed in batches when the device
@@ -122,16 +123,20 @@ class QoraClientConfig {
   /// Prevents the "thundering herd" problem when many queries were paused
   /// while offline and all attempt to execute simultaneously on reconnect.
   ///
-  /// Default: `ReconnectStrategy()` — 5 concurrent queries, 100 ms jitter.
+  /// Default: `ReconnectStrategy()`: 5 concurrent queries, 100 ms jitter.
   ///
   /// ```dart
-  /// // Aggressive — replay everything instantly (e.g. integration tests)
+  /// // Aggressive: replay everything instantly (e.g. integration tests)
   /// reconnectStrategy: const ReconnectStrategy.instant(),
   ///
-  /// // Conservative — slow backend, many queries
+  /// // Conservative: slow backend, many queries
   /// reconnectStrategy: const ReconnectStrategy.conservative(),
   /// ```
   final ReconnectStrategy reconnectStrategy;
+
+  /// Retry policy of the queue of registered mutations
+  /// (`QoraClient.mutationQueue`). See [MutationQueueConfig].
+  final MutationQueueConfig mutationQueue;
 
   const QoraClientConfig({
     this.defaultOptions = const QoraOptions(),
@@ -142,5 +147,6 @@ class QoraClientConfig {
     this.onBackgroundFetchError,
     this.refetchOnMount = true,
     this.reconnectStrategy = const ReconnectStrategy(),
+    this.mutationQueue = const MutationQueueConfig(),
   });
 }

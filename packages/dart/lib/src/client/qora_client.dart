@@ -340,6 +340,26 @@ class QoraClient implements MutationTracker {
   /// ```
   OfflineMutationQueue get offlineMutationQueue => _offlineMutationQueue;
 
+  /// The queue of registered mutations.
+  ///
+  /// Holds every call made with `MutationOptions(mutationKey: ...,
+  /// offlineQueue: true)` until it succeeds or the app discards it. Read its
+  /// [MutationQueue.entries] to show what is waiting, and decide on blocked
+  /// or failed calls with [MutationQueue.retry] and [MutationQueue.discard].
+  MutationQueue get mutationQueue => _mutationQueue;
+
+  late final MutationQueue _mutationQueue = MutationQueue(
+    registry: _mutationRegistry,
+    isOnline: () => isOnline,
+    config: config.mutationQueue,
+    maxConcurrent: config.reconnectStrategy.maxConcurrent,
+    invalidateQuery: (key) async => invalidate(key),
+    invalidateTags: invalidateTags,
+    log: _log,
+    track: (id, state, metadata) =>
+        trackMutation(id, state, metadata: metadata),
+  );
+
   // ── Registered mutations ──────────────────────────────────────────────────
 
   /// The mutations registered on this client, by key.
@@ -361,6 +381,11 @@ class QoraClient implements MutationTracker {
   /// call can be stored. [invalidates] and [invalidatesTags] run after every
   /// successful call, in addition to the call site's own.
   ///
+  /// Calls made with `offlineQueue: true` go through [mutationQueue].
+  /// [scope] puts the calls that depend on each other in one ordered lane;
+  /// [isPermanent] tells which errors reject a call for good instead of
+  /// being retried (see [MutationQueueConfig]).
+  ///
   /// Register each key once, at startup, before any call site uses it.
   /// Throws a [StateError] if [key] is already registered.
   ///
@@ -374,6 +399,8 @@ class QoraClient implements MutationTracker {
   ///     fromJson: (json) => NewTodo.fromJson(json as Map<String, dynamic>),
   ///   ),
   ///   invalidates: [['todos']],
+  ///   scope: (input) => 'todo:${input.id}',
+  ///   isPermanent: (error) => error is ApiException && error.isClientError,
   /// );
   /// ```
   void registerMutation<TData, TVariables>(
@@ -382,6 +409,8 @@ class QoraClient implements MutationTracker {
     required QoraSerializer<TVariables> variables,
     List<Object>? invalidates,
     List<QueryTag>? invalidatesTags,
+    String? Function(TVariables variables)? scope,
+    bool Function(Object error)? isPermanent,
   }) {
     _assertNotDisposed();
     _mutationRegistry.register<TData, TVariables>(
@@ -391,6 +420,8 @@ class QoraClient implements MutationTracker {
         variables: variables,
         invalidates: invalidates,
         invalidatesTags: invalidatesTags,
+        scope: scope,
+        isPermanent: isPermanent,
       ),
     );
   }
@@ -1738,6 +1769,7 @@ class QoraClient implements MutationTracker {
     _pausedFetches.clear();
     _activeMutations.clear();
     _offlineMutationQueue.clear();
+    _mutationQueue.dispose();
     for (final bc in _fetchStatusBus.values) {
       bc.close();
     }
@@ -1780,6 +1812,9 @@ class QoraClient implements MutationTracker {
 
     if (wasOffline && status == NetworkStatus.online) {
       unawaited(_onReconnect());
+    } else if (status == NetworkStatus.offline) {
+      // Calls behind an in-flight request now wait for the network.
+      _mutationQueue.refresh();
     }
   }
 
@@ -1787,10 +1822,14 @@ class QoraClient implements MutationTracker {
     _log('Reconnected: replaying ${_pausedFetches.length} paused queries '
         'and ${_offlineMutationQueue.length} queued mutations');
 
+    // Registered writes do not depend on fresh reads: resume them now
+    // rather than after every paused read and its retries.
+    _mutationQueue.resume();
+
     // Replay queries in batches to avoid the thundering herd.
     await _replayPausedFetches();
 
-    // Replay offline mutation queue after queries so that server data is fresh.
+    // Replay unregistered mutations after queries so that server data is fresh.
     if (!_offlineMutationQueue.isEmpty) {
       final result = await _offlineMutationQueue.replay();
       _log('Offline mutation replay: ${result.succeeded} ok, '

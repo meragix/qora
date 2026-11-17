@@ -35,14 +35,18 @@ Qora's direction: be the server-state layer you pick when a Flutter app has to k
 - `invalidatePrefix`, `useFetchStatus`
 - Guides: route prefetching, Dio, GraphQL, migration from `cached_query` and `flutter_query`
 
-## Next: v1.4, offline all the way
+### v1.4: Offline writes that survive a restart
+
+- Registered mutations (`registerMutation`, `mutationKey`) with a stable `mutationId` for idempotency keys
+- `client.mutationQueue`: retries with backoff, ordered lanes per `scope`, `blocked` and `held` calls when a write is rejected, `retry` and `discard`
+- With `PersistQoraClient`, each queued call is stored before it counts as queued and restored by `hydrate()`
+- Sync status: `entriesStream`, `useMutationQueue()`, and `mutationEvents` for calls with no caller left
+
+## Next
 
 | Feature | Why |
 |---|---|
-| **Persisted offline mutation queue** | Today a write queued offline is lost if the app is killed before reconnecting. Closures cannot be persisted, so mutations will be registered by name with a serializer for their variables, and the queue will store `(name, variables)` through the existing `StorageAdapter`. |
-| **First-party storage adapters** | Ship ready-made `StorageAdapter` implementations (Hive, SharedPreferences) so persistence takes three lines instead of a custom class. |
-| **Sync status API** | A stream and a hook (`useOfflineQueue`) exposing pending, replaying and failed mutations, for "3 changes waiting to sync" UIs without polling. |
-| **Replay conflict handling** | A per-mutation callback to decide what happens when a replayed write is rejected (for example HTTP 409): drop, retry, or surface to the user. |
+| **First-party storage adapters** | Ship ready-made `StorageAdapter` implementations (Hive, SharedPreferences) so persistence takes three lines instead of a custom class. They need their own packages: `qora` stays pure Dart. |
 | **Offline demo app on the web** | A live demo where you can toggle the network and watch the cache, the queue and the overlay react. |
 
 ## Later

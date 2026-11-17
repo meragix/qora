@@ -53,7 +53,10 @@ export 'package:qora_flutter/qora_flutter.dart'
         MutationIdle,
         MutationPending,
         MutationSuccess,
-        MutationFailure;
+        MutationFailure,
+        MutationQueue,
+        QueuedMutation,
+        QueuedMutationStatus;
 
 export 'src/hooks/use_query_client.dart';
 export 'src/hooks/use_query.dart';
@@ -63,3 +66,4 @@ export 'src/hooks/use_infinite_query.dart'
     show InfiniteQueryHandle, useInfiniteQuery;
 export 'src/hooks/use_is_fetching.dart';
 export 'src/hooks/use_is_mutating.dart';
+export 'src/hooks/use_mutation_queue.dart';

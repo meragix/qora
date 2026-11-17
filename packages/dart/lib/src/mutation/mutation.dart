@@ -38,3 +38,7 @@ export 'mutation_state.dart';
 export 'mutation_state_extensions.dart';
 export 'mutation_tracker.dart';
 export 'mutation_update.dart';
+export 'queue/mutation_discarded_exception.dart';
+export 'queue/mutation_queue.dart' show MutationQueue;
+export 'queue/mutation_queue_config.dart';
+export 'queue/queued_mutation.dart';

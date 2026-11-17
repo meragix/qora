@@ -1,70 +1,67 @@
 import 'package:flutter/material.dart';
 
-import '../models/todo.dart';
+import '../data/todo_view.dart';
 
-/// A single row in the todo list.
+/// A row of the list.
 ///
-/// Renders differently depending on [todo.isPending]:
-/// - **Pending** (created offline, not yet confirmed by server): greyed-out
-///   italic title, spinner leading, cloud-off trailing with tooltip.
-/// - **Confirmed**: normal title, checkbox leading, delete trailing.
+/// A todo with queued writes stays fully usable: a toggle or a delete made
+/// before the server confirmed its creation is queued behind it, in the same
+/// scope. The trailing icon shows where it stands.
 class TodoTile extends StatelessWidget {
-  final Todo todo;
-  final void Function(ToggleTodoInput input) onToggle;
-  final void Function(DeleteTodoInput input)? onDelete;
-
   const TodoTile({
     super.key,
-    required this.todo,
+    required this.view,
     required this.onToggle,
-    this.onDelete,
+    required this.onDelete,
   });
+
+  final TodoView view;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final todo = view.todo;
     return ListTile(
-      leading: todo.isPending
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Checkbox(
-              value: todo.completed,
-              onChanged: (_) => onToggle(
-                ToggleTodoInput(id: todo.id, completed: !todo.completed),
-              ),
-            ),
+      leading: Checkbox(value: todo.completed, onChanged: (_) => onToggle()),
       title: Text(
         todo.title,
         style: TextStyle(
-          color: todo.isPending
-              ? Colors.grey.shade500
-              : todo.completed
-              ? Colors.grey.shade600
-              : null,
-          fontStyle: todo.isPending ? FontStyle.italic : FontStyle.normal,
-          decoration: !todo.isPending && todo.completed
-              ? TextDecoration.lineThrough
-              : null,
+          color: todo.completed ? Colors.grey.shade600 : null,
+          decoration: todo.completed ? TextDecoration.lineThrough : null,
         ),
       ),
-      trailing: todo.isPending
-          ? Tooltip(
-              message: 'Will sync when online',
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          switch (view.sync) {
+            SyncState.synced => const SizedBox.shrink(),
+            SyncState.pending => Tooltip(
+              message: 'Waiting to sync',
               child: Icon(
-                Icons.cloud_off,
-                size: 16,
-                color: Colors.grey.shade400,
+                Icons.cloud_upload_outlined,
+                key: const ValueKey('pending'),
+                size: 18,
+                color: Colors.grey.shade500,
               ),
-            )
-          : IconButton(
-              icon: const Icon(Icons.delete_outline),
-              color: Colors.grey.shade600,
-              onPressed: onDelete == null
-                  ? null
-                  : () => onDelete!(DeleteTodoInput(id: todo.id)),
             ),
+            SyncState.needsAttention => Tooltip(
+              message: 'Not synced: open the sync panel',
+              child: Icon(
+                Icons.error_outline,
+                key: const ValueKey('needsAttention'),
+                size: 18,
+                color: Colors.red.shade400,
+              ),
+            ),
+          },
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            color: Colors.grey.shade600,
+            onPressed: onDelete,
+          ),
+        ],
+      ),
     );
   }
 }

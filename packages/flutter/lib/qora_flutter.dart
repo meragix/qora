@@ -88,6 +88,7 @@ export 'package:qora/qora.dart';
 
 // Widgets
 export 'src/widgets/infinite_query_builder.dart';
+export 'src/widgets/mutation_queue_builder.dart';
 export 'src/widgets/network_status_builder.dart';
 export 'src/widgets/network_status_indicator.dart';
 export 'src/widgets/qora_builder.dart';

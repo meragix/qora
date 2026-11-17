@@ -232,6 +232,7 @@ class _QoraMutationBuilderState<TData, TVariables, TContext>
       mutator: widget.mutator,
       options: widget.options,
       registry: client?.mutationRegistry,
+      mutationQueue: client?.mutationQueue,
       tracker: client,
       metadata: _buildMetadata(),
       // Wire offline support when a QoraScope with connectivity is present.
