@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Passthrough scaling helpers — drop-in replacement for flutter_screenutil's
+/// Passthrough scaling helpers: drop-in replacement for flutter_screenutil's
 /// `.w` / `.h` / `.r` / `.sp` without any screen-relative scaling logic.
 extension NumScalingExt on num {
   double get w => toDouble();

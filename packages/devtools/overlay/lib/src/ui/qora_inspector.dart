@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qora/qora.dart';
 import 'package:qora_devtools_overlay/src/data/overlay_tracker.dart';
-import 'package:qora_devtools_overlay/src/domain/cache_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
+import 'package:qora_devtools_overlay/src/domain/mutation_queue_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/mutations_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/queries_notifier.dart';
 import 'package:qora_devtools_overlay/src/domain/query_inspector_notifier.dart';
@@ -15,7 +15,7 @@ import 'package:qora_devtools_overlay/src/ui/panel/layout/qora_panel.dart';
 /// Public entry point for the Qora DevTools overlay.
 ///
 /// Wraps [child] with the DevTools FAB and panel. Zero overhead in release
-/// builds — the entire overlay is tree-shaken when [kDebugMode] is `false`.
+/// builds: the entire overlay is tree-shaken when [kDebugMode] is `false`.
 ///
 /// ## Setup
 ///
@@ -50,10 +50,12 @@ class QoraInspector extends StatefulWidget {
   /// The [OverlayTracker] connected to the [QoraClient] of this app.
   final OverlayTracker tracker;
 
-  /// Optional [QoraClient] reference used by the inspector action buttons
-  /// (Refetch, Invalidate, Remove, Mark Stale, Simulate Error).
+  /// Optional [QoraClient] of the app.
   ///
-  /// When omitted the actions section is hidden.
+  /// Enables the query actions (Invalidate, Remove, Mark Stale, Simulate
+  /// Error) and the Queue tab, which reads [QoraClient.mutationQueue].
+  /// Without it the actions are hidden and the Queue tab explains how to
+  /// enable it.
   final QoraClient? client;
 
   @override
@@ -66,7 +68,7 @@ class _QoraInspectorState extends State<QoraInspector> {
   late final MutationInspectorNotifier _mutationInspectorNotifier;
   late final QueriesNotifier _queriesNotifier;
   late final MutationsNotifier _mutationsNotifier;
-  late final CacheNotifier _cacheNotifier;
+  late final MutationQueueNotifier _queueNotifier;
 
   bool _panelOpen = false;
 
@@ -80,7 +82,7 @@ class _QoraInspectorState extends State<QoraInspector> {
     _mutationInspectorNotifier = MutationInspectorNotifier(widget.tracker);
     _queriesNotifier = QueriesNotifier(widget.tracker);
     _mutationsNotifier = MutationsNotifier(widget.tracker);
-    _cacheNotifier = CacheNotifier(widget.tracker);
+    _queueNotifier = MutationQueueNotifier(widget.client?.mutationQueue);
   }
 
   @override
@@ -91,7 +93,7 @@ class _QoraInspectorState extends State<QoraInspector> {
       _mutationInspectorNotifier.dispose();
       _queriesNotifier.dispose();
       _mutationsNotifier.dispose();
-      _cacheNotifier.dispose();
+      _queueNotifier.dispose();
     }
     super.dispose();
   }
@@ -104,10 +106,10 @@ class _QoraInspectorState extends State<QoraInspector> {
       providers: [
         ChangeNotifierProvider.value(value: _queriesNotifier),
         ChangeNotifierProvider.value(value: _mutationsNotifier),
+        ChangeNotifierProvider.value(value: _queueNotifier),
         ChangeNotifierProvider.value(value: _queryInspectorNotifier),
         ChangeNotifierProvider.value(value: _mutationInspectorNotifier),
         ChangeNotifierProvider.value(value: _timelineNotifier),
-        ChangeNotifierProvider.value(value: _cacheNotifier),
       ],
       child: Directionality(
         textDirection: TextDirection.ltr,

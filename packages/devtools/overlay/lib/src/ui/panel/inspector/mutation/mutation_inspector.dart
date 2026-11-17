@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:qora_devtools_overlay/src/domain/mutation_inspector_notifier.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/inspector_widgets.dart';
@@ -14,8 +13,8 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// Inspector detail view for a selected mutation.
 ///
 /// Two tabs (memorised across selections):
-/// - OVERVIEW: STATUS + ACTIONS + METADATA
-/// - DATA: VARIABLES + ERROR + ROLLBACK CONTEXT
+/// - OVERVIEW: key, status and timestamps
+/// - DETAILS: variables, then the result or the error
 class MutationInspector extends StatefulWidget {
   const MutationInspector({super.key});
 
@@ -101,46 +100,6 @@ class _MutationInspectorState extends State<MutationInspector>
                     child: StatusBadge(status: detail.status),
                   ),
 
-                  // ACTIONS
-                  if (detail.status == 'error')
-                    InspectorSection(
-                      label: 'ACTIONS',
-                      child: InspectorActionButton(
-                        label: 'Retry',
-                        icon: LucideIcons.refreshCcw,
-                        accentColor: const Color(0xFF4F46E5),
-                        onTap: () => notifier.retry(),
-                      ),
-                    ),
-                  if (detail.status == 'pending')
-                    InspectorSection(
-                      label: 'ACTIONS',
-                      child: Column(
-                        children: [
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              InspectorActionButton(
-                                // label: 'Pause/Resume',
-                                label: 'Pause',
-                                //icon: detail.isPaused ? LucideIcons.play : LucideIcons.pause,
-                                icon: LucideIcons.play,
-                                accentColor: DevtoolsColors.amber400,
-                                onTap: () => notifier.pauseResume(),
-                              ),
-                            ],
-                          ),
-                          InspectorActionButton(
-                            label: 'Cancel',
-                            icon: LucideIcons.circleX,
-                            accentColor: DevtoolsColors.red400,
-                            onTap: () => notifier.cancel(),
-                          ),
-                        ],
-                      ),
-                    ),
-
                   // METADATA
                   InspectorSection(
                     label: 'METADATA',
@@ -149,15 +108,11 @@ class _MutationInspectorState extends State<MutationInspector>
                       children: [
                         InspectorMetaRow(
                             'Created At', detail.createdAt.fmtDateTime()),
-                        if (detail.submittedAt != null)
-                          InspectorMetaRow('Submitted At',
-                              detail.submittedAt!.fmtDateTime()),
                         if (detail.updatedAt != null)
                           InspectorMetaRow(
                               'Updated At', detail.updatedAt!.fmtDateTime()),
                         if (detail.elapsedMs != null)
                           InspectorMetaRow('Duration', '${detail.elapsedMs}ms'),
-                        InspectorMetaRow('Retry Count', '${detail.retryCount}'),
                       ],
                     ),
                   ),
@@ -177,7 +132,7 @@ class _MutationInspectorState extends State<MutationInspector>
                     ),
                   ),
 
-                  // DATA — server response on success
+                  // DATA: server response on success
                   if (detail.data != null)
                     InspectorSection(
                       label: 'DATA',
@@ -187,23 +142,13 @@ class _MutationInspectorState extends State<MutationInspector>
                       ),
                     ),
 
-                  // ERROR — on failure
+                  // ERROR: on failure
                   if (detail.error != null)
                     InspectorSection(
                       label: 'ERROR',
                       child: JsonViewer(
                         key: ValueKey('${detail.id}_error'),
                         data: detail.error,
-                      ),
-                    ),
-
-                  // ROLLBACK CONTEXT — optimistic updates only
-                  if (detail.rollbackContext != null)
-                    InspectorSection(
-                      label: 'ROLLBACK CONTEXT',
-                      child: JsonViewer(
-                        key: ValueKey('${detail.id}_rollback'),
-                        data: detail.rollbackContext,
                       ),
                     ),
                 ],

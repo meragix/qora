@@ -20,17 +20,19 @@ class QueriesNotifier extends ChangeNotifier {
   final _queries = <String, QueryEvent>{};
 
   QueriesNotifier(this._tracker) {
-    for (final e in _tracker.queryHistory) {
-      _queries[e.key] = e;
-    }
+    _tracker.queryHistory.forEach(_apply);
     _sub = _tracker.onQuery.listen((event) {
-      if (event.type == QueryEventType.removed) {
-        _queries.remove(event.key);
-      } else {
-        _queries[event.key] = event;
-      }
+      _apply(event);
       notifyListeners();
     });
+  }
+
+  void _apply(QueryEvent event) {
+    if (event.type == QueryEventType.removed) {
+      _queries.remove(event.key);
+    } else {
+      _queries[event.key] = event;
+    }
   }
 
   /// All observed queries, one entry per distinct key, newest first.

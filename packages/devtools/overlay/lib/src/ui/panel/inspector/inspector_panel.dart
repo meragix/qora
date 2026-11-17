@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/mutation/mutation_inspector.dart';
 import 'package:qora_devtools_overlay/src/ui/panel/inspector/query/query_inspector.dart';
+import 'package:qora_devtools_overlay/src/ui/panel/inspector/queue/queue_inspector.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_typography.dart';
 
-/// Dispatches to [QueryInspector] or [MutationInspector] based on [showQuery].
-///
-/// Renders a sticky header that shows "QUERY INSPECTOR" or "MUTATION INSPECTOR"
-/// and animates between the two inspectors when [showQuery] changes.
-class InspectorPanel extends StatelessWidget {
-  /// When `true`, renders [QueryInspector]; otherwise renders [MutationInspector].
-  final bool showQuery;
+/// What the inspector column shows: the selection of the list tab last used.
+enum InspectorKind { query, mutation, queue }
 
-  const InspectorPanel({super.key, required this.showQuery});
+/// Dispatches to [QueryInspector], [MutationInspector] or [QueueInspector]
+/// based on [kind], under a header naming it.
+class InspectorPanel extends StatelessWidget {
+  final InspectorKind kind;
+
+  const InspectorPanel({super.key, required this.kind});
 
   @override
   Widget build(BuildContext context) {
@@ -20,15 +21,20 @@ class InspectorPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Header ─────────────────────────────────────────────────────────
-        _InspectorHeader(showQuery: showQuery),
+        _InspectorHeader(kind: kind),
 
         // ── Content ────────────────────────────────────────────────────────
         Expanded(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: showQuery
-                ? const QueryInspector(key: ValueKey('query'))
-                : const MutationInspector(key: ValueKey('mutation')),
+            child: switch (kind) {
+              InspectorKind.query =>
+                const QueryInspector(key: ValueKey('query')),
+              InspectorKind.mutation =>
+                const MutationInspector(key: ValueKey('mutation')),
+              InspectorKind.queue =>
+                const QueueInspector(key: ValueKey('queue')),
+            },
           ),
         ),
       ],
@@ -37,8 +43,8 @@ class InspectorPanel extends StatelessWidget {
 }
 
 class _InspectorHeader extends StatelessWidget {
-  final bool showQuery;
-  const _InspectorHeader({required this.showQuery});
+  final InspectorKind kind;
+  const _InspectorHeader({required this.kind});
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +56,12 @@ class _InspectorHeader extends StatelessWidget {
       ),
       alignment: Alignment.centerLeft,
       child: Text(
-        showQuery ? 'INSPECTOR' : 'MUTATION INSPECTOR',
-        key: ValueKey(showQuery),
+        switch (kind) {
+          InspectorKind.query => 'INSPECTOR',
+          InspectorKind.mutation => 'MUTATION INSPECTOR',
+          InspectorKind.queue => 'QUEUE INSPECTOR',
+        },
+        key: ValueKey(kind),
         style: DevtoolsTypography.tab.copyWith(letterSpacing: 0.6),
       ),
     );

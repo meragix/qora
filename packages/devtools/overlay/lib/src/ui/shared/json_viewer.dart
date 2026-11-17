@@ -23,11 +23,11 @@ class _C {
 }
 
 // ─────────────────────────────────────────────
-// Entry point — accepts raw dynamic
+// Entry point: accepts raw dynamic
 // ─────────────────────────────────────────────
 
 class JsonViewer extends StatefulWidget {
-  /// Any value: Map, List, String, num, bool, null — or a pre-built [JsonValue].
+  /// Any value: Map, List, String, num, bool, null, or a pre-built [JsonValue].
   final dynamic data;
 
   /// Max number of nesting levels auto-expanded on first render.
@@ -85,7 +85,7 @@ class _JsonViewerState extends State<JsonViewer> {
             ),
           ),
 
-          // ── Copy button — appears on hover ──────────────────────────────
+          // ── Copy button: appears on hover ──────────────────────────────
           if (widget.data != null && _hovered)
             Positioned(
               top: 0,
@@ -114,7 +114,7 @@ class _JsonViewerState extends State<JsonViewer> {
 }
 
 // ─────────────────────────────────────────────
-// Recursive node — dispatches on sealed type
+// Recursive node: dispatches on sealed type
 // ─────────────────────────────────────────────
 
 class _JsonNode extends StatelessWidget {
@@ -151,7 +151,7 @@ class _JsonNode extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Leaf — primitive value chip
+// Leaf: primitive value chip
 // ─────────────────────────────────────────────
 
 class _PrimitiveChip extends StatelessWidget {
@@ -170,7 +170,7 @@ class _PrimitiveChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Expandable node — object or array
+// Expandable node: object or array
 // ─────────────────────────────────────────────
 
 class _ExpandableNode extends StatefulWidget {
@@ -206,7 +206,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
       case JsonArray v:
         _isArray = true;
         _length = v.length;
-        // index as string key — matches React's `data.entries()`
+        // index as string key: matches React's `data.entries()`
         _entries = v.items.asMap().entries.map(
               (e) => MapEntry(e.key.toString(), e.value),
             );
@@ -215,7 +215,7 @@ class _ExpandableNodeState extends State<_ExpandableNode> {
         _length = v.length;
         _entries = v.fields.entries;
       default:
-        // unreachable — _ExpandableNode is only created for Array/Object
+        // unreachable: _ExpandableNode is only created for Array/Object
         _isArray = false;
         _length = 0;
         _entries = const [];

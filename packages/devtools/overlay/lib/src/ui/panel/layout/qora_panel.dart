@@ -4,7 +4,7 @@ import 'package:qora_devtools_overlay/src/ui/panel/layout/panel_body.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 import 'package:qora_devtools_overlay/src/ui/theme/devtools_spacing.dart';
 
-/// The main DevTools panel — a dark sheet anchored to the bottom of the screen.
+/// The main DevTools panel: a dark sheet anchored to the bottom of the screen.
 ///
 /// The expand button in [PanelHeader] toggles between 60 % height (normal)
 /// and 95 % height (expanded), animated with [AnimatedPositioned].

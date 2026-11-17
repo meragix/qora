@@ -42,7 +42,7 @@ void main() {
 
       // Ring buffer capped at 200
       expect(tracker.queryHistory.length, 200);
-      // Oldest entry evicted — first key should be key_1
+      // Oldest entry evicted: first key should be key_1
       expect(tracker.queryHistory.first.key, 'key_1');
     });
 

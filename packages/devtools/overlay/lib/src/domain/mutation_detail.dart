@@ -3,10 +3,10 @@ import 'package:qora_devtools_shared/qora_devtools_shared.dart';
 /// View-model for the Mutation Inspector panel (column 2).
 ///
 /// Derived from a [MutationEvent] snapshot; exposes computed fields that
-/// the inspector panel renders directly — status badge, raw data for the
+/// the inspector panel renders directly: status badge, raw data for the
 /// JSON viewer, and metadata rows.
 class MutationDetail {
-  /// Runtime mutation identifier — stable across retries. Used as widget key
+  /// Runtime mutation identifier: stable across retries. Used as widget key
   /// for [JsonViewer] instances to force a full rebuild on selection change.
   final String id;
 
@@ -19,16 +19,11 @@ class MutationDetail {
   /// Raw variables passed to the mutation, or `null` if none.
   final dynamic variables;
 
-  /// Server response — only present when [status] is `'success'`.
+  /// Server response: only present when [status] is `'success'`.
   final dynamic data;
 
-  /// Raw error/result — only present when [status] is `'error'`.
+  /// Raw error/result: only present when [status] is `'error'`.
   final dynamic error;
-
-  /// Raw rollback context — only present for optimistic-update mutations.
-  ///
-  /// Currently `null`; will be populated when the tracker exposes rollback data.
-  final dynamic rollbackContext;
 
   /// Round-trip duration in milliseconds from `started` to `settled`.
   ///
@@ -38,26 +33,8 @@ class MutationDetail {
   /// Timestamp of the `mutation.started` event.
   final DateTime createdAt;
 
-  /// Timestamp when the mutation was submitted to the server (same as [createdAt] for now).
-  final DateTime? submittedAt;
-
-  /// Timestamp of the last state update (settle event), if any.
+  /// Timestamp of the settle event, or `null` while pending.
   final DateTime? updatedAt;
-
-  /// Whether this mutation carries an optimistic update.
-  ///
-  /// `true` when [QoraClient.setQueryData] was called for the associated key
-  /// before the server confirmed the result. In the overlay this is inferred
-  /// by correlating [OverlayTracker.onOptimisticUpdate] with the mutation start;
-  /// in the IDE extension it is read directly from the protocol JSON.
-  final bool isOptimistic;
-
-  /// Number of retry attempts for this mutation.
-  ///
-  /// In the overlay this stays `0` — the [QoraTracker] interface does not
-  /// expose a per-retry hook for mutations. In the IDE extension it is
-  /// populated from the protocol JSON field `retryCount`.
-  final int retryCount;
 
   const MutationDetail({
     required this.id,
@@ -66,13 +43,9 @@ class MutationDetail {
     this.variables,
     this.data,
     this.error,
-    this.rollbackContext,
     this.elapsedMs,
     required this.createdAt,
-    this.submittedAt,
     this.updatedAt,
-    this.isOptimistic = false,
-    this.retryCount = 0,
   });
 
   /// Builds a [MutationDetail] from the latest [MutationEvent] snapshot.
@@ -104,8 +77,6 @@ class MutationDetail {
       elapsedMs: elapsedMs,
       createdAt: (startedAtMs ?? event.timestampMs).toDateTime(),
       updatedAt: isSettled ? event.timestampMs.toDateTime() : null,
-      isOptimistic: event.isOptimistic,
-      retryCount: event.retryCount,
     );
   }
 }

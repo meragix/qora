@@ -3,7 +3,7 @@ import 'package:qora_devtools_overlay/src/ui/theme/devtools_colors.dart';
 
 const double kMobileBreakpoint = 600.0;
 
-// ── Contraintes des colonnes ──────────────────────────────────────────────────
+// ── Column constraints ────────────────────────────────────────────────────────
 
 const double _kListMinWidth = 180.0;
 const double _kListMaxWidth = 400.0;
@@ -26,7 +26,7 @@ enum PanelScreen { list, inspector, secondary }
 /// Responsive three-column layout with **draggable dividers** on desktop and a
 /// slide-animated single-column stack on mobile.
 ///
-/// ### Desktop — resizable split panels
+/// ### Desktop: resizable split panels
 ///
 /// ```
 /// ┌──────────┬──────────────────────────┬───────────┐
@@ -42,7 +42,7 @@ enum PanelScreen { list, inspector, secondary }
 ///   (`$_kSecondaryMinWidth` – `$_kSecondaryMaxWidth`).
 /// * The center column takes all remaining space (min `$_kCenterMinWidth`).
 ///
-/// ### Mobile — swipe stack
+/// ### Mobile: swipe stack
 ///
 /// Three full-screen pages driven by [currentScreen] / [onNavigate], each
 /// animated with a directional [SlideTransition].
@@ -130,7 +130,7 @@ class _PanelLayoutState extends State<PanelLayout> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Desktop — split panels
+// Desktop: split panels
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _DesktopLayout extends StatelessWidget {
@@ -171,13 +171,13 @@ class _DesktopLayout extends StatelessWidget {
 
         return Row(
           children: [
-            // ── Col 1 — list ────────────────────────────────────────────────
+            // ── Col 1: list ────────────────────────────────────────────────
             SizedBox(width: listWidth, child: listColumn),
 
             // ── Divider 1 ───────────────────────────────────────────────────
             if (hasInspector) _ResizeDivider(onDrag: onListDividerDrag),
 
-            // ── Col 2 — inspector (flex) ────────────────────────────────────
+            // ── Col 2: inspector (flex) ────────────────────────────────────
             if (hasInspector)
               Expanded(
                 child: ConstrainedBox(
@@ -190,7 +190,7 @@ class _DesktopLayout extends StatelessWidget {
             if (hasInspector && hasSecondary)
               _ResizeDivider(onDrag: onSecondaryDividerDrag),
 
-            // ── Col 3 — secondary ───────────────────────────────────────────
+            // ── Col 3: secondary ───────────────────────────────────────────
             if (hasSecondary)
               SizedBox(
                 width: effectiveSecondaryWidth,
@@ -252,7 +252,7 @@ class _ResizeDividerState extends State<_ResizeDivider> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mobile — slide stack
+// Mobile: slide stack
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MobileLayout extends StatelessWidget {
@@ -334,7 +334,7 @@ class _MobileLayout extends StatelessWidget {
 // Mobile nav bar
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Barre de navigation mobile — back + titre centré + forward optionnel.
+/// Mobile navigation bar: back, centered title, optional forward.
 class _MobileNavBar extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
