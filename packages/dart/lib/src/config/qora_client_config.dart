@@ -71,8 +71,10 @@ class QoraClientConfig {
   /// Maximum number of queries held in cache simultaneously.
   ///
   /// When the limit is reached, the least-recently-used *inactive* (no
-  /// subscribers) query is evicted to make room. Active queries are never
-  /// forcibly evicted. `null` (default) means unbounded.
+  /// subscribers) queries are evicted to make room. Active queries, and
+  /// queries with a fetch in flight or paused offline, are never forcibly
+  /// evicted, so the cache can exceed the limit until those fetches settle.
+  /// `null` (default) means unbounded.
   final int? maxCacheSize;
 
   /// Callback invoked whenever a cache entry is evicted — either via LRU,
