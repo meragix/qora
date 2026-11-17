@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# The Dart analysis server sends usage metrics to Google Analytics. When that
+# request fails (offline, firewall, VPN, sandbox), the server crashes with
+# "The analysis server crashed unexpectedly" and the hook fails for a reason
+# unrelated to the code. Suppress analytics for these checks only; the global
+# telemetry setting (dart/flutter --disable-analytics) is left untouched.
+export DASH__SUPPRESS_ANALYTICS=true
+
 echo "→ Checking format..."
 melos format:check || exit 1
 
