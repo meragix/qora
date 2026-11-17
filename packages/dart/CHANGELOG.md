@@ -11,9 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `QueryCache(canEvict:)`: an optional predicate that keeps an entry from LRU eviction.
+- `QoraClient.registerMutation` and `MutationOptions.mutationKey`: register a mutation once by key and run it from any call site without a mutator. Its mutator receives a `mutationId` that stays the same across retries and replays, to send as an idempotency key.
+- `QoraClient.mutationRegistry` lists the registered mutations (`MutationRegistry`, `MutationRegistration`), and `MutationMeta` carries the call's identity.
 
 ### Changed
 
+- `MutationController` no longer requires a `mutator` when `options.mutationKey` names a registered mutation.
 - `PersistQoraClient.clearStorage()`, and `clear()` which calls it, now delete only the entries Qora wrote, like `hydrate()` since 1.3.1. Other keys in a shared adapter are kept. To wipe the whole adapter, call `clear()` on the `StorageAdapter` itself.
 - `QoraClient.prefetch()` no longer throws for a fetch failure. The failure is still recorded in the query state and is now passed once to `QoraClientConfig.onBackgroundFetchError` (not when the prefetch joined a fetch started elsewhere, which reports or delivers its own error); a cancelled or offline-paused prefetch completes silently. Fire-and-forget calls such as `onLongPress: () => context.prefetch(...)` crashed the current `Zone` on failure. If you awaited `prefetch` to catch its error, use `fetchQuery` instead.
 - `QoraClientConfig.onBackgroundFetchError` now fires once per failed background fetch, from the call that started it. Callers that join an in-flight fetch (a watcher mounting during a prefetch, a reconnect replay) no longer report the same failure again. A fetch started by `fetchQuery` delivers its error to that caller and is not reported, even when background callers joined it. Cancellations and real offline pauses are no longer reported (a `QoraOfflineException` thrown by a fetcher, `errorMapper` or `transformError` still is): `watchQuery` used to pass a `QoraOfflineException` when it paused with no cached data.
@@ -31,9 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A throwing `transformError`, `errorMapper` or model `==` no longer leaves the query stuck in `Loading`; the fetch fails with that error.
 - `keepPreviousData` and `Failure.previousData` now keep data written by an older fetch that settled first.
 - `FetchStatus` no longer reports `idle` while a fetch for the key is paused offline.
-
-### Fixed
-
 - Per-query `QoraOptions` now inherit `QoraClientConfig.defaultOptions`, as documented. `merge` reset every field a query did not pass (`staleTime`, `gcTime`, `enabled`, `retryCount`, `retryDelay`, `refetchOnWindowFocus`, `refetchOnReconnect`, `networkMode`, `structuralSharing`, `keepPreviousData`) to its constructor default: a global `retryCount: 0` became 3 as soon as a query passed `QoraOptions(staleTime: ...)`. These constructor parameters are now nullable; a field left out is unset, reads as its default, and falls back to the global value on `merge`. Reading the fields and existing call sites are unchanged. If a query relied on the reset, pass the default explicitly, for example `QoraOptions(staleTime: Duration.zero)`.
 
 ## [1.3.1] - 2026-11-07

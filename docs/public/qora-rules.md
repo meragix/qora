@@ -53,7 +53,8 @@ builder: (context, state, fetchStatus) => switch (state) {
 
 - Widget: `QoraMutationBuilder<TData, TVariables, TContext>(mutator: ..., options: MutationOptions(...), builder: (context, state, mutate) => ...)`.
 - Hook: `final m = useMutation<TData, TVariables>(mutator: ..., options: ...);` then `m.mutate(vars)` or `await m.mutateAsync(vars)`. Its rollback context type is `void`; use `QoraMutationBuilder` when `onMutate` must return a snapshot for `onError`.
-- Callback order: `onMutate`, mutator, then `onSuccess`, `invalidates`, `invalidatesTags`, `onSettled`; or `onError`, `onSettled`.
+- Registered mutations: at startup, `client.registerMutation<TData, TVariables>('todos.create', mutator: (vars, meta) => ..., variables: QoraSerializer<TVariables>(toJson: ..., fromJson: ...))`; at the call site, `MutationOptions(mutationKey: 'todos.create')` and no `mutator`. Passing both, or a key never registered, throws. `meta.mutationId` is stable across the retries and replays of one call: send it as an idempotency key.
+- Callback order: `onMutate`, mutator, then `onSuccess`, the registration's `invalidates` and `invalidatesTags`, the call site's `invalidates` and `invalidatesTags`, `onSettled`; or `onError`, `onSettled`.
 - Optimistic update: in `onMutate`, read with `client.getQueryData<T>(key)`, write with `client.setQueryData<T>(key, value)`, return the previous value; in `onError`, call `client.restoreQueryData<T>(key, previous)`.
 - Imperative access in widgets: `context.qora` returns the `QoraClient`.
 

@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `useMutation`'s `mutator` is optional when `options.mutationKey` names a mutation registered with `QoraClient.registerMutation`.
+
 ### Fixed
 
 - `useInfiniteQuery`: `fetchNextPage` called the fetcher once and exposed the first failure, while the first page went through `fetchQuery` and was retried. It now applies the same policy: `retryCount`, `retryCondition` and the backoff of `options`, merged over the client defaults.
