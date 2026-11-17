@@ -43,7 +43,7 @@ If you know [TanStack Query](https://tanstack.com/query), you already know the m
 
 ```yaml
 dependencies:
-  qora_flutter: ^1.3.1
+  qora_flutter: ^1.4.0
 ```
 
 Create a client and put it above your app. `QoraScope.auto` wires app-lifecycle and connectivity tracking for you:

@@ -1,6 +1,6 @@
 # Qora rules for AI coding assistants
 
-Qora (pub.dev: `qora`, `qora_flutter`, `qora_hooks`) is a server-state library for Flutter and Dart, version 1.3. It is inspired by TanStack Query but its API is different: do not translate TanStack or React Query code literally. Full docs: https://qora.meragix.dev/llms.txt
+Qora (pub.dev: `qora`, `qora_flutter`, `qora_hooks`) is a server-state library for Flutter and Dart, version 1.4. It is inspired by TanStack Query but its API is different: do not translate TanStack or React Query code literally. Full docs: https://qora.meragix.dev/llms.txt
 
 ## Setup
 

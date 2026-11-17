@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-17
+
 ### Added
 
 - `MutationQueueBuilder` rebuilds with the calls in the client's mutation queue each time they change.
