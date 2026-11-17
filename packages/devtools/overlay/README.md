@@ -20,7 +20,7 @@ Zero overhead in release builds: `QoraInspector` returns its `child` unchanged a
 
 ```yaml
 dependencies:
-  qora_devtools_overlay: ^0.3.0
+  qora_devtools_overlay: ^0.4.0
 ```
 
 Add it to `dependencies`, not `dev_dependencies`: `main.dart` imports it. It costs nothing in release builds.
