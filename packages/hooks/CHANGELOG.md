@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-17
+
+### Changed
+
+- Requires `qora_flutter` 1.4.1.
+
 ## [1.4.0] - 2026-11-17
 
 ### Added

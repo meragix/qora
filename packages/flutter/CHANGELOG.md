@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-17
+
+### Changed
+
+- Requires `qora` 1.4.1, which reports failed fetches to DevTools.
+
 ## [1.4.0] - 2026-11-17
 
 ### Added
