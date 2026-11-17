@@ -13,7 +13,7 @@ Part of the [Qora monorepo](https://github.com/meragix/qora). For Flutter-specif
 
 ```yaml
 dependencies:
-  qora: ^1.3.1
+  qora: ^1.4.0
 ```
 
 ## Quick start
