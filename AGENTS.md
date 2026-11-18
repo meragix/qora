@@ -65,6 +65,7 @@ Do not break these without an explicit decision from a maintainer.
 - `qora`, `qora_flutter` and `qora_hooks` are released in lockstep with the same version and a tag `x.y.z`, by `scripts/release.sh <version>`. Never bump their `version:` or move CHANGELOG headings by hand.
 - The DevTools packages have their own versions.
 - In every package you change, add an entry to its `CHANGELOG.md` under `## [Unreleased]`, in a Keep a Changelog section (`### Added`, `### Changed`, `### Fixed`, `### Deprecated`, `### Removed`). The release script turns `[Unreleased]` into the version heading.
+- The docs site renders these files at `/changelog` (`docs/content.config.ts`, `docs/app/utils/changelog.ts`). A release heading other than `## [x.y.z] - YYYY-MM-DD` or a section outside Keep a Changelog fails the docs build.
 
 ## Documentation
 
