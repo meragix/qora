@@ -7,15 +7,26 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/deploy-docs.yml"
+      # The changelog page reads these files in place (docs/content.config.ts).
+      - "packages/*/CHANGELOG.md"
+      - "packages/devtools/*/CHANGELOG.md"
+  # Build only, no deploy: a page that fails to prerender, such as the
+  # changelog page on a malformed CHANGELOG.md, fails the PR before the merge.
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+      - "packages/*/CHANGELOG.md"
+      - "packages/devtools/*/CHANGELOG.md"
 
+# The build job, which also runs on PRs, only reads; deploy alone writes to Pages.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  # Deploys queue one after another; a PR build only replaces its own previous run.
+  group: ${{ github.event_name == 'push' && 'pages' || format('docs-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   build:
@@ -43,11 +54,16 @@ jobs:
         run: npm run build
       
       - name: Upload artifact
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/.output/public
 
   deploy:
+    if: github.event_name == 'push'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

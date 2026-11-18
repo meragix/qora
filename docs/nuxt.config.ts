@@ -3,6 +3,10 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/i18n'],
   nitro: {
     prerender: {
+      // Any crawled page that fails to render, a broken internal link
+      // included, fails the build instead of shipping as an error page. The
+      // changelog page relies on it to reject a CHANGELOG.md it cannot read.
+      failOnError: true,
       crawlLinks: true,
       routes: ['/en', '/fr'],
     },
