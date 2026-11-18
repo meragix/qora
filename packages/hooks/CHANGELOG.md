@@ -66,7 +66,7 @@
 
 - Bump version to 1.0.0 to align with `qora` core package for the v1.0.0 release.
 
-## [0.8.0] - 2026-03-01
+## [0.8.0] - 2026-03-12
 
 ### Changed
 

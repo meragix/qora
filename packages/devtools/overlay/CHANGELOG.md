@@ -57,7 +57,7 @@ All notable changes to this project will be documented in this file.
 - `QoraPanel`: added an `Overlay` widget ancestor so `TextField` can render focus decorations and selection handles; previously focusing `QuerySearchBar` threw `No Overlay widget found`.
 - `import 'package:qora/qora.dart' hide MutationEvent` removed: no longer needed since core type is now `MutationUpdate`.
 
-## [0.2.0] - 2026-03-02
+## [0.2.0] - 2026-03-12
 
 ### Added
 
