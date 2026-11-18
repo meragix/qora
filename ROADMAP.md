@@ -47,6 +47,7 @@ Qora's direction: be the server-state layer you pick when a Flutter app has to k
 | Feature | Why |
 |---|---|
 | **First-party storage adapters** | Ship ready-made `StorageAdapter` implementations (Hive, SharedPreferences) so persistence takes three lines instead of a custom class. They need their own packages: `qora` stays pure Dart. |
+| **Unreadable queued calls** | After an app update changes a serializer, a stored call that cannot be decoded is skipped silently and holds its scope. List these calls apart from `entries`, with their raw payload and error, so the app can migrate or discard them. |
 | **Offline demo app on the web** | A live demo where you can toggle the network and watch the cache, the queue and the overlay react. |
 
 ## Later
@@ -56,6 +57,7 @@ Qora's direction: be the server-state layer you pick when a Flutter app has to k
 | **Typed selector widget** | `QoraSelector<T, R>` that hands the builder the selected value directly, instead of using `select` only as a rebuild filter. |
 | **Stream watcher** | `client.watchStream(key, stream)` to pipe WebSocket or Firestore data into the cache. |
 | **Flutter DevTools extension** | Publish the IDE extension that shares the overlay's event protocol. |
+| **Memory-only registered mutations** | A per-mutation option to keep a call in the queue without writing it to storage, for data that must never sit on disk. Until then, encrypt the `StorageAdapter`. |
 | **Dart server adapter** | The core is pure Dart; a `shelf` integration would make it usable for server-side caching. |
 
 ## How priorities are decided
