@@ -7,15 +7,10 @@ import 'package:qora/src/persistence/persist_qora_client.dart';
 /// data — is managed entirely by [PersistQoraClient]; adapters only handle
 /// opaque strings and need no knowledge of Qora internals.
 ///
-/// ## Available adapters
-///
-/// | Package                        | Backend            |
-/// |--------------------------------|--------------------|
-/// | `qora` (built-in)              | [InMemoryStorageAdapter] |
-/// | `qora_storage_hive`            | Hive               |
-/// | `qora_storage_isar`            | Isar               |
-/// | `qora_storage_drift`           | Drift / SQLite     |
-/// | `qora_storage_shared_prefs`    | SharedPreferences  |
+/// Qora ships [InMemoryStorageAdapter] for tests. For an app, implement this
+/// interface over the storage it already uses (Hive, SharedPreferences, a
+/// database). Qora never calls [clear], so the store can be shared with the
+/// app. To keep persisted data off disk in plain text, encrypt in the adapter.
 ///
 /// ## Implementing a custom adapter
 ///
