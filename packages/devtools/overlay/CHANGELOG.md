@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Queue tab: the calls waiting in `client.mutationQueue`, with their status, attempts, scope, last error and variables. Needs `QoraInspector(client:)`.
+- Queue tab for `client.mutationQueue`; needs `QoraInspector(client:)`.
 
 ### Changed
 
@@ -17,64 +17,35 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Compiles again: 0.3.0 used `qora_devtools_shared` APIs that were never published, so adding it to an app failed to build.
-- A failed fetch no longer stays `loading`.
-- A cancelled fetch no longer stays `loading`: the row goes back to its previous state.
-- `setQueryData` now creates or updates the row with the written data, shown as JSON.
-- An error row keeps showing the data from before the failure, as the query does.
-- `clear()` now removes every row, and rows removed before the panel opened no longer reappear.
-- Selecting a query that was invalidated before any fetch no longer throws.
+- Compiles again: 0.3.0 used unpublished `qora_devtools_shared` APIs.
+- Failed and cancelled fetches no longer stay `loading`.
+- `setQueryData`, errors and `clear()` now show in the panel as in the cache.
 
 ### Removed
 
-- Actions and fields that did nothing or showed made-up values: the query "Refetch" button (it only invalidated), the mutation Retry, Pause and Cancel buttons, the "Optimistic" badge, the gc countdown, "Is Invalidated", rollback context, submitted time and retry count.
-- The "Widget Tree" placeholder tab and the "Data Diff" tab.
-- `OverlayTracker.onOptimistic` and `OverlayTracker.cacheSnapshot`, which no widget used.
-- The unused `assets/logo.png`, which was bundled into every app using the overlay.
+- Buttons, fields and tabs that did nothing or showed made-up values.
+- `OverlayTracker.onOptimistic` and `OverlayTracker.cacheSnapshot`.
 
 ## [0.3.0] - 2026-11-07
 
-### Fixed
-
-- Installable again with `qora` 1.x: the published 0.2.0 depended on `qora: ^0.8.0`, so adding the overlay to a `qora_flutter` 1.x app failed version solving. Now depends on `qora: ^1.3.1`.
-- Requires `lucide_icons_flutter: ^3.1.25`; earlier 3.1.x releases do not compile on current Flutter (`IconData` became a final class).
-
 ### Added
 
-- `QoraInspector.client`: optional `QoraClient` parameter; when provided, the Query Inspector column exposes Refetch, Invalidate, Remove, Mark Stale, and Simulate Error action buttons; omitting it hides the actions section entirely.
-- `OverlayTracker.onQueryRemoved()`: implements the new `QoraTracker` hook; removes the key from `_cacheState` and pushes a `removed` event so `QueriesNotifier` evicts the row immediately.
-- `OverlayTracker.onQueryMarkedStale()`: implements the new `QoraTracker` hook; pushes a `QueryEvent(type: updated, status: 'stale')` so `QueryRow` shows the orange stale dot without emitting a timeline fetch entry.
-- `QueryInspectorNotifier.markStale()`: now calls `client.markStale()` instead of `client.invalidate()`; the action flags the entry stale without triggering an immediate refetch or loading state on active observers.
-- `OverlayTracker.needsSerialization`: returns `true`; satisfies the new `QoraTracker` interface getter added in `qora 0.9.0`.
-- `OverlayTracker.onQueryFetched`: now accepts `String? dependsOnKey` named parameter (ignored: dependency graph lives in the IDE extension).
+- `QoraInspector(client:)` adds Refetch, Invalidate, Remove, Mark Stale and Simulate Error actions.
 
 ### Fixed
 
-- `OverlayTracker.onQueryFetching()`: was a no-op; now emits a transient `QueryEvent(type: updated, status: 'loading')` directly to the stream (not history) so the status dot turns blue immediately when a fetch begins.
-- `OverlayTracker.onQueryInvalidated()`: was missing; now pushes a `QueryEvent.invalidated` to both `_queryHistory` and `_queryController` so the dot updates on invalidation.
-- `QueriesNotifier`: now removes the entry from `_queries` when it receives a `removed` event; previously removed queries remained in the list indefinitely.
-- `QueryInspectorNotifier`: now clears `_selected` and calls `notifyListeners()` when the selected query receives a `removed` event; previously the inspector panel continued to show stale metadata after a remove.
-- `QoraPanel`: added an `Overlay` widget ancestor so `TextField` can render focus decorations and selection handles; previously focusing `QuerySearchBar` threw `No Overlay widget found`.
-- `import 'package:qora/qora.dart' hide MutationEvent` removed: no longer needed since core type is now `MutationUpdate`.
+- Installable with `qora` 1.x and current Flutter.
+- Status dots update on fetch, invalidation and removal.
+- The search field no longer throws on focus.
 
 ## [0.2.0] - 2026-03-12
 
 ### Added
 
-- **`OverlayTracker.onQueryFetching()`**: no-op override satisfying the new `QoraTracker` interface hook; the overlay tracks fetch completion only.
-- **`DataDiffTab` implemented**: replaces the "coming soon" stub; shows BEFORE (mutation variables) and AFTER (result or error) in a two-column dark-themed diff view for the mutation selected in `MutationInspectorNotifier`.
+- Data Diff tab for mutations.
 
 ## [0.1.0] - 2026-02-28
 
 ### Added
 
-- `OverlayTracker`: implements `QoraTracker`; fans out hook calls to typed streams with 200-event ring buffers.
-- `QoraInspector`: public `StatefulWidget` entry point; zero overhead in release builds via `kDebugMode` guard.
-- Domain notifiers: `QueriesNotifier`, `MutationsNotifier`, `MutationInspectorNotifier`, `TimelineNotifier`, `CacheNotifier`.
-- `MutationDetail`: view-model entity derived from `MutationEvent` for the inspector panel.
-- UI shell: `QoraFab`, `FabBadge`, `QoraPanel`, `PanelHeader`, `PanelTabBar`, `ResponsivePanelLayout`.
-- Panels: `QueriesPanelView`, `MutationsTabView`, `MutationInspectorColumn`, `TimelineTab`.
-- Shared widgets: `StatusBadge`, `ExpandableObject`, `BreadcrumbKey`.
-- Stub tabs: `WidgetTreeTab` (coming soon).
-- `provider` dependency for `ChangeNotifier`-based state wiring.
-- Initial package scaffold.
+- First release: `QoraInspector` with queries, mutations and timeline panels.

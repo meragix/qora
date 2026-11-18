@@ -9,18 +9,17 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Requires `qora` 1.4.1, which reports failed fetches to DevTools.
+- Requires `qora` 1.4.1.
 
 ## [1.4.0] - 2026-11-17
 
 ### Added
 
-- `MutationQueueBuilder` rebuilds with the calls in the client's mutation queue each time they change.
+- `MutationQueueBuilder` rebuilds with the calls in the mutation queue.
 
 ### Changed
 
-- `QoraMutationBuilder.mutator` is optional when `options.mutationKey` names a mutation registered with `QoraClient.registerMutation`. Code that reads `widget.mutator` now gets a nullable value.
-- `QoraMutationBuilder` sends registered mutations with `offlineQueue: true` through `QoraClient.mutationQueue`.
+- `QoraMutationBuilder.mutator` is optional (now nullable) for registered mutations.
 
 ## [1.3.1] - 2026-11-07
 
@@ -30,116 +29,91 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `QoraScope.auto()`: convenience constructor that wires `FlutterLifecycleManager` and `FlutterConnectivityManager` for one-call refetch on resume and on reconnect (#24).
-- `QoraBuilder` seeds `QoraOptions.initialData` / `placeholderData` before the first frame, so cached or server-provided data renders instantly (#19).
-- `QoraBuilder.select`: rebuild filter for derived data. The widget rebuilds only when the state kind or the selected value changes; the builder still receives the full, up-to-date state (#22).
+- `QoraScope.auto()` wires refetch on app resume and on reconnect.
+- `QoraBuilder.select` rebuilds only when the selected value changes.
+- `QoraBuilder` renders `initialData` or `placeholderData` on the first frame.
 
 ### Fixed
 
-- `QoraBuilder`: a fetcher that failed without awaiting I/O (for example `if (token == null) throw ...`) after an invalidation caused an unbounded `Loading` / `Failure` refetch loop that froze the UI. `QoraBuilder` now delegates its lifecycle to `QoraClient.watchQuery`, whose invalidation signal cannot be re-triggered by a fetch.
-- `QoraBuilder` / `QoraStateBuilder`: the first frame now renders the cached state synchronously instead of `Initial`.
-- `QoraBuilder` / `QoraStateBuilder` / `InfiniteQueryBuilder`: query keys are compared structurally. A parent rebuild passing a new list with the same content (`queryKey: ['users', id]`) no longer re-subscribes and refetches stale data.
-- `QoraBuilder`: background refetches (invalidation, polling) use the latest `fetcher` closure.
+- A fetcher failing synchronously no longer causes an endless refetch loop.
+- Builders render cached data on the first frame instead of `Initial`.
+- A new key list with the same content no longer refetches.
 
 ## [1.2.0] - 2026-06-15
 
 ### Added
 
-- `QoraMutationBuilder` now wires `invalidateQuery` from `QoraClient`, enabling `MutationOptions.invalidates` in Flutter widgets without manual setup.
+- `QoraMutationBuilder` supports `MutationOptions.invalidates`.
 
 ### Fixed
 
-- `QoraBuilder` : `refetchOnMount` is now correctly honored; it prevents network requests on mount if the cached data is fresh (or based on the `refetchOnMount` flag) mirroring the `watchQuery` core logic.
-- `QoraStateBuilder` & `QoraPrefetch`: fixed a Flutter framework crash (`dependOnInheritedWidgetOfExactType` called before `initState` completed) by correctly deferring the `QoraScope` lookup to `didChangeDependencies`.
+- `QoraBuilder` honors `refetchOnMount`.
+- `QoraStateBuilder` and `QoraPrefetch` no longer crash on first build.
 
 ## [1.1.0] - 2026-06-04
 
-### Changed
-
-- Bump version to 1.1.0 to align with `qora` core package for the v1.1.0 release.
+- No changes in this package. Released in lockstep with `qora` 1.1.0.
 
 ## [1.0.0] - 2026-06-01
 
-### Changed
-
-- Bump version to 1.0.0 to align with `qora` core package for the v1.0.0 release.
+- No changes in this package. Released in lockstep with `qora` 1.0.0.
 
 ## [0.8.0] - 2026-03-12
 
 ### Changed
 
-- Updated dependency to `qora: ^0.8.0` : enables `PersistQoraClient`, `StorageAdapter`, `QoraSerializer`, and the full persistence layer introduced in core 0.8.0
+- Requires `qora` 0.8.0.
 
 ## [0.7.0] - 2026-03-03
 
 ### Added
 
-- **`InfiniteQueryBuilder<TData, TPageParam>`** : `StatefulWidget` that manages the full infinite-query lifecycle: creates an `InfiniteQueryObserver` on mount, fetches the first page, subscribes to all state transitions, and disposes cleanly; auto-refetches on `InfiniteInitial` (external invalidation); accepts `queryKey`, `fetcher`, `options`, `builder`, `client`, and `enabled`
-- **`InfiniteQueryController<TData, TPageParam>`** : stable handle passed to the builder with `fetchNextPage()`, `fetchPreviousPage()`, and `refetch()`; safe to capture in scroll listeners and `RefreshIndicator.onRefresh`
+- `InfiniteQueryBuilder` for paginated lists.
 
 ## [0.6.0] - 2026-03-02
 
 ### Added
 
-- **`NetworkStatusBuilder`** : low-level widget that subscribes to the `ConnectivityManager` stream and rebuilds on every `NetworkStatus` transition; accepts optional `child` to avoid rebuilding expensive sub-trees
-- **`NetworkStatusIndicator`** : high-level wrapper that overlays an offline banner on `NetworkStatus.offline`; built-in default banner (wifi-off icon, "Offline mode" text, no Material dependency); customisable via `offlineBanner` or full `builder` escape-hatch
-- **`QoraScope.connectivityManagerOf(context)`** : static method exposing the active `ConnectivityManager` to descendant widgets; used internally by `NetworkStatusBuilder`
-- **`QoraMutationBuilder`** : now injects `isOnline` callback and `offlineMutationQueue` from `QoraClient` into `MutationController` automatically
-- **`QoraBuilder`** : builder signature extended to three arguments `(BuildContext, QoraState<T>, FetchStatus)`; subscribes to `client.watchFetchStatus(key)` alongside state stream; catches `QoraOfflineException` silently (handled via `FetchStatus.paused`)
+- `NetworkStatusBuilder` and `NetworkStatusIndicator` for offline UI.
 
 ### Changed
 
-- **`FlutterConnectivityManager`** : now a **pure signal provider**; constructor takes no arguments; removed `QoraClient` dependency and direct `invalidateWhere()` call; all reconnect logic delegated to `QoraClient.attachConnectivityManager()`
-- **`QoraScope`** : calls `client.attachConnectivityManager(cm)` after `connectivityManager.start()` in `initState`; exposes manager via `_InheritedQoraScope`
+- **Breaking**: the `QoraBuilder` builder receives a third `FetchStatus` argument.
+- **Breaking**: `FlutterConnectivityManager()` no longer takes a `QoraClient`.
 
 ## [0.5.0] - 2026-03-01
 
 ### Changed
 
-- Updated dependency to `qora: ^0.5.0` : enables `PersistQoraClient`, `StorageAdapter`, `QoraSerializer`, and the full persistence layer introduced in core 0.5.0
+- Requires `qora` 0.5.0, which adds persistence.
 
 ## [0.4.0] - 2026-02-28
 
 ### Changed
 
-- Updated dependencies to `qora: ^0.4.0` in `qora_flutter` package
-- Updated README and documentation to reflect new version and features
+- Requires `qora` 0.4.0.
 
 ## [0.3.0] - 2026-02-25
 
 ### Added
 
-- **`MutationBuilder<TData, TVariables, TContext>`** : `StatefulWidget` that creates and manages a `MutationController` internally; the `builder` receives the current `MutationState` and a `mutate(variables)` callback
-  - `mutator` parameter (mirrors `fetcher` in `QoraBuilder`) : the async function performing the write
-  - `options` parameter : `MutationOptions` with `onMutate` / `onSuccess` / `onError` / `onSettled` lifecycle hooks
-  - `metadata` parameter : optional `Map<String, Object?>?` forwarded to every `MutationEvent`; attach domain context (e.g. `{'category': 'auth', 'screen': 'login'}`) visible in DevTools without modifying the core schema
-  - Rebuilds on every state transition; controller is disposed automatically on widget unmount
-  - Recreates the controller if `mutator`, `options`, or `metadata` identity changes across widget rebuilds
-  - Passes `QoraScope.maybeOf(context)` as `tracker` automatically; safe to use without a `QoraScope` ancestor (standalone mode, no DevTools wiring)
+- `MutationBuilder` widget for mutations.
 
 ## [0.2.0] - 2026-02-22
 
 ### Added
 
-- `FlutterConnectivityManager` : invalidates all queries when the device reconnects after being offline; powered by `connectivity_plus` (bundled as a direct dependency)
-- `FlutterConnectivityManager` and `FlutterLifecycleManager` exported from the main `qora_flutter` library barrel
-- `QoraScope` now accepts an optional `connectivityManager` parameter alongside `lifecycleManager`
+- `FlutterConnectivityManager` refetches queries on reconnect.
 
 ### Changed
 
-- **`queryKey` accepts `Object`** : both `QoraBuilder` and `QoraStateBuilder` now accept a plain `List<dynamic>` or a `QoraKey`; no wrapping in `QoraKey(...)` required
-- **`FlutterLifecycleManager.minBackgroundDuration`** replaces `refetchInterval`; configures the minimum duration the app must be in background before queries are invalidated on resume (default: 5 s)
-- **Internal refetch mechanism** uses `client.invalidateWhere((_) => true)` instead of direct stream manipulation; active `QoraBuilder` widgets detect the resulting `Loading(previousData: …)` state and re-fetch automatically
+- `queryKey` accepts any `Object`; `FlutterLifecycleManager.minBackgroundDuration` replaces `refetchInterval`.
 
 ## [0.1.0] - 2026-02-11
 
 ### Added
 
-- `QoraScope` (`InheritedWidget`) : provides `QoraClient` to the widget tree
-- `QoraBuilder<T>` : fetches on mount, subscribes to all state transitions, re-fetches on invalidation, and cleans up on dispose
-- `QoraStateBuilder<T>` : observe-only variant; subscribes to state without triggering a fetch
-- `BuildContext` extensions: `context.qora`, `context.qoraOrNull`
-- `FlutterLifecycleManager` : invalidates all queries when the app resumes after a configurable background pause
+- First release: `QoraScope`, `QoraBuilder`, `QoraStateBuilder` and refetch on resume.
 
 [unreleased]: https://github.com/meragix/qora/compare/1.1.0...HEAD
 [1.1.0]: https://github.com/meragix/qora/compare/1.0.0...1.1.0
